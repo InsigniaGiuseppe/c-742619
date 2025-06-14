@@ -36,7 +36,7 @@ export class ChartSeriesManager {
     }
 
     if (chartType === 'candlestick') {
-      this.currentSeries = this.chart.addSeries('Candlestick', candlestickSeriesOptions);
+      this.currentSeries = this.chart.addCandlestickSeries(candlestickSeriesOptions as CandlestickSeriesPartialOptions);
       const candlestickData = data.map(d => ({
         time: d.time as any,
         open: d.open,
@@ -46,11 +46,11 @@ export class ChartSeriesManager {
       })) as CandlestickData[];
       this.currentSeries.setData(candlestickData);
     } else if (chartType === 'line') {
-      this.currentSeries = this.chart.addSeries('Line', lineSeriesOptions);
+      this.currentSeries = this.chart.addLineSeries(lineSeriesOptions as LineSeriesPartialOptions);
       const lineData = data.map(d => ({ time: d.time as any, value: d.close })) as LineData[];
       this.currentSeries.setData(lineData);
     } else if (chartType === 'area') {
-      this.currentSeries = this.chart.addSeries('Area', areaSeriesOptions);
+      this.currentSeries = this.chart.addAreaSeries(areaSeriesOptions as AreaSeriesPartialOptions);
       const areaData = data.map(d => ({ time: d.time as any, value: d.close })) as LineData[];
       this.currentSeries.setData(areaData);
     }
@@ -64,7 +64,7 @@ export class ChartSeriesManager {
       this.chart.removeSeries(this.volumeSeries);
     }
 
-    this.volumeSeries = this.chart.addSeries('Histogram', volumeSeriesOptions);
+    this.volumeSeries = this.chart.addHistogramSeries(volumeSeriesOptions as HistogramSeriesPartialOptions);
     const histogramData = volumeData.map(d => ({
       time: d.time as any,
       value: d.value,
