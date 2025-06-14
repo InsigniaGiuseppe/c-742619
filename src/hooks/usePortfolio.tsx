@@ -1,3 +1,4 @@
+
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -16,6 +17,7 @@ export interface PortfolioItem {
     name: string;
     symbol: string;
     current_price: number;
+    price_change_percentage_24h: number;
     logo_url?: string;
   };
 }
@@ -37,6 +39,7 @@ const fetchPortfolio = async (userId: string): Promise<{
         name,
         symbol,
         current_price,
+        price_change_percentage_24h,
         logo_url
       )
     `)
