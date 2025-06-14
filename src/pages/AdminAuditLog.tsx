@@ -1,4 +1,3 @@
-
 import React from 'react';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
@@ -8,12 +7,9 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ArrowLeft, AlertCircle, History } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useAdminAuditLogs } from '@/hooks/useAdminAuditLogs';
+import { useAdminAuditLogs, AdminAuditLogEntry } from '@/hooks/useAdminAuditLogs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-
-type Log = ReturnType<typeof useAdminAuditLogs>['data'];
-type LogEntry = NonNullable<Log>[number];
 
 const AdminAuditLog = () => {
   const navigate = useNavigate();
@@ -26,12 +22,12 @@ const AdminAuditLog = () => {
     return 'bg-gray-500/20 text-gray-400 border border-gray-500/30';
   };
   
-  const renderUser = (user: LogEntry['admin'] | LogEntry['target_user']) => {
+  const renderUser = (user: AdminAuditLogEntry['admin'] | AdminAuditLogEntry['target_user']) => {
     if (!user) return <span className="text-muted-foreground">N/A</span>;
     return (
       <div className="flex flex-col">
-        <span className="font-medium">{user.full_name}</span>
-        <span className="text-xs text-muted-foreground">{user.email}</span>
+        <span className="font-medium">{user.full_name || 'N/A'}</span>
+        <span className="text-xs text-muted-foreground">{user.email || 'N/A'}</span>
       </div>
     );
   };
@@ -58,7 +54,7 @@ const AdminAuditLog = () => {
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>Error Fetching Logs</AlertTitle>
               <AlertDescription>
-                {error instanceof Error ? error.message : 'An unknown error occurred.'}
+                {error.message}
               </AlertDescription>
             </Alert>
           </TableCell>

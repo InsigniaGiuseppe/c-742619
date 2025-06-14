@@ -2,7 +2,23 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
-const fetchAuditLogs = async () => {
+export type AdminAuditLogEntry = {
+  id: string;
+  created_at: string;
+  action_type: string;
+  details: unknown;
+  ip_address: string | null;
+  admin: {
+    full_name: string | null;
+    email: string | null;
+  } | null;
+  target_user: {
+    full_name: string | null;
+    email: string | null;
+  } | null;
+};
+
+const fetchAuditLogs = async (): Promise<AdminAuditLogEntry[]> => {
   const { data, error } = await supabase
     .from('admin_audit_log')
     .select(`
@@ -22,11 +38,11 @@ const fetchAuditLogs = async () => {
     throw new Error(error.message);
   }
 
-  return data;
+  return data as AdminAuditLogEntry[];
 };
 
 export const useAdminAuditLogs = () => {
-  return useQuery({
+  return useQuery<AdminAuditLogEntry[], Error>({
     queryKey: ['admin-audit-logs'],
     queryFn: fetchAuditLogs,
   });
