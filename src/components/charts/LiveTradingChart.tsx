@@ -15,6 +15,7 @@ import {
 import { Cryptocurrency } from '@/hooks/useCryptocurrencies';
 import { useBinanceChartData, ChartDataPoint } from '@/hooks/useBinanceChartData';
 import { ChartType } from './AdvancedTradingChart';
+import CandlestickShape from './CandlestickShape';
 
 interface LiveTradingChartProps {
   crypto: Cryptocurrency;
@@ -30,7 +31,6 @@ const LiveTradingChart: React.FC<LiveTradingChartProps> = ({
   const { chartData: binanceData, loading, error } = useBinanceChartData(crypto.symbol, timeframe as any);
   const [liveData, setLiveData] = useState<ChartDataPoint[]>([]);
   const lastUpdateRef = useRef<number>(0);
-  const [stableVolume] = useState<number[]>([]);
 
   // Convert timeframe to update interval (in milliseconds)
   const getUpdateInterval = (tf: string) => {
@@ -104,11 +104,12 @@ const LiveTradingChart: React.FC<LiveTradingChartProps> = ({
     );
   }
 
-  // Prepare chart data with stable volume
+  // Prepare chart data with calculated domains
   const chartData = liveData.map((item, index) => {
-    // Generate stable volume based on price range
-    const baseVolume = (item.high - item.low) * 50000;
-    const stableVol = baseVolume + (index % 10) * 10000;
+    // Generate stable volume based on price and index
+    const priceRange = Math.max(item.high - item.low, 0.01);
+    const baseVolume = priceRange * crypto.current_price * 1000;
+    const stableVol = baseVolume * (0.8 + (index % 5) * 0.1); // Vary by 10-30% of base
     
     return {
       time: new Date(item.time).toLocaleDateString(),
@@ -123,51 +124,16 @@ const LiveTradingChart: React.FC<LiveTradingChartProps> = ({
     };
   });
 
-  // Custom candlestick shape component
-  const CandlestickShape = (props: any) => {
-    const { payload, x, y, width, height } = props;
-    if (!payload) return null;
-    
-    const { open, high, low, close } = payload;
-    const isGreen = close >= open;
-    const color = isGreen ? '#10B981' : '#EF4444';
-    
-    const wickX = x + width / 2;
-    const bodyWidth = Math.max(width * 0.6, 2);
-    const bodyX = x + (width - bodyWidth) / 2;
-    
-    // Simple scaling - adjust these values as needed
-    const priceRange = Math.max(high - low, 0.01);
-    const priceToPixel = height / (priceRange * 10); // Adjust multiplier as needed
-    
-    const bodyHeight = Math.abs(close - open) * priceToPixel;
-    const bodyTop = y + height - ((Math.max(open, close) - low) * priceToPixel);
-    
-    return (
-      <g>
-        {/* Wick line */}
-        <line
-          x1={wickX}
-          y1={y + height - ((high - low) * priceToPixel)}
-          x2={wickX}
-          y2={y + height}
-          stroke={color}
-          strokeWidth={1}
-        />
-        
-        {/* Body rectangle */}
-        <rect
-          x={bodyX}
-          y={bodyTop}
-          width={bodyWidth}
-          height={Math.max(bodyHeight, 1)}
-          fill={isGreen ? color : 'transparent'}
-          stroke={color}
-          strokeWidth={1}
-        />
-      </g>
-    );
-  };
+  // Calculate proper domains for Y-axes
+  const allPrices = chartData.flatMap(d => [d.open, d.high, d.low, d.close]);
+  const minPrice = Math.min(...allPrices);
+  const maxPrice = Math.max(...allPrices);
+  const priceRange = maxPrice - minPrice;
+  const pricePadding = priceRange * 0.05; // 5% padding
+  
+  const allVolumes = chartData.map(d => d.volume);
+  const maxVolume = Math.max(...allVolumes);
+  const minVolume = Math.min(...allVolumes);
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -186,7 +152,7 @@ const LiveTradingChart: React.FC<LiveTradingChartProps> = ({
           {(chartType === 'line' || chartType === 'area') && (
             <p className="text-sm text-gray-300">Price: ${data.price?.toFixed(2)}</p>
           )}
-          <p className="text-sm text-gray-300">Volume: {data.volume?.toLocaleString()}</p>
+          <p className="text-sm text-gray-300">Volume: {data.volume?.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
         </div>
       );
     }
@@ -208,22 +174,26 @@ const LiveTradingChart: React.FC<LiveTradingChartProps> = ({
             orientation="right"
             stroke="#9CA3AF"
             fontSize={12}
-            domain={['dataMin - 50', 'dataMax + 50']}
+            domain={[minPrice - pricePadding, maxPrice + pricePadding]}
+            tickFormatter={(value) => `$${value.toFixed(2)}`}
           />
           <YAxis 
             yAxisId="volume"
             orientation="left"
             stroke="#9CA3AF"
             fontSize={12}
+            domain={[0, maxVolume * 1.1]}
+            tickFormatter={(value) => (value / 1000).toFixed(0) + 'K'}
           />
           <Tooltip content={<CustomTooltip />} />
           
-          {/* Stable volume bars */}
+          {/* Volume bars with reduced opacity */}
           <Bar 
             yAxisId="volume"
             dataKey="volume" 
             fill="#374151" 
-            opacity={0.2}
+            opacity={0.15}
+            stroke="none"
           />
           
           {/* Price display based on chart type */}
@@ -253,7 +223,7 @@ const LiveTradingChart: React.FC<LiveTradingChartProps> = ({
             <Bar 
               yAxisId="price"
               dataKey="close"
-              shape={<CandlestickShape />}
+              shape={(props: any) => <CandlestickShape {...props} />}
             />
           )}
         </ComposedChart>
