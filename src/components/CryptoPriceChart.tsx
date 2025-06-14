@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -9,6 +8,7 @@ import {
   Tooltip,
   CartesianGrid,
   ReferenceLine,
+  Label,
 } from 'recharts';
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Card, CardContent } from '@/components/ui/card';
@@ -54,17 +54,17 @@ const formatXAxisTick = (tick: number, timeframe: Timeframe) => {
   }
 };
 
-const CustomTooltip = ({ active, payload, label, timeframe }: any) => {
+const CustomTooltip = ({ active, payload, label, timeframe, formatter }: any) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
     return (
       <div className="p-4 bg-background/80 backdrop-blur-sm border border-border rounded-lg shadow-lg">
         <p className="label text-sm text-muted-foreground">{formatXAxisTick(label, timeframe)}</p>
         <div className="mt-2 space-y-1 text-sm">
-          <p><strong>Open:</strong> {formatPrice(data.open)}</p>
-          <p><strong>High:</strong> {formatPrice(data.high)}</p>
-          <p><strong>Low:</strong> {formatPrice(data.low)}</p>
-          <p><strong>Close:</strong> {formatPrice(data.close)}</p>
+          <p><strong>Open:</strong> {formatter(data.open)}</p>
+          <p><strong>High:</strong> {formatter(data.high)}</p>
+          <p><strong>Low:</strong> {formatter(data.low)}</p>
+          <p><strong>Close:</strong> {formatter(data.close)}</p>
         </div>
       </div>
     );
@@ -139,10 +139,16 @@ const CryptoPriceChart = ({ crypto }: { crypto: Cryptocurrency }) => {
     fetchChartData(timeframe);
   }, [timeframe, fetchChartData]);
 
-  const domain: [number, number] = [
-    Math.min(...chartData.map(d => d.low)),
-    Math.max(...chartData.map(d => d.high))
-  ];
+  const domain = useMemo((): [number, number] => {
+    return [
+      Math.min(...chartData.map(d => d.low)),
+      Math.max(...chartData.map(d => d.high))
+    ];
+  }, [chartData]);
+
+  if (!crypto) {
+    return <Card className="glass glass-hover h-full flex items-center justify-center"><p>No crypto data available.</p></Card>;
+  }
 
   return (
     <Card className="glass glass-hover h-full">
@@ -166,7 +172,7 @@ const CryptoPriceChart = ({ crypto }: { crypto: Cryptocurrency }) => {
           </ToggleGroup>
         </div>
 
-        <div className="flex-grow">
+        <div className="flex-grow mt-4 -mx-4">
         {loading ? (
           <div className="w-full h-[400px] flex flex-col justify-between">
             <Skeleton className="w-full h-4/5" />
@@ -182,7 +188,7 @@ const CryptoPriceChart = ({ crypto }: { crypto: Cryptocurrency }) => {
             <div className="w-full h-[400px] flex items-center justify-center text-destructive">{error}</div>
         ) : (
           <ResponsiveContainer width="100%" height={400}>
-            <ComposedChart data={chartData} margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+            <ComposedChart data={chartData} margin={{ top: 5, right: 30, bottom: 5, left: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border) / 0.5)" />
               <XAxis
                 dataKey="time"
@@ -201,11 +207,15 @@ const CryptoPriceChart = ({ crypto }: { crypto: Cryptocurrency }) => {
                 stroke="hsl(var(--muted-foreground))"
                 tickLine={false}
                 axisLine={false}
+                width={80}
               />
-              <Tooltip content={<CustomTooltip timeframe={timeframe} />} cursor={{ fill: 'hsl(var(--accent) / 0.2)' }}/>
+              <Tooltip 
+                content={<CustomTooltip timeframe={timeframe} formatter={formatPrice} />} 
+                cursor={{ fill: 'hsl(var(--accent) / 0.2)' }}
+              />
               <Bar dataKey="close" shape={<CustomCandle />} />
               <ReferenceLine y={crypto.current_price} stroke="hsl(var(--primary))" strokeDasharray="3 3">
-                <YAxis.Label value="Current Price" position="insideTopLeft" fill="hsl(var(--primary))" fontSize={12} />
+                <Label value="Current Price" position="insideTopLeft" fill="hsl(var(--primary))" fontSize={12} dy={-10} />
               </ReferenceLine>
             </ComposedChart>
           </ResponsiveContainer>
