@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface Cryptocurrency {
@@ -19,6 +19,7 @@ interface CryptocurrenciesContextValue {
   cryptocurrencies: Cryptocurrency[];
   loading: boolean;
   error: string | null;
+  isRealtimeConnected: boolean;
   refetch: () => Promise<void>;
 }
 
@@ -28,6 +29,9 @@ export const CryptocurrenciesProvider: React.FC<{ children: ReactNode }> = ({ ch
   const [cryptocurrencies, setCryptocurrencies] = useState<Cryptocurrency[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isRealtimeConnected, setIsRealtimeConnected] = useState(false);
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const retryTimeoutRef = useRef<number | null>(null);
 
   const fetchCryptocurrencies = async () => {
     try {
@@ -66,12 +70,14 @@ export const CryptocurrenciesProvider: React.FC<{ children: ReactNode }> = ({ ch
     }
   };
 
-  useEffect(() => {
-    fetchCryptocurrencies();
-
-    const syncInterval = setInterval(() => {
-      syncPrices();
-    }, 30000);
+  const setupRealtimeSubscription = () => {
+    if (channelRef.current) {
+        supabase.removeChannel(channelRef.current).catch(err => console.error("Failed to remove channel", err));
+        channelRef.current = null;
+    }
+    if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+    }
 
     const channel = supabase
       .channel('cryptocurrencies-changes')
@@ -79,10 +85,11 @@ export const CryptocurrenciesProvider: React.FC<{ children: ReactNode }> = ({ ch
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'cryptocurrencies' },
         (payload) => {
+          console.log('Real-time update received:', payload.new);
           const updatedCrypto = payload.new as Cryptocurrency;
           setCryptocurrencies((currentCryptos) =>
             currentCryptos.map((crypto) =>
-              crypto.id === updatedCrypto.id ? updatedCrypto : crypto
+              crypto.id === updatedCrypto.id ? { ...crypto, ...updatedCrypto } : crypto
             )
           );
         }
@@ -90,20 +97,51 @@ export const CryptocurrenciesProvider: React.FC<{ children: ReactNode }> = ({ ch
       .subscribe((status, err) => {
         if (status === 'SUBSCRIBED') {
           console.log('Subscribed to real-time crypto updates!');
+          setIsRealtimeConnected(true);
+          if (error && error.startsWith('Real-time connection failed')) {
+            setError(null);
+          }
         }
-        if (status === 'CHANNEL_ERROR') {
-          console.error('Real-time channel error:', err);
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          console.error('Real-time channel error:', status, err);
+          setIsRealtimeConnected(false);
           setError('Real-time connection failed. Prices may be outdated.');
+          
+          console.log('Attempting to reconnect real-time channel in 5 seconds...');
+          retryTimeoutRef.current = window.setTimeout(() => {
+            setupRealtimeSubscription();
+          }, 5000);
+        }
+        if (status === 'CLOSED') {
+            console.log('Real-time channel closed.');
+            setIsRealtimeConnected(false);
         }
       });
+
+      channelRef.current = channel;
+  };
+
+
+  useEffect(() => {
+    fetchCryptocurrencies();
+    setupRealtimeSubscription();
+
+    const syncInterval = setInterval(() => {
+      syncPrices();
+    }, 30000);
       
     return () => {
       clearInterval(syncInterval);
-      supabase.removeChannel(channel);
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+      }
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current).catch(err => console.error("Failed to remove channel on unmount", err));
+      }
     };
   }, []);
 
-  const value = { cryptocurrencies, loading, error, refetch: fetchCryptocurrencies };
+  const value = { cryptocurrencies, loading, error, isRealtimeConnected, refetch: fetchCryptocurrencies };
 
   return (
     <CryptocurrenciesContext.Provider value={value}>
