@@ -1,4 +1,3 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -49,7 +48,7 @@ const fetchPortfolio = async (userId: string): Promise<{
     throw new Error(error.message);
   }
 
-  console.log('[usePortfolio] Portfolio data fetched:', data);
+  console.log('[usePortfolio] Raw data fetched from supabase:', data);
 
   const portfolioData = data?.map(item => ({
     ...item,
@@ -62,10 +61,11 @@ const fetchPortfolio = async (userId: string): Promise<{
   const totalInvested = portfolioData.reduce((sum, item) => sum + item.total_invested, 0);
   const totalPLPercentage = totalInvested > 0 ? (totalPL / totalInvested) * 100 : 0;
 
-  console.log('[usePortfolio] Calculated totals:', {
+  console.log('[usePortfolio] Processed data being returned:', {
+    portfolio: portfolioData,
     totalValue: totalVal,
     totalProfitLoss: totalPL,
-    totalProfitLossPercentage: totalPLPercentage
+    totalProfitLossPercentage: totalPLPercentage,
   });
 
   return {
@@ -78,10 +78,14 @@ const fetchPortfolio = async (userId: string): Promise<{
 
 export const usePortfolio = () => {
   const { user } = useAuth();
+  const queryKey = ['portfolio', user?.id];
 
   const query = useQuery({
-    queryKey: ['portfolio', user?.id],
-    queryFn: () => fetchPortfolio(user!.id),
+    queryKey: queryKey,
+    queryFn: () => {
+      console.log(`[usePortfolio] queryFn executed with key:`, queryKey);
+      return fetchPortfolio(user!.id);
+    },
     enabled: !!user,
     staleTime: 30000, // Consider data stale after 30 seconds
     refetchInterval: 60000, // Refetch every minute

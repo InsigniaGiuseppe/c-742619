@@ -1,4 +1,3 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -42,16 +41,20 @@ const fetchTransactions = async (userId: string): Promise<Transaction[]> => {
     throw new Error(error.message);
   }
 
-  console.log('[useTransactionHistory] Transactions fetched:', data?.length || 0, 'records');
+  console.log('[useTransactionHistory] Raw data fetched:', data);
   return data || [];
 };
 
 export const useTransactionHistory = () => {
   const { user } = useAuth();
+  const queryKey = ['transaction-history', user?.id];
 
   const query = useQuery({
-    queryKey: ['transaction-history', user?.id],
-    queryFn: () => fetchTransactions(user!.id),
+    queryKey: queryKey,
+    queryFn: () => {
+      console.log(`[useTransactionHistory] queryFn executed with key:`, queryKey);
+      return fetchTransactions(user!.id)
+    },
     enabled: !!user,
     staleTime: 30000, // Consider data stale after 30 seconds
     refetchInterval: 60000, // Refetch every minute

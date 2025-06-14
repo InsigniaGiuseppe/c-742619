@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -20,6 +19,7 @@ export const useTrade = (crypto: Cryptocurrency | undefined) => {
 
   const fetchUserData = useCallback(async () => {
     if (!user || !crypto) return;
+    console.log('[useTrade] Running fetchUserData for user and crypto', { userId: user.id, cryptoId: crypto.id });
 
     try {
       // Fetch user's demo balance
@@ -93,16 +93,14 @@ export const useTrade = (crypto: Cryptocurrency | undefined) => {
     const feeAmount = eurValue * 0.001;
     const totalCost = eurValue + feeAmount;
 
-    console.log('[useTrade] Starting trade:', {
-      user_id: user.id,
-      crypto_id: crypto.id,
-      trade_type: tradeType,
-      eur_value: eurValue,
-      coin_amount: coinAmount,
-      fee_amount: feeAmount,
-      total_cost: totalCost,
-      user_balance: userBalance,
-      user_holdings: userHoldings
+    console.log('[useTrade] Initiating trade with params:', {
+      userId: user.id,
+      cryptoId: crypto.id,
+      tradeType,
+      eurValue,
+      coinAmount,
+      userBalance,
+      userHoldings,
     });
 
     if (tradeType === 'buy' && totalCost > userBalance) {
@@ -116,10 +114,11 @@ export const useTrade = (crypto: Cryptocurrency | undefined) => {
     }
 
     setIsProcessingTrade(true);
+    const logPrefix = `[Trade-Step]`;
 
     try {
       // Step 1: Create trading order
-      console.log('[useTrade] Creating trading order...');
+      console.log(`${logPrefix} 1. Inserting into trading_orders...`);
       const { data: order, error: orderError } = await supabase
         .from('trading_orders')
         .insert({
@@ -136,16 +135,13 @@ export const useTrade = (crypto: Cryptocurrency | undefined) => {
         .select()
         .single();
 
-      if (orderError) {
-        console.error('[useTrade] Trading order error:', orderError);
-        throw new Error(`Failed to create trading order: ${orderError.message}`);
-      }
-
-      console.log('[useTrade] Trading order created:', order);
+      console.log(`${logPrefix} 1. Result:`, { order, orderError });
+      if (orderError) throw new Error(`Failed at trading_orders: ${orderError.message}`);
+      if (!order) throw new Error('Trading order creation returned no data.');
 
       // Step 2: Create transaction history record
-      console.log('[useTrade] Creating transaction history...');
-      const { error: transactionError } = await supabase
+      console.log(`${logPrefix} 2. Inserting into transaction_history...`);
+      const { data: transaction, error: transactionError } = await supabase
         .from('transaction_history')
         .insert({
           user_id: user.id,
@@ -157,17 +153,16 @@ export const useTrade = (crypto: Cryptocurrency | undefined) => {
           status: 'completed',
           description: `${tradeType.toUpperCase()} ${coinAmount.toFixed(8)} ${crypto.symbol}`,
           reference_order_id: order.id
-        });
-
-      if (transactionError) {
-        console.error('[useTrade] Transaction history error:', transactionError);
-        throw new Error(`Failed to create transaction record: ${transactionError.message}`);
-      }
-
-      console.log('[useTrade] Transaction history created');
+        })
+        .select()
+        .single();
+      
+      console.log(`${logPrefix} 2. Result:`, { transaction, transactionError });
+      if (transactionError) throw new Error(`Failed at transaction_history: ${transactionError.message}`);
+      if (!transaction) throw new Error('Transaction history creation returned no data.');
 
       // Step 3: Update or create portfolio entry
-      console.log('[useTrade] Updating portfolio...');
+      console.log(`${logPrefix} 3. Fetching existing portfolio for update...`);
       const { data: existingPortfolio, error: portfolioFetchError } = await supabase
         .from('user_portfolios')
         .select('*')
@@ -175,12 +170,13 @@ export const useTrade = (crypto: Cryptocurrency | undefined) => {
         .eq('cryptocurrency_id', crypto.id)
         .single();
 
+      console.log(`${logPrefix} 3. Fetch Result:`, { existingPortfolio, portfolioFetchError });
       if (portfolioFetchError && portfolioFetchError.code !== 'PGRST116') {
-        console.error('[useTrade] Portfolio fetch error:', portfolioFetchError);
-        throw new Error(`Failed to fetch portfolio: ${portfolioFetchError.message}`);
+        throw new Error(`Failed to fetch portfolio for update: ${portfolioFetchError.message}`);
       }
 
       if (existingPortfolio) {
+        console.log(`${logPrefix} 3a. Updating existing portfolio...`);
         // Update existing portfolio
         const newQuantity = tradeType === 'buy' 
           ? existingPortfolio.quantity + coinAmount 
@@ -195,7 +191,7 @@ export const useTrade = (crypto: Cryptocurrency | undefined) => {
         const newProfitLoss = newCurrentValue - newTotalInvested;
         const newProfitLossPercentage = newTotalInvested > 0 ? (newProfitLoss / newTotalInvested) * 100 : 0;
 
-        const { error: portfolioUpdateError } = await supabase
+        const { data: updatedPortfolio, error: portfolioUpdateError } = await supabase
           .from('user_portfolios')
           .update({
             quantity: newQuantity,
@@ -205,15 +201,15 @@ export const useTrade = (crypto: Cryptocurrency | undefined) => {
             profit_loss: newProfitLoss,
             profit_loss_percentage: newProfitLossPercentage
           })
-          .eq('id', existingPortfolio.id);
+          .eq('id', existingPortfolio.id)
+          .select()
+          .single();
 
-        if (portfolioUpdateError) {
-          console.error('[useTrade] Portfolio update error:', portfolioUpdateError);
-          throw new Error(`Failed to update portfolio: ${portfolioUpdateError.message}`);
-        }
+        console.log(`${logPrefix} 3a. Update Result:`, { updatedPortfolio, portfolioUpdateError });
+        if (portfolioUpdateError) throw new Error(`Failed to update portfolio: ${portfolioUpdateError.message}`);
       } else if (tradeType === 'buy') {
-        // Create new portfolio entry
-        const { error: portfolioCreateError } = await supabase
+        console.log(`${logPrefix} 3b. Creating new portfolio entry...`);
+        const { data: newPortfolio, error: portfolioCreateError } = await supabase
           .from('user_portfolios')
           .insert({
             user_id: user.id,
@@ -224,37 +220,37 @@ export const useTrade = (crypto: Cryptocurrency | undefined) => {
             current_value: eurValue,
             profit_loss: 0,
             profit_loss_percentage: 0
-          });
-
-        if (portfolioCreateError) {
-          console.error('[useTrade] Portfolio create error:', portfolioCreateError);
-          throw new Error(`Failed to create portfolio entry: ${portfolioCreateError.message}`);
-        }
+          })
+          .select()
+          .single();
+        
+        console.log(`${logPrefix} 3b. Create Result:`, { newPortfolio, portfolioCreateError });
+        if (portfolioCreateError) throw new Error(`Failed to create portfolio entry: ${portfolioCreateError.message}`);
       }
 
-      console.log('[useTrade] Portfolio updated');
-
       // Step 4: Update user balance
-      console.log('[useTrade] Updating user balance...');
+      console.log(`${logPrefix} 4. Updating user balance...`);
       const newBalance = tradeType === 'buy' 
         ? userBalance - totalCost 
         : userBalance + eurValue - feeAmount;
       
-      const { error: balanceError } = await supabase
+      const { data: updatedProfile, error: balanceError } = await supabase
         .from('profiles')
         .update({ demo_balance_usd: newBalance })
-        .eq('id', user.id);
+        .eq('id', user.id)
+        .select()
+        .single();
 
-      if (balanceError) {
-        console.error('[useTrade] Balance update error:', balanceError);
-        throw new Error(`Failed to update balance: ${balanceError.message}`);
-      }
-
-      console.log('[useTrade] Balance updated');
+      console.log(`${logPrefix} 4. Update Result:`, { updatedProfile, balanceError });
+      if (balanceError) throw new Error(`Failed to update balance: ${balanceError.message}`);
 
       // Step 5: Invalidate queries to refresh data
-      queryClient.invalidateQueries({ queryKey: ['portfolio'] });
-      queryClient.invalidateQueries({ queryKey: ['transaction-history'] });
+      const portfolioQueryKey = ['portfolio', user.id];
+      const historyQueryKey = ['transaction-history', user.id];
+      console.log(`${logPrefix} 5. Invalidating queries with keys:`, { portfolioQueryKey, historyQueryKey });
+      
+      queryClient.invalidateQueries({ queryKey: portfolioQueryKey });
+      queryClient.invalidateQueries({ queryKey: historyQueryKey });
       queryClient.invalidateQueries({ queryKey: ['admin-transactions'] });
       
       toast.success(`Successfully ${tradeType === 'buy' ? 'bought' : 'sold'} ${coinAmount.toFixed(8)} ${crypto.symbol}`);

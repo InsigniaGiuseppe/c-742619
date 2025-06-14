@@ -80,7 +80,8 @@ export const useAdmin = () => {
         console.error(`[useAdmin] ${timestamp} CATCH block error checking admin status:`, error);
         setIsAdmin(false);
       } finally {
-        console.log(`[useAdmin] ${timestamp} Finished check. Loading set to false. Final isAdmin:`, isAdmin);
+        // This log was incorrect, it was logging the *stale* value of isAdmin
+        // We need to see the value that *will be* set.
         setLoading(false);
       }
     };
@@ -88,6 +89,7 @@ export const useAdmin = () => {
     checkAdminStatus();
   }, [user]);
 
-  console.log(`[useAdmin] Hook returning: isAdmin=${isAdmin}, loading=${loading}`);
+  // This log will run on every render, showing the current state of the hook
+  console.log(`[useAdmin] HOOK RENDER. Returning: isAdmin=${isAdmin}, loading=${loading}`);
   return { isAdmin, loading };
 };
