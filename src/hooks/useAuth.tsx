@@ -1,10 +1,10 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 export const useAuth = () => {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-	const [isAdmin, setIsAdmin] = useState(false);
 
   const fetchUser = useCallback(async () => {
     setLoading(true);
@@ -20,35 +20,6 @@ export const useAuth = () => {
       fetchUser();
     });
   }, [fetchUser]);
-
-	useEffect(() => {
-    const checkAdminStatus = async () => {
-      if (!user) {
-        setIsAdmin(false);
-        return;
-      }
-
-      try {
-        const { data: profile, error } = await supabase
-          .from('profiles')
-          .select('is_admin')
-          .eq('id', user.id)
-          .single();
-
-        if (error) {
-          console.error('Error fetching profile:', error);
-          setIsAdmin(false);
-        } else if (profile) {
-          setIsAdmin(profile.is_admin || false);
-        }
-      } catch (err) {
-        console.error('Error in checkAdminStatus:', err);
-        setIsAdmin(false);
-      }
-    };
-
-    checkAdminStatus();
-  }, [user]);
 
   const signIn = async (email: string, password: string) => {
     try {
@@ -106,8 +77,7 @@ export const useAuth = () => {
     loading,
     signUp,
     signIn,
-    signOut,
-    isAdmin
+    signOut
   };
 };
 
