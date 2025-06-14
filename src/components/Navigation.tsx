@@ -69,7 +69,7 @@ const Navigation = () => {
         <nav className="flex items-center justify-between h-full">
           <Link to="/" className="flex items-center gap-2">
             <img 
-              src="/lovable-uploads/13ae56ac-ef6c-4fe4-9393-309f5845f79c.png" 
+              src="/lovable-uploads/f2e4b091-6735-4cc9-bf78-84aa28f74b0b.png" 
               alt="PROMPTO TRADING Logo" 
               className="w-8 h-8 object-contain"
               onError={(e) => {

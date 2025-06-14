@@ -47,7 +47,14 @@ const DashboardPage = () => {
       <Navigation />
       <main className="flex-grow container mx-auto px-4 py-20 pt-24">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2">Dashboard</h1>
+          <div className="flex items-center gap-3 mb-2">
+            <img 
+              src="/lovable-uploads/f2e4b091-6735-4cc9-bf78-84aa28f74b0b.png" 
+              alt="PROMPTO Logo" 
+              className="w-10 h-10 object-contain"
+            />
+            <h1 className="text-4xl font-bold">PROMPTO DASHBOARD</h1>
+          </div>
           <p className="text-muted-foreground">
             Welcome back, {user?.email}
           </p>

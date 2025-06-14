@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navigation from '@/components/Navigation';
@@ -55,7 +54,14 @@ const TradingPage = () => {
         className="flex-grow container mx-auto px-4 py-20 pt-24"
       >
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold mb-4">Cryptocurrency Trading</h1>
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <img 
+              src="/lovable-uploads/f2e4b091-6735-4cc9-bf78-84aa28f74b0b.png" 
+              alt="PROMPTO Logo" 
+              className="w-12 h-12 object-contain"
+            />
+            <h1 className="text-4xl font-bold">PROMPTO TRADING</h1>
+          </div>
           <p className="text-muted-foreground text-lg">
             Trade the most popular cryptocurrencies with real-time prices
           </p>
