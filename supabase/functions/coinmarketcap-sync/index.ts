@@ -38,29 +38,59 @@ serve(async (req) => {
     const data = await response.json()
     console.log('CMC API Response:', data)
 
+    let updatedCount = 0
+    let errorCount = 0
+
     // Update cryptocurrency prices in database
     for (const [symbol, coinData] of Object.entries(data.data)) {
-      const quote = (coinData as any).quote.USD
-      
-      const { error } = await supabaseClient
-        .from('cryptocurrencies')
-        .update({
-          current_price: quote.price,
-          market_cap: quote.market_cap,
-          volume_24h: quote.volume_24h,
-          price_change_24h: quote.change_24h,
-          price_change_percentage_24h: quote.percent_change_24h,
-          updated_at: new Date().toISOString()
-        })
-        .eq('symbol', symbol)
+      try {
+        const quote = (coinData as any).quote.USD
+        
+        // Validate that we have required price data
+        if (!quote || typeof quote.price !== 'number' || quote.price <= 0) {
+          console.error(`Invalid price data for ${symbol}:`, quote)
+          errorCount++
+          continue
+        }
 
-      if (error) {
-        console.error(`Error updating ${symbol}:`, error)
+        const updateData = {
+          current_price: quote.price,
+          market_cap: quote.market_cap || null,
+          volume_24h: quote.volume_24h || null,
+          price_change_24h: quote.change_24h || null,
+          price_change_percentage_24h: quote.percent_change_24h || null,
+          updated_at: new Date().toISOString()
+        }
+
+        console.log(`Updating ${symbol} with price: ${quote.price}`)
+
+        const { error } = await supabaseClient
+          .from('cryptocurrencies')
+          .update(updateData)
+          .eq('symbol', symbol)
+
+        if (error) {
+          console.error(`Error updating ${symbol}:`, error)
+          errorCount++
+        } else {
+          updatedCount++
+          console.log(`Successfully updated ${symbol}`)
+        }
+      } catch (coinError) {
+        console.error(`Error processing ${symbol}:`, coinError)
+        errorCount++
       }
     }
 
+    console.log(`Update complete. Updated: ${updatedCount}, Errors: ${errorCount}`)
+
     return new Response(
-      JSON.stringify({ success: true, updated: Object.keys(data.data).length }),
+      JSON.stringify({ 
+        success: true, 
+        updated: updatedCount,
+        errors: errorCount,
+        total_processed: Object.keys(data.data).length 
+      }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200 
