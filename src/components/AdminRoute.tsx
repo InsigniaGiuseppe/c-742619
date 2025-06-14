@@ -12,7 +12,17 @@ const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
   const { user, loading: authLoading } = useAuth();
   const { isAdmin, loading: adminLoading } = useAdmin();
 
+  const logState = (decision: string) => {
+    console.log(`[AdminRoute] Decision: ${decision}`, {
+      authLoading,
+      adminLoading,
+      userExists: !!user,
+      isAdmin,
+    });
+  };
+
   if (authLoading || adminLoading) {
+    logState('Loading...');
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
@@ -24,13 +34,16 @@ const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
   }
 
   if (!user) {
+    logState('No user, redirecting to /login');
     return <Navigate to="/login" replace />;
   }
 
   if (!isAdmin) {
+    logState('User is not admin, redirecting to /dashboard');
     return <Navigate to="/dashboard" replace />;
   }
 
+  logState('Access granted, rendering children');
   return <>{children}</>;
 };
 

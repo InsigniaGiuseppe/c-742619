@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
@@ -18,30 +17,9 @@ const AdminLoginPage = () => {
   });
   const [loading, setLoading] = useState(false);
   
-  const { signIn, user } = useAuth();
+  const { signIn } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
-
-  // Redirect if already logged in and is admin
-  useEffect(() => {
-    const checkAdminAndRedirect = async () => {
-      if (user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('is_admin')
-          .eq('id', user.id)
-          .single();
-        
-        if (profile?.is_admin) {
-          navigate('/admin');
-        } else {
-          navigate('/dashboard');
-        }
-      }
-    };
-    
-    checkAdminAndRedirect();
-  }, [user, navigate]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -53,44 +31,31 @@ const AdminLoginPage = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    console.log('[AdminLogin] Submitting form...');
 
     try {
-      const { data, error } = await signIn(formData.email, formData.password);
+      const { error } = await signIn(formData.email, formData.password);
 
       if (error) {
+        console.error('[AdminLogin] SignIn Error:', error.message);
         toast({
           title: "Login Error",
           description: error.message,
           variant: "destructive",
         });
-      } else if (data?.user) {
-        // Check if user is admin via profile
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('is_admin')
-          .eq('id', data.user.id)
-          .single();
-        
-        if (profile?.is_admin) {
-          toast({
-            title: "Admin Access Granted",
-            description: "Welcome, Administrator!",
-          });
-          navigate('/admin');
-        } else {
-          toast({
-            title: "Access Denied",
-            description: "Admin privileges required",
-            variant: "destructive",
-          });
-          navigate('/dashboard');
-        }
+      } else {
+        console.log('[AdminLogin] SignIn Success. Navigating to /admin');
+        toast({
+          title: "Login Successful",
+          description: "Redirecting to admin portal for verification...",
+        });
+        navigate('/admin');
       }
     } catch (error) {
-      console.error('Admin login error:', error);
+      console.error('[AdminLogin] Unexpected handleSubmit error:', error);
       toast({
         title: "Error",
-        description: "An unexpected error occurred",
+        description: "An unexpected error occurred during login.",
         variant: "destructive",
       });
     } finally {
