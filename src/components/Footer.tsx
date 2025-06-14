@@ -1,4 +1,4 @@
-import { Github, Twitter } from "lucide-react";
+import { Github, Twitter, Shield } from "lucide-react";
 import { Button } from "./ui/button";
 
 const Footer = () => {
@@ -65,6 +65,12 @@ const Footer = () => {
                 <li>
                   <a href="#" className="text-sm text-muted-foreground hover:text-primary transition-colors">
                     Terms of Service
+                  </a>
+                </li>
+                <li>
+                  <a href="/admin-login" className="text-xs text-orange-400 hover:text-orange-300 transition-colors flex items-center gap-1">
+                    <Shield className="w-3 h-3" />
+                    Admin Portal
                   </a>
                 </li>
               </ul>

@@ -33,6 +33,8 @@ export const useAuth = () => {
   const signUp = async (email: string, password: string, userData?: any) => {
     const redirectUrl = `${window.location.origin}/`;
     
+    console.log('SignUp attempt with redirectUrl:', redirectUrl);
+    
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -48,6 +50,7 @@ export const useAuth = () => {
 
   const signIn = async (email: string, password: string) => {
     console.log('Attempting sign in with:', email);
+    console.log('Current origin:', window.location.origin);
     
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
@@ -55,10 +58,20 @@ export const useAuth = () => {
     });
     
     console.log('SignIn response:', { data, error });
+    
+    if (error) {
+      console.error('SignIn error details:', {
+        message: error.message,
+        status: error.status,
+        name: error.name
+      });
+    }
+    
     return { data, error };
   };
 
   const signOut = async () => {
+    console.log('Signing out...');
     const { error } = await supabase.auth.signOut();
     console.log('SignOut response:', { error });
     return { error };

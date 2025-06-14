@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import DashboardPage from "./pages/DashboardPage";
 import LoginPage from "./pages/LoginPage";
+import AdminLoginPage from "./pages/AdminLoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import WalletPage from "./pages/WalletPage";
 import TradingPage from "./pages/TradingPage";
@@ -17,13 +18,8 @@ import ReferralsPage from "./pages/ReferralsPage";
 import MessagesPage from "./pages/MessagesPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminUsers from "./pages/AdminUsers";
-import DevDashboard from "./pages/DevDashboard";
-import DevAdmin from "./pages/DevAdmin";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
-import DevProtectedRoute from "./components/DevProtectedRoute";
-import DevAdminRoute from "./components/DevAdminRoute";
-import { DevAuthProvider } from "./contexts/DevAuthContext";
 
 const queryClient = new QueryClient();
 
@@ -37,13 +33,10 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/admin-login" element={<AdminLoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             
-            {/* Development Routes - Remove before production */}
-            <Route path="/dev-dashboard" element={<DevDashboard />} />
-            <Route path="/dev-admin" element={<DevAdmin />} />
-            
-            {/* Protected Routes using Real Authentication */}
+            {/* Protected Routes */}
             <Route path="/dashboard" element={
               <ProtectedRoute>
                 <DashboardPage />
@@ -85,7 +78,7 @@ const App = () => (
               </ProtectedRoute>
             } />
             
-            {/* Admin Routes using Real Authentication */}
+            {/* Admin Routes */}
             <Route path="/admin" element={
               <AdminRoute>
                 <AdminDashboard />

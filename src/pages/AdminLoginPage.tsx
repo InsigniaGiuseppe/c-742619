@@ -8,8 +8,9 @@ import { Label } from '@/components/ui/label';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { Shield } from 'lucide-react';
 
-const LoginPage = () => {
+const AdminLoginPage = () => {
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -32,26 +33,37 @@ const LoginPage = () => {
     setLoading(true);
 
     try {
-      console.log('Login attempt:', formData.email);
+      console.log('Admin login attempt:', formData.email);
       const { data, error } = await signIn(formData.email, formData.password);
 
       if (error) {
-        console.error('Login error:', error);
+        console.error('Admin login error:', error);
         toast({
           title: "Login Error",
           description: error.message || "Failed to sign in",
           variant: "destructive",
         });
       } else if (data?.user) {
-        console.log('Login successful:', data.user);
-        toast({
-          title: "Success",
-          description: "Logged in successfully!",
-        });
-        navigate('/dashboard');
+        console.log('Admin login successful:', data.user);
+        
+        // Check if user is admin
+        if (data.user.email === 'admin@prompto.trading') {
+          toast({
+            title: "Admin Access Granted",
+            description: "Welcome, Administrator!",
+          });
+          navigate('/admin');
+        } else {
+          toast({
+            title: "Access Denied",
+            description: "Admin privileges required",
+            variant: "destructive",
+          });
+          navigate('/dashboard');
+        }
       }
     } catch (error) {
-      console.error('Login catch error:', error);
+      console.error('Admin login catch error:', error);
       toast({
         title: "Error",
         description: "An unexpected error occurred",
@@ -62,71 +74,79 @@ const LoginPage = () => {
     }
   };
 
+  const handleQuickAdminLogin = () => {
+    setFormData({
+      email: 'admin@prompto.trading',
+      password: 'admin123'
+    });
+  };
+
   return (
     <div className="min-h-screen bg-black text-foreground flex flex-col">
       <Navigation />
       <main className="flex-grow container mx-auto px-4 py-20 pt-24 flex items-center justify-center">
-        <div className="glass glass-hover rounded-xl p-8 w-full max-w-md">
+        <div className="glass glass-hover rounded-xl p-8 w-full max-w-md border-orange-500/20">
           <div className="text-center mb-6">
-            <img 
-              src="/lovable-uploads/a2c0bb3a-a47b-40bf-ba26-d79f2f9e741b.png" 
-              alt="PROMPTO TRADING" 
-              className="w-16 h-16 mx-auto mb-4"
-              onError={(e) => {
-                e.currentTarget.style.display = 'none';
-              }}
-            />
-            <h1 className="text-3xl font-bold">Welcome Back</h1>
-            <p className="text-muted-foreground mt-2">Sign in to your PROMPTO TRADING account</p>
+            <div className="w-16 h-16 mx-auto mb-4 bg-orange-500/20 rounded-full flex items-center justify-center">
+              <Shield className="w-8 h-8 text-orange-400" />
+            </div>
+            <h1 className="text-3xl font-bold text-orange-400">Admin Portal</h1>
+            <p className="text-muted-foreground mt-2">Secure administrator access</p>
           </div>
           
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">Admin Email</Label>
               <Input 
                 id="email" 
                 name="email"
                 type="email" 
-                placeholder="you@example.com" 
-                className="mt-1 bg-background/80"
+                placeholder="admin@prompto.trading" 
+                className="mt-1 bg-background/80 border-orange-500/30"
                 value={formData.email}
                 onChange={handleChange}
                 required
               />
             </div>
             <div>
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">Admin Password</Label>
               <Input 
                 id="password" 
                 name="password"
                 type="password" 
                 placeholder="••••••••" 
-                className="mt-1 bg-background/80"
+                className="mt-1 bg-background/80 border-orange-500/30"
                 value={formData.password}
                 onChange={handleChange}
                 required
               />
             </div>
             <div className="flex items-center justify-between">
-              <Link to="#" className="text-sm text-primary hover:underline">
-                Forgot password?
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={handleQuickAdminLogin}
+                className="text-xs text-orange-400 hover:text-orange-300"
+              >
+                Use Admin Credentials
+              </Button>
+              <Link to="/login" className="text-sm text-primary hover:underline">
+                Regular Login
               </Link>
             </div>
             <Button 
               type="submit" 
-              className="w-full button-gradient"
+              className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600"
               disabled={loading}
             >
-              {loading ? 'Signing In...' : 'Sign In'}
+              {loading ? 'Authenticating...' : 'Admin Sign In'}
             </Button>
           </form>
           
           <div className="mt-6 text-center">
-            <p className="text-sm text-muted-foreground">
-              Don't have an account?{' '}
-              <Link to="/register" className="text-primary hover:underline">
-                Sign up
-              </Link>
+            <p className="text-xs text-muted-foreground">
+              Admin credentials: admin@prompto.trading / admin123
             </p>
           </div>
         </div>
@@ -136,4 +156,4 @@ const LoginPage = () => {
   );
 };
 
-export default LoginPage;
+export default AdminLoginPage;
