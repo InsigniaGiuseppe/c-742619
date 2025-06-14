@@ -21,6 +21,9 @@ import DevDashboard from "./pages/DevDashboard";
 import DevAdmin from "./pages/DevAdmin";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
+import DevProtectedRoute from "./components/DevProtectedRoute";
+import DevAdminRoute from "./components/DevAdminRoute";
+import { DevAuthProvider } from "./contexts/DevAuthContext";
 
 const queryClient = new QueryClient();
 
@@ -40,6 +43,7 @@ const App = () => (
             <Route path="/dev-dashboard" element={<DevDashboard />} />
             <Route path="/dev-admin" element={<DevAdmin />} />
             
+            {/* Protected Routes using Real Authentication */}
             <Route path="/dashboard" element={
               <ProtectedRoute>
                 <DashboardPage />
@@ -80,6 +84,8 @@ const App = () => (
                 <MessagesPage />
               </ProtectedRoute>
             } />
+            
+            {/* Admin Routes using Real Authentication */}
             <Route path="/admin" element={
               <AdminRoute>
                 <AdminDashboard />
