@@ -21,6 +21,8 @@ import TopUpPage from "./pages/TopUpPage";
 import ReferralsPage from "./pages/ReferralsPage";
 import LendingPage from "./pages/LendingPage";
 import MessagesPage from "./pages/MessagesPage";
+import TradingPage from "./pages/TradingPage";
+import CryptoDetailPage from "./pages/CryptoDetailPage";
 
 function App() {
   return (
@@ -39,6 +41,8 @@ function App() {
         <Route path="/referrals" element={<ProtectedRoute><ReferralsPage /></ProtectedRoute>} />
         <Route path="/lending" element={<ProtectedRoute><LendingPage /></ProtectedRoute>} />
         <Route path="/messages" element={<ProtectedRoute><MessagesPage /></ProtectedRoute>} />
+        <Route path="/trading" element={<ProtectedRoute><TradingPage /></ProtectedRoute>} />
+        <Route path="/crypto/:symbol" element={<ProtectedRoute><CryptoDetailPage /></ProtectedRoute>} />
 
         {/* Admin Routes */}
         <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />

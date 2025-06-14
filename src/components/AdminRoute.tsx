@@ -13,7 +13,8 @@ const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
   const { isAdmin, loading: adminLoading } = useAdmin();
 
   const logState = (decision: string) => {
-    console.log(`[AdminRoute] Decision: ${decision}`, {
+    const timestamp = new Date().toISOString();
+    console.log(`[AdminRoute] ${timestamp} Decision: ${decision}`, {
       authLoading,
       adminLoading,
       userExists: !!user,

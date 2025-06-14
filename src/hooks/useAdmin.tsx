@@ -10,7 +10,7 @@ export const useAdmin = () => {
 
   useEffect(() => {
     const checkAdminStatus = async () => {
-      console.log('[useAdmin] useEffect triggered. User:', user?.id);
+      console.log('[useAdmin] EFFECT RUNNING. User object:', user ? { id: user.id, email: user.email } : null);
       if (!user) {
         console.log('[useAdmin] No user, setting isAdmin to false.');
         setIsAdmin(false);
