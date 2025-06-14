@@ -346,6 +346,48 @@ export type Database = {
         }
         Relationships: []
       }
+      external_wallets: {
+        Row: {
+          admin_notes: string | null
+          coin_symbol: string
+          created_at: string
+          id: string
+          network: string
+          screenshot_url: string | null
+          status: Database["public"]["Enums"]["wallet_status"]
+          updated_at: string
+          user_id: string
+          wallet_address: string
+          wallet_label: string | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          coin_symbol: string
+          created_at?: string
+          id?: string
+          network: string
+          screenshot_url?: string | null
+          status?: Database["public"]["Enums"]["wallet_status"]
+          updated_at?: string
+          user_id: string
+          wallet_address: string
+          wallet_label?: string | null
+        }
+        Update: {
+          admin_notes?: string | null
+          coin_symbol?: string
+          created_at?: string
+          id?: string
+          network?: string
+          screenshot_url?: string | null
+          status?: Database["public"]["Enums"]["wallet_status"]
+          updated_at?: string
+          user_id?: string
+          wallet_address?: string
+          wallet_label?: string | null
+        }
+        Relationships: []
+      }
       gang_members: {
         Row: {
           gang_id: string | null
@@ -505,6 +547,39 @@ export type Database = {
           webhook_secret?: string | null
           workspace_id?: string
           workspace_name?: string | null
+        }
+        Relationships: []
+      }
+      kyc_documents: {
+        Row: {
+          admin_notes: string | null
+          created_at: string
+          document_type: Database["public"]["Enums"]["kyc_document_type"]
+          document_url: string
+          id: string
+          status: Database["public"]["Enums"]["kyc_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          created_at?: string
+          document_type: Database["public"]["Enums"]["kyc_document_type"]
+          document_url: string
+          id?: string
+          status?: Database["public"]["Enums"]["kyc_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          created_at?: string
+          document_type?: Database["public"]["Enums"]["kyc_document_type"]
+          document_url?: string
+          id?: string
+          status?: Database["public"]["Enums"]["kyc_status"]
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -700,8 +775,13 @@ export type Database = {
       }
       profiles: {
         Row: {
+          account_type: string
+          address: string | null
           avatar_url: string | null
+          bank_details_iban: string | null
+          country: string | null
           created_at: string | null
+          demo_balance_usd: number
           email: string | null
           energy: number | null
           full_name: string | null
@@ -710,19 +790,30 @@ export type Database = {
           id: string
           is_admin: boolean | null
           jail_until: string | null
+          kyc_status: Database["public"]["Enums"]["kyc_status"]
           last_energy_tick: string | null
+          last_login_date: string | null
+          last_login_ip: unknown | null
           max_energy: number | null
           money_in_bank: number | null
           money_on_hand: number | null
+          phone: string | null
           power_level: number | null
           short_bio: string | null
+          two_factor_enabled: boolean
+          two_factor_secret: string | null
           updated_at: string | null
           username: string | null
           vip_rank: Database["public"]["Enums"]["vip_rank"] | null
         }
         Insert: {
+          account_type?: string
+          address?: string | null
           avatar_url?: string | null
+          bank_details_iban?: string | null
+          country?: string | null
           created_at?: string | null
+          demo_balance_usd?: number
           email?: string | null
           energy?: number | null
           full_name?: string | null
@@ -731,19 +822,30 @@ export type Database = {
           id: string
           is_admin?: boolean | null
           jail_until?: string | null
+          kyc_status?: Database["public"]["Enums"]["kyc_status"]
           last_energy_tick?: string | null
+          last_login_date?: string | null
+          last_login_ip?: unknown | null
           max_energy?: number | null
           money_in_bank?: number | null
           money_on_hand?: number | null
+          phone?: string | null
           power_level?: number | null
           short_bio?: string | null
+          two_factor_enabled?: boolean
+          two_factor_secret?: string | null
           updated_at?: string | null
           username?: string | null
           vip_rank?: Database["public"]["Enums"]["vip_rank"] | null
         }
         Update: {
+          account_type?: string
+          address?: string | null
           avatar_url?: string | null
+          bank_details_iban?: string | null
+          country?: string | null
           created_at?: string | null
+          demo_balance_usd?: number
           email?: string | null
           energy?: number | null
           full_name?: string | null
@@ -752,12 +854,18 @@ export type Database = {
           id?: string
           is_admin?: boolean | null
           jail_until?: string | null
+          kyc_status?: Database["public"]["Enums"]["kyc_status"]
           last_energy_tick?: string | null
+          last_login_date?: string | null
+          last_login_ip?: unknown | null
           max_energy?: number | null
           money_in_bank?: number | null
           money_on_hand?: number | null
+          phone?: string | null
           power_level?: number | null
           short_bio?: string | null
+          two_factor_enabled?: boolean
+          two_factor_secret?: string | null
           updated_at?: string | null
           username?: string | null
           vip_rank?: Database["public"]["Enums"]["vip_rank"] | null
@@ -1058,6 +1166,69 @@ export type Database = {
           },
         ]
       }
+      user_sessions: {
+        Row: {
+          created_at: string
+          device_name: string | null
+          id: string
+          ip_address: unknown | null
+          is_active: boolean
+          last_login: string
+          os_browser: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          device_name?: string | null
+          id?: string
+          ip_address?: unknown | null
+          is_active?: boolean
+          last_login?: string
+          os_browser?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          device_name?: string | null
+          id?: string
+          ip_address?: unknown | null
+          is_active?: boolean
+          last_login?: string
+          os_browser?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_settings: {
+        Row: {
+          created_at: string
+          email_on_login: boolean
+          email_on_withdrawal: boolean
+          price_alerts_enabled: boolean
+          sms_on_withdrawal: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email_on_login?: boolean
+          email_on_withdrawal?: boolean
+          price_alerts_enabled?: boolean
+          sms_on_withdrawal?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email_on_login?: boolean
+          email_on_withdrawal?: boolean
+          price_alerts_enabled?: boolean
+          sms_on_withdrawal?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_watchlist: {
         Row: {
           created_at: string | null
@@ -1176,7 +1347,14 @@ export type Database = {
     }
     Enums: {
       gang_role: "leader" | "member"
+      kyc_document_type:
+        | "id_card"
+        | "passport"
+        | "drivers_license"
+        | "proof_of_address"
+      kyc_status: "not_started" | "pending" | "verified" | "rejected"
       vip_rank: "free" | "bronze" | "silver" | "gold"
+      wallet_status: "pending" | "verified" | "rejected"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1293,7 +1471,15 @@ export const Constants = {
   public: {
     Enums: {
       gang_role: ["leader", "member"],
+      kyc_document_type: [
+        "id_card",
+        "passport",
+        "drivers_license",
+        "proof_of_address",
+      ],
+      kyc_status: ["not_started", "pending", "verified", "rejected"],
       vip_rank: ["free", "bronze", "silver", "gold"],
+      wallet_status: ["pending", "verified", "rejected"],
     },
   },
 } as const
