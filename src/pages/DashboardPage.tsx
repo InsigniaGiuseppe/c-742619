@@ -50,10 +50,10 @@ const DashboardPage = () => {
           <div className="flex items-center gap-3 mb-2">
             <img 
               src="/lovable-uploads/b0e06c59-c716-48eb-af56-83b02e9c928c.png" 
-              alt="PROMPTO Logo" 
+              alt="PROMPTO TRADING Logo" 
               className="w-10 h-10 object-contain"
             />
-            <h1 className="text-4xl font-bold">PROMPTO DASHBOARD</h1>
+            <h1 className="text-4xl font-bold">PROMPTO TRADING DASHBOARD</h1>
           </div>
           <p className="text-muted-foreground">
             Welcome back, {user?.email}

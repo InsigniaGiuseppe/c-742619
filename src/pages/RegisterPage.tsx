@@ -24,7 +24,7 @@ const RegisterPage = () => {
       >
         <div className="text-center mb-8">
           <img 
-            src="/lovable-uploads/a2c0bb3a-a47b-40bf-ba26-d79f2f9e741b.png" 
+            src="/lovable-uploads/b0e06c59-c716-48eb-af56-83b02e9c928c.png" 
             alt="PROMPTO TRADING Logo" 
             className="w-16 h-16 mx-auto mb-4 object-contain"
             onError={(e) => {

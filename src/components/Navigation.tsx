@@ -38,11 +38,11 @@ const Navigation = () => {
           <Link to={user ? '/dashboard' : '/'} className="flex items-center gap-3">
             <img 
               src="/lovable-uploads/b0e06c59-c716-48eb-af56-83b02e9c928c.png" 
-              alt="PROMPTO Logo" 
+              alt="PROMPTO TRADING Logo" 
               className="w-8 h-8 object-contain"
             />
             <span className="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent">
-              PROMPTO
+              PROMPTO TRADING
             </span>
           </Link>
 
