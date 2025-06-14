@@ -16,8 +16,9 @@ import { motion } from 'framer-motion';
 import CryptoDetailSkeletonPage from './CryptoDetailSkeletonPage';
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { formatCurrency, formatPrice, formatPercentage } from '@/lib/formatters';
+import { formatPrice } from '@/lib/formatters';
 import CryptoLogo from '@/components/CryptoLogo';
+import FormattedNumber from '@/components/FormattedNumber';
 
 const chartConfig = {
   price: {

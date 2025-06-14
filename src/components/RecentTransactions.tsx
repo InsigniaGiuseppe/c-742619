@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useTransactionHistory } from '@/hooks/useTransactionHistory';
 import { TrendingUp, TrendingDown } from 'lucide-react';
-import { formatCurrency } from '@/lib/formatters';
+import FormattedNumber from './FormattedNumber';
 
 const RecentTransactions = () => {
   const { transactions, loading } = useTransactionHistory();
@@ -19,7 +19,7 @@ const RecentTransactions = () => {
           <div className="space-y-4">
             {[...Array(5)].map((_, i) => (
               <div key={i} className="animate-pulse">
-                <div className="h-12 bg-gray-800 rounded"></div>
+                <div className="h-16 bg-gray-800 rounded-lg"></div>
               </div>
             ))}
           </div>
@@ -33,18 +33,25 @@ const RecentTransactions = () => {
   return (
     <Card className="glass glass-hover">
       <CardHeader>
-        <CardTitle>Recent Transactions</CardTitle>
+        <CardTitle className="text-xl">Recent Transactions</CardTitle>
+        <p className="text-sm text-muted-foreground">
+          {recentTransactions.length} recent activities
+        </p>
       </CardHeader>
       <CardContent>
         {recentTransactions.length === 0 ? (
-          <div className="text-gray-400 text-center py-8">
-            No transactions yet
+          <div className="text-gray-400 text-center py-12 space-y-2">
+            <div className="text-lg">No transactions yet</div>
+            <div className="text-sm">Start trading to see your activity here</div>
           </div>
         ) : (
           <div className="space-y-3">
-            {recentTransactions.map((transaction) => (
-              <div key={transaction.id} className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
-                <div className="flex items-center gap-3">
+            {recentTransactions.map((transaction, index) => (
+              <div 
+                key={transaction.id} 
+                className="flex items-center justify-between p-4 bg-white/5 rounded-lg hover:bg-white/10 transition-all duration-200 border border-white/10"
+              >
+                <div className="flex items-center gap-4">
                   <div className={`p-2 rounded-full ${
                     transaction.transaction_type === 'buy' ? 'bg-green-500/20' : 'bg-red-500/20'
                   }`}>
@@ -54,22 +61,35 @@ const RecentTransactions = () => {
                       <TrendingDown className="h-4 w-4 text-red-500" />
                     )}
                   </div>
-                  <div>
-                    <p className="font-medium">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium truncate">
                       {transaction.description || `${transaction.transaction_type.toUpperCase()} ${transaction.crypto?.symbol}`}
                     </p>
                     <p className="text-sm text-gray-400">
-                      {new Date(transaction.created_at).toLocaleDateString()}
+                      {new Date(transaction.created_at).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
                     </p>
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className="font-medium">
-                    {formatCurrency(transaction.usd_value || 0)}
-                  </p>
-                  <Badge variant={transaction.status === 'completed' ? 'default' : 'secondary'}>
-                    {transaction.status}
-                  </Badge>
+                <div className="text-right space-y-1">
+                  <FormattedNumber
+                    value={transaction.usd_value || 0}
+                    type="currency"
+                    showTooltip={false}
+                    className="font-semibold"
+                  />
+                  <div>
+                    <Badge 
+                      variant={transaction.status === 'completed' ? 'default' : 'secondary'}
+                      className="text-xs"
+                    >
+                      {transaction.status}
+                    </Badge>
+                  </div>
                 </div>
               </div>
             ))}
