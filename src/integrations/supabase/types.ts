@@ -243,6 +243,7 @@ export type Database = {
           name: string
           price_change_24h: number | null
           price_change_percentage_24h: number | null
+          slug: string | null
           symbol: string
           total_supply: number | null
           updated_at: string | null
@@ -262,6 +263,7 @@ export type Database = {
           name: string
           price_change_24h?: number | null
           price_change_percentage_24h?: number | null
+          slug?: string | null
           symbol: string
           total_supply?: number | null
           updated_at?: string | null
@@ -281,6 +283,7 @@ export type Database = {
           name?: string
           price_change_24h?: number | null
           price_change_percentage_24h?: number | null
+          slug?: string | null
           symbol?: string
           total_supply?: number | null
           updated_at?: string | null

@@ -44,22 +44,60 @@ export const useCryptocurrencies = () => {
 
   const syncPrices = async () => {
     try {
-      const { data, error } = await supabase.functions.invoke('coinmarketcap-sync');
+      const { error } = await supabase.functions.invoke('coinmarketcap-sync');
       
       if (error) {
         console.error('Error syncing prices:', error);
+        // We don't set a user-facing error for a background sync, just log it.
         return;
       }
 
-      console.log('Prices synced:', data);
-      await fetchCryptocurrencies(); // Refresh data
+      console.log('Price sync function invoked. Real-time subscription will handle UI updates.');
+      // No need to call fetchCryptocurrencies() here, the real-time listener will catch the changes.
     } catch (error) {
       console.error('Error calling sync function:', error);
     }
   };
 
   useEffect(() => {
+    // Fetch initial data
     fetchCryptocurrencies();
+
+    // Set up a 30-second interval for syncing prices as a fallback
+    const syncInterval = setInterval(() => {
+      syncPrices();
+    }, 30000); // 30 seconds
+
+    // Set up real-time subscription for instant updates
+    const channel = supabase
+      .channel('cryptocurrencies-changes')
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'cryptocurrencies' },
+        (payload) => {
+          const updatedCrypto = payload.new as Cryptocurrency;
+          setCryptocurrencies((currentCryptos) =>
+            currentCryptos.map((crypto) =>
+              crypto.id === updatedCrypto.id ? updatedCrypto : crypto
+            )
+          );
+        }
+      )
+      .subscribe((status, err) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('Subscribed to real-time crypto updates!');
+        }
+        if (status === 'CHANNEL_ERROR') {
+          console.error('Real-time channel error:', err);
+          setError('Real-time connection failed. Prices may be outdated.');
+        }
+      });
+      
+    // Cleanup on unmount
+    return () => {
+      clearInterval(syncInterval);
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   return {
@@ -67,6 +105,5 @@ export const useCryptocurrencies = () => {
     loading,
     error,
     refetch: fetchCryptocurrencies,
-    syncPrices
   };
 };

@@ -4,16 +4,15 @@ import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, RefreshCw } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { useCryptocurrencies } from '@/hooks/useCryptocurrencies';
 import CryptoCard from '@/components/CryptoCard';
 import { useToast } from '@/hooks/use-toast';
 
 const TradingPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const { cryptocurrencies, loading, error, refetch, syncPrices } = useCryptocurrencies();
+  const { cryptocurrencies, loading, error, refetch } = useCryptocurrencies();
   const { toast } = useToast();
-  const [syncing, setSyncing] = useState(false);
 
   const filteredCryptos = cryptocurrencies.filter(crypto =>
     crypto.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -25,25 +24,6 @@ const TradingPage = () => {
       title: "Trading Feature",
       description: `Trading ${crypto.symbol} will be available soon!`,
     });
-  };
-
-  const handleSyncPrices = async () => {
-    setSyncing(true);
-    try {
-      await syncPrices();
-      toast({
-        title: "Success",
-        description: "Cryptocurrency prices have been updated!",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to sync prices. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setSyncing(false);
-    }
   };
 
   return (
@@ -68,14 +48,6 @@ const TradingPage = () => {
               className="pl-10 bg-background/80"
             />
           </div>
-          <Button 
-            onClick={handleSyncPrices}
-            disabled={syncing}
-            className="button-gradient"
-          >
-            <RefreshCw className={`w-4 h-4 mr-2 ${syncing ? 'animate-spin' : ''}`} />
-            {syncing ? 'Syncing...' : 'Sync Prices'}
-          </Button>
         </div>
 
         {loading ? (
@@ -86,7 +58,7 @@ const TradingPage = () => {
         ) : error ? (
           <div className="text-center">
             <p className="text-red-400 mb-4">Error: {error}</p>
-            <Button onClick={refetch} variant="outline">
+            <Button onClick={() => refetch()} variant="outline">
               Try Again
             </Button>
           </div>
