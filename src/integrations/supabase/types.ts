@@ -1478,6 +1478,15 @@ export type Database = {
         }
         Returns: undefined
       }
+      update_wallet_status_and_log: {
+        Args: {
+          target_wallet_id_in: string
+          admin_id_in: string
+          new_status_in: Database["public"]["Enums"]["wallet_status"]
+          admin_notes_in: string
+        }
+        Returns: undefined
+      }
       validate_admin_session: {
         Args: { session_token: string }
         Returns: boolean
