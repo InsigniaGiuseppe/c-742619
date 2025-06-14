@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface Cryptocurrency {
@@ -15,7 +15,16 @@ export interface Cryptocurrency {
   description?: string;
 }
 
-export const useCryptocurrencies = () => {
+interface CryptocurrenciesContextValue {
+  cryptocurrencies: Cryptocurrency[];
+  loading: boolean;
+  error: string | null;
+  refetch: () => Promise<void>;
+}
+
+const CryptocurrenciesContext = createContext<CryptocurrenciesContextValue | undefined>(undefined);
+
+export const CryptocurrenciesProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [cryptocurrencies, setCryptocurrencies] = useState<Cryptocurrency[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -48,27 +57,22 @@ export const useCryptocurrencies = () => {
       
       if (error) {
         console.error('Error syncing prices:', error);
-        // We don't set a user-facing error for a background sync, just log it.
         return;
       }
 
       console.log('Price sync function invoked. Real-time subscription will handle UI updates.');
-      // No need to call fetchCryptocurrencies() here, the real-time listener will catch the changes.
     } catch (error) {
       console.error('Error calling sync function:', error);
     }
   };
 
   useEffect(() => {
-    // Fetch initial data
     fetchCryptocurrencies();
 
-    // Set up a 30-second interval for syncing prices as a fallback
     const syncInterval = setInterval(() => {
       syncPrices();
-    }, 30000); // 30 seconds
+    }, 30000);
 
-    // Set up real-time subscription for instant updates
     const channel = supabase
       .channel('cryptocurrencies-changes')
       .on(
@@ -93,17 +97,25 @@ export const useCryptocurrencies = () => {
         }
       });
       
-    // Cleanup on unmount
     return () => {
       clearInterval(syncInterval);
       supabase.removeChannel(channel);
     };
   }, []);
 
-  return {
-    cryptocurrencies,
-    loading,
-    error,
-    refetch: fetchCryptocurrencies,
-  };
+  const value = { cryptocurrencies, loading, error, refetch: fetchCryptocurrencies };
+
+  return (
+    <CryptocurrenciesContext.Provider value={value}>
+      {children}
+    </CryptocurrenciesContext.Provider>
+  );
+};
+
+export const useCryptocurrencies = () => {
+  const context = useContext(CryptocurrenciesContext);
+  if (context === undefined) {
+    throw new Error('useCryptocurrencies must be used within a CryptocurrenciesProvider');
+  }
+  return context;
 };

@@ -22,88 +22,91 @@ import CryptoDetailPage from "./pages/CryptoDetailPage";
 import WalletVerificationPage from "./pages/WalletVerificationPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
+import { CryptocurrenciesProvider } from "./hooks/useCryptocurrencies";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <div className="min-h-screen bg-background">
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/admin-login" element={<AdminLoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
-            
-            {/* Protected Routes */}
-            <Route path="/dashboard" element={
-              <ProtectedRoute>
-                <DashboardPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/wallet" element={
-              <ProtectedRoute>
-                <WalletPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/trading" element={
-              <ProtectedRoute>
-                <TradingPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/crypto/:symbol" element={
-              <ProtectedRoute>
-                <CryptoDetailPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/wallet-verification" element={
-              <ProtectedRoute>
-                <WalletVerificationPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/lending" element={
-              <ProtectedRoute>
-                <LendingPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/profile" element={
-              <ProtectedRoute>
-                <ProfilePage />
-              </ProtectedRoute>
-            } />
-            <Route path="/topup" element={
-              <ProtectedRoute>
-                <TopUpPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/referrals" element={
-              <ProtectedRoute>
-                <ReferralsPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/messages" element={
-              <ProtectedRoute>
-                <MessagesPage />
-              </ProtectedRoute>
-            } />
-            
-            {/* Admin Routes */}
-            <Route path="/admin" element={
-              <AdminRoute>
-                <AdminDashboard />
-              </AdminRoute>
-            } />
-            <Route path="/admin/users" element={
-              <AdminRoute>
-                <AdminUsers />
-              </AdminRoute>
-            } />
-          </Routes>
-        </BrowserRouter>
-      </div>
+      <CryptocurrenciesProvider>
+        <div className="min-h-screen bg-background">
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/admin-login" element={<AdminLoginPage />} />
+              <Route path="/register" element={<RegisterPage />} />
+              
+              {/* Protected Routes */}
+              <Route path="/dashboard" element={
+                <ProtectedRoute>
+                  <DashboardPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/wallet" element={
+                <ProtectedRoute>
+                  <WalletPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/trading" element={
+                <ProtectedRoute>
+                  <TradingPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/crypto/:symbol" element={
+                <ProtectedRoute>
+                  <CryptoDetailPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/wallet-verification" element={
+                <ProtectedRoute>
+                  <WalletVerificationPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/lending" element={
+                <ProtectedRoute>
+                  <LendingPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/profile" element={
+                <ProtectedRoute>
+                  <ProfilePage />
+                </ProtectedRoute>
+              } />
+              <Route path="/topup" element={
+                <ProtectedRoute>
+                  <TopUpPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/referrals" element={
+                <ProtectedRoute>
+                  <ReferralsPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/messages" element={
+                <ProtectedRoute>
+                  <MessagesPage />
+                </ProtectedRoute>
+              } />
+              
+              {/* Admin Routes */}
+              <Route path="/admin" element={
+                <AdminRoute>
+                  <AdminDashboard />
+                </AdminRoute>
+              } />
+              <Route path="/admin/users" element={
+                <AdminRoute>
+                  <AdminUsers />
+                </AdminRoute>
+              } />
+            </Routes>
+          </BrowserRouter>
+        </div>
+      </CryptocurrenciesProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
