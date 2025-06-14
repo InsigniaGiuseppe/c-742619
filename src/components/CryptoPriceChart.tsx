@@ -28,25 +28,26 @@ const CryptoPriceChart = ({ crypto }: { crypto: Cryptocurrency }) => {
     if (!chartData) return [];
     return chartData.map(d => {
       const isGain = d.close >= d.open;
+      const bodyTop = Math.max(d.open, d.close);
+      const bodyBottom = Math.min(d.open, d.close);
       const bodyHeight = Math.abs(d.close - d.open);
-      const wickBottom = Math.min(d.open, d.close) - d.low;
-      const wickTop = d.high - Math.max(d.open, d.close);
       
       return {
         ...d,
-        // Main candlestick body
-        candleBody: isGain ? [d.open, d.close] : [d.close, d.open],
-        // Wicks (shadows)
-        wickLow: [d.low, Math.min(d.open, d.close)],
-        wickHigh: [Math.max(d.open, d.close), d.high],
-        // Colors
-        bodyColor: isGain ? '#22c55e' : '#ef4444', // green for gain, red for loss
-        wickColor: isGain ? '#16a34a' : '#dc2626', // darker shades for wicks
-        // Additional data for tooltip
+        // Candlestick body - using array format [bottom, top]
+        candleBody: [bodyBottom, bodyTop],
+        // Upper wick - from body top to high
+        upperWick: bodyTop < d.high ? [bodyTop, d.high] : null,
+        // Lower wick - from low to body bottom
+        lowerWick: bodyBottom > d.low ? [d.low, bodyBottom] : null,
+        // Colors based on price movement
+        bodyColor: isGain ? '#22c55e' : '#ef4444',
+        wickColor: isGain ? '#16a34a' : '#dc2626',
+        // Additional properties for tooltip
         isGain,
         bodyHeight,
-        wickBottom,
-        wickTop,
+        priceChange: d.close - d.open,
+        priceChangePercent: d.open > 0 ? ((d.close - d.open) / d.open) * 100 : 0,
       };
     });
   }, [chartData]);
@@ -57,8 +58,8 @@ const CryptoPriceChart = ({ crypto }: { crypto: Cryptocurrency }) => {
     const highs = chartData.map(d => d.high);
     const minLow = Math.min(...lows);
     const maxHigh = Math.max(...highs);
-    const padding = (maxHigh - minLow) * 0.02; // 2% padding
-    return [minLow - padding, maxHigh + padding];
+    const padding = (maxHigh - minLow) * 0.05; // 5% padding
+    return [Math.max(0, minLow - padding), maxHigh + padding];
   }, [chartData]);
 
   if (!crypto) {
@@ -86,8 +87,8 @@ const CryptoPriceChart = ({ crypto }: { crypto: Cryptocurrency }) => {
            <div className="w-full h-[400px] flex items-center justify-center text-muted-foreground">No chart data available for this timeframe.</div>
         ) : (
           <ResponsiveContainer width="100%" height={400}>
-            <ComposedChart data={processedChartData} margin={{ top: 5, right: 30, bottom: 5, left: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border) / 0.3)" />
+            <ComposedChart data={processedChartData} margin={{ top: 20, right: 30, bottom: 5, left: 0 }}>
+              <CartesianGrid strokeDasharray="2 2" stroke="hsl(var(--border) / 0.2)" />
               <XAxis
                 dataKey="time"
                 tickFormatter={(tick) => formatXAxisTick(tick, timeframe)}
@@ -95,8 +96,9 @@ const CryptoPriceChart = ({ crypto }: { crypto: Cryptocurrency }) => {
                 tickLine={false}
                 axisLine={false}
                 interval="preserveStartEnd"
-                minTickGap={60}
-                fontSize={12}
+                minTickGap={80}
+                fontSize={11}
+                height={60}
               />
               <YAxis
                 orientation="right"
@@ -105,51 +107,52 @@ const CryptoPriceChart = ({ crypto }: { crypto: Cryptocurrency }) => {
                 stroke="hsl(var(--muted-foreground))"
                 tickLine={false}
                 axisLine={false}
-                width={80}
-                fontSize={12}
+                width={90}
+                fontSize={11}
               />
               <Tooltip 
                 content={<CustomTooltip timeframe={timeframe} formatter={formatPrice} />} 
-                cursor={{ fill: 'hsl(var(--accent) / 0.1)' }}
+                cursor={{ fill: 'hsl(var(--accent) / 0.1)', stroke: 'hsl(var(--border))', strokeWidth: 1 }}
               />
               
-              {/* Candlestick Wicks - Lower shadows */}
+              {/* Lower wicks (shadows) */}
               <Bar 
-                dataKey="wickLow" 
-                barSize={1.5} 
+                dataKey="lowerWick" 
+                barSize={2} 
                 isAnimationActive={false}
                 radius={0}
               >
                 {processedChartData.map((entry, index) => (
-                  <Cell key={`wick-low-${index}`} fill={entry.wickColor} />
+                  <Cell key={`lower-wick-${index}`} fill={entry.wickColor} />
                 ))}
               </Bar>
               
-              {/* Candlestick Wicks - Upper shadows */}
+              {/* Upper wicks (shadows) */}
               <Bar 
-                dataKey="wickHigh" 
-                barSize={1.5} 
+                dataKey="upperWick" 
+                barSize={2} 
                 isAnimationActive={false}
                 radius={0}
               >
                 {processedChartData.map((entry, index) => (
-                  <Cell key={`wick-high-${index}`} fill={entry.wickColor} />
+                  <Cell key={`upper-wick-${index}`} fill={entry.wickColor} />
                 ))}
               </Bar>
               
-              {/* Candlestick Bodies */}
+              {/* Candlestick bodies */}
               <Bar 
                 dataKey="candleBody" 
-                barSize={8} 
+                barSize={Math.max(6, Math.min(12, 600 / processedChartData.length))} 
                 isAnimationActive={false}
                 radius={0}
               >
                 {processedChartData.map((entry, index) => (
                   <Cell 
                     key={`body-${index}`} 
-                    fill={entry.bodyColor}
+                    fill={entry.bodyHeight < 0.001 ? 'none' : entry.bodyColor}
                     stroke={entry.bodyColor}
-                    strokeWidth={entry.bodyHeight < 0.01 ? 1 : 0} // Add stroke for doji candles
+                    strokeWidth={entry.bodyHeight < 0.001 ? 2 : 1}
+                    opacity={0.9}
                   />
                 ))}
               </Bar>
@@ -158,8 +161,9 @@ const CryptoPriceChart = ({ crypto }: { crypto: Cryptocurrency }) => {
                 <ReferenceLine 
                   y={crypto.current_price} 
                   stroke="hsl(var(--primary))" 
-                  strokeDasharray="3 3"
+                  strokeDasharray="4 4"
                   strokeWidth={2}
+                  opacity={0.8}
                 >
                   <Label 
                     value={`Current: ${formatPrice(crypto.current_price)}`} 

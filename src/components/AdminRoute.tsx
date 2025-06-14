@@ -29,7 +29,7 @@ const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary mx-auto"></div>
           <p className="mt-4 text-muted-foreground">Verifying admin access...</p>
         </div>
       </div>
@@ -42,10 +42,26 @@ const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
     return <Navigate to="/admin/login" replace />;
   }
 
-  // Redirect to dashboard if user is not admin
+  // Show access denied if user is not admin
   if (!isAdmin) {
-    logState(`User ${user.email} is not admin, redirecting to /dashboard`);
-    return <Navigate to="/dashboard" replace />;
+    logState(`User ${user.email} is not admin, showing access denied`);
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <h1 className="text-2xl font-bold text-red-400">Access Denied</h1>
+          <p className="text-muted-foreground">You don't have admin privileges.</p>
+          <p className="text-sm text-gray-500">
+            Current user: {user.email} | Admin status: {isAdmin ? 'Yes' : 'No'}
+          </p>
+          <button 
+            onClick={() => window.location.href = '/dashboard'}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90"
+          >
+            Go to Dashboard
+          </button>
+        </div>
+      </div>
+    );
   }
 
   logState(`Access granted for admin user ${user.email}, rendering children`);

@@ -142,7 +142,7 @@ export const useTrade = (crypto: Cryptocurrency | undefined) => {
 
       // Step 2: Create transaction history record with correct transaction_type
       console.log(`${logPrefix} 2. Inserting into transaction_history...`);
-      const transactionType = tradeType === 'buy' ? 'purchase' : 'sale';
+      const transactionType = tradeType === 'buy' ? 'trade_buy' : 'trade_sell';
       
       const { data: transaction, error: transactionError } = await supabase
         .from('transaction_history')

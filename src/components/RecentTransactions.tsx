@@ -31,29 +31,29 @@ const RecentTransactions = () => {
   const recentTransactions = transactions.slice(0, 10);
 
   const getTransactionIcon = (transactionType: string) => {
-    const isBuy = transactionType === 'purchase' || transactionType === 'buy' || transactionType.includes('buy');
+    const isBuy = transactionType === 'trade_buy' || transactionType === 'purchase' || transactionType === 'buy' || transactionType.includes('buy');
     return isBuy ? TrendingUp : TrendingDown;
   };
 
   const getTransactionColor = (transactionType: string) => {
-    const isBuy = transactionType === 'purchase' || transactionType === 'buy' || transactionType.includes('buy');
+    const isBuy = transactionType === 'trade_buy' || transactionType === 'purchase' || transactionType === 'buy' || transactionType.includes('buy');
     return isBuy ? 'text-green-500' : 'text-red-500';
   };
 
   const getTransactionBgColor = (transactionType: string) => {
-    const isBuy = transactionType === 'purchase' || transactionType === 'buy' || transactionType.includes('buy');
+    const isBuy = transactionType === 'trade_buy' || transactionType === 'purchase' || transactionType === 'buy' || transactionType.includes('buy');
     return isBuy ? 'bg-green-500/20' : 'bg-red-500/20';
   };
 
   const formatTransactionType = (transactionType: string) => {
     switch (transactionType) {
+      case 'trade_buy':
       case 'purchase':
-        return 'BUY';
-      case 'sale':
-        return 'SELL';
       case 'buy':
       case 'buy_crypto':
         return 'BUY';
+      case 'trade_sell':
+      case 'sale':
       case 'sell':
       case 'sell_crypto':
         return 'SELL';
