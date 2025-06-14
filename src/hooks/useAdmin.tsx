@@ -20,68 +20,61 @@ export const useAdmin = () => {
         return;
       }
       
-      console.log(`[useAdmin] ${timestamp} Checking admin status for user ${user.id} (${user.email})`);
-
+      let finalIsAdmin = false;
+      
       try {
-        // Check admin status from profiles table
+        console.log(`[useAdmin] ${timestamp} Checking admin status for user ${user.id} (${user.email})`);
         const { data: profile, error } = await supabase
           .from('profiles')
           .select('is_admin, email')
           .eq('id', user.id)
           .single();
 
-        if (error) {
-          console.error(`[useAdmin] ${timestamp} Error checking admin status:`, error);
-          
-          // If profile doesn't exist, create it
-          if (error.code === 'PGRST116') {
-            console.log(`[useAdmin] ${timestamp} Profile not found, creating profile for user`);
-            const { error: createError } = await supabase
-              .from('profiles')
-              .insert({
-                id: user.id,
-                email: user.email,
-                is_admin: user.email === 'admin@prompto.trading'
-              });
-            
-            if (createError) {
-              console.error(`[useAdmin] ${timestamp} Error creating profile:`, createError);
-              setIsAdmin(false);
-            } else {
-              const newIsAdmin = user.email === 'admin@prompto.trading';
-              console.log(`[useAdmin] ${timestamp} Profile created. is_admin:`, newIsAdmin);
-              setIsAdmin(newIsAdmin);
-            }
+        if (error && error.code !== 'PGRST116') {
+          console.error(`[useAdmin] ${timestamp} Error fetching profile:`, error);
+          // finalIsAdmin remains false
+        } else if (error && error.code === 'PGRST116') {
+          // Profile not found, create it.
+          console.log(`[useAdmin] ${timestamp} Profile not found for ${user.email}, creating new profile.`);
+          const isAdminByEmail = user.email === 'admin@prompto.trading';
+          const { error: createError } = await supabase
+            .from('profiles')
+            .insert({ id: user.id, email: user.email, is_admin: isAdminByEmail });
+
+          if (createError) {
+            console.error(`[useAdmin] ${timestamp} Error creating profile:`, createError);
           } else {
-            setIsAdmin(false);
+            console.log(`[useAdmin] ${timestamp} Profile created. is_admin set to: ${isAdminByEmail}`);
+            finalIsAdmin = isAdminByEmail;
           }
-        } else {
-          console.log(`[useAdmin] ${timestamp} Profile fetched. is_admin:`, profile?.is_admin, 'email:', profile?.email);
-          
-          // Auto-promote admin@prompto.trading if needed
-          if (user.email === 'admin@prompto.trading' && !profile?.is_admin) {
-            console.log(`[useAdmin] ${timestamp} Auto-promoting admin@prompto.trading to admin`);
+        } else if (profile) {
+          // Profile found.
+          console.log(`[useAdmin] ${timestamp} Profile found for ${user.email}. DB is_admin: ${profile.is_admin}`);
+          if (user.email === 'admin@prompto.trading' && !profile.is_admin) {
+            // Auto-promote.
+            console.log(`[useAdmin] ${timestamp} Mismatch found. Auto-promoting ${user.email} to admin.`);
             const { error: updateError } = await supabase
               .from('profiles')
               .update({ is_admin: true })
               .eq('id', user.id);
-            
+
             if (updateError) {
-              console.error(`[useAdmin] ${timestamp} Error promoting to admin:`, updateError);
+              console.error(`[useAdmin] ${timestamp} Failed to auto-promote:`, updateError);
+              finalIsAdmin = false;
             } else {
-              console.log(`[useAdmin] ${timestamp} Successfully promoted to admin`);
-              setIsAdmin(true);
+              console.log(`[useAdmin] ${timestamp} Auto-promotion successful.`);
+              finalIsAdmin = true;
             }
           } else {
-            setIsAdmin(profile?.is_admin || false);
+            finalIsAdmin = profile.is_admin || false;
           }
         }
-      } catch (error) {
-        console.error(`[useAdmin] ${timestamp} CATCH block error checking admin status:`, error);
-        setIsAdmin(false);
+      } catch (err) {
+        console.error(`[useAdmin] ${timestamp} CATCH block error in checkAdminStatus:`, err);
+        // finalIsAdmin remains false
       } finally {
-        // This log was incorrect, it was logging the *stale* value of isAdmin
-        // We need to see the value that *will be* set.
+        console.log(`[useAdmin] ${timestamp} FINAL DECISION. Setting isAdmin to: ${finalIsAdmin}`);
+        setIsAdmin(finalIsAdmin);
         setLoading(false);
       }
     };
@@ -89,7 +82,6 @@ export const useAdmin = () => {
     checkAdminStatus();
   }, [user]);
 
-  // This log will run on every render, showing the current state of the hook
   console.log(`[useAdmin] HOOK RENDER. Returning: isAdmin=${isAdmin}, loading=${loading}`);
   return { isAdmin, loading };
 };
