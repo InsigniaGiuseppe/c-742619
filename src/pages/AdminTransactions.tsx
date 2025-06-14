@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useAdminTransactions, TransactionWithDetails } from '@/hooks/useAdminTransactions';
 import Navigation from '@/components/Navigation';
@@ -81,8 +80,8 @@ const AdminTransactions = () => {
                     transactions?.map((tx: TransactionWithDetails) => (
                       <TableRow key={tx.id}>
                         <TableCell>
-                          <div className="font-medium">{tx.trading_users?.full_name || 'N/A'}</div>
-                          <div className="text-sm text-muted-foreground">{tx.trading_users?.email}</div>
+                          <div className="font-medium">{tx.profiles?.full_name || 'N/A'}</div>
+                          <div className="text-sm text-muted-foreground">{tx.profiles?.email}</div>
                         </TableCell>
                         <TableCell>{format(new Date(tx.created_at!), 'PPpp')}</TableCell>
                         <TableCell className="capitalize">{tx.order_type}</TableCell>

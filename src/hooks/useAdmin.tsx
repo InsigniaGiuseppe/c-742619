@@ -19,7 +19,6 @@ export const useAdmin = () => {
       }
       
       console.log(`[useAdmin] Checking admin status for user ${user.id}`);
-      setLoading(true); // Set loading to true when check starts
 
       try {
         // Check admin status from profiles table

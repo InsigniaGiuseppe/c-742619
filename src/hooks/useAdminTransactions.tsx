@@ -6,7 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from "sonner";
 
 export type TransactionWithDetails = Tables<'trading_orders'> & {
-  trading_users: {
+  profiles: {
     full_name: string | null;
     email: string | null;
   } | null;
@@ -21,7 +21,7 @@ const fetchTransactions = async (): Promise<TransactionWithDetails[]> => {
     .from('trading_orders')
     .select(`
       *,
-      trading_users (
+      profiles (
         full_name,
         email
       ),

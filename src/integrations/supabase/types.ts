@@ -1082,7 +1082,7 @@ export type Database = {
             foreignKeyName: "trading_orders_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "trading_users"
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1206,7 +1206,7 @@ export type Database = {
             foreignKeyName: "transaction_history_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "trading_users"
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
