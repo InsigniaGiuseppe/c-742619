@@ -83,26 +83,26 @@ const AdminUserDetailPage = () => {
         <Table>
           <TableBody>
             <DetailRow label="User ID" value={<code className="text-xs bg-muted px-2 py-1 rounded">{user.id}</code>} />
-            <DetailRow label="Full Name" value={user.full_name} />
-            <DetailRow label="Username" value={user.username} />
-            <DetailRow label="Email" value={user.email} />
+            <DetailRow label="Full Name" value={user.full_name ? String(user.full_name) : null} />
+            <DetailRow label="Username" value={user.username ? String(user.username) : null} />
+            <DetailRow label="Email" value={user.email ? String(user.email) : null} />
             <DetailRow label="Account Status" value={<Badge className={getStatusColor(user.account_status)}>{user.account_status}</Badge>} />
-            <DetailRow label="Account Type" value={user.account_type} />
+            <DetailRow label="Account Type" value={user.account_type ? String(user.account_type) : null} />
             <DetailRow label="KYC Status" value={<Badge className={getKycStatusColor(user.kyc_status || 'not_started')}>{user.kyc_status?.replace(/_/g, ' ') || 'Not Started'}</Badge>} />
             <DetailRow label="Is Admin" value={user.is_admin ? <Badge className="bg-purple-500/20 text-purple-400">Yes</Badge> : 'No'} />
             <DetailRow label="Date of Birth" value={user.date_of_birth ? new Date(user.date_of_birth).toLocaleDateString() : 'Not provided'} />
-            <DetailRow label="Phone" value={user.phone} />
-            <DetailRow label="Address" value={user.address} />
-            <DetailRow label="City" value={user.city} />
-            <DetailRow label="Postal Code" value={user.postal_code} />
-            <DetailRow label="Country" value={user.country} />
+            <DetailRow label="Phone" value={user.phone ? String(user.phone) : null} />
+            <DetailRow label="Address" value={user.address ? String(user.address) : null} />
+            <DetailRow label="City" value={user.city ? String(user.city) : null} />
+            <DetailRow label="Postal Code" value={user.postal_code ? String(user.postal_code) : null} />
+            <DetailRow label="Country" value={user.country ? String(user.country) : null} />
             <DetailRow label="Demo Balance (USD)" value={user.demo_balance_usd ? `$${Number(user.demo_balance_usd).toLocaleString()}` : '$0'} />
             <DetailRow label="Registered At" value={new Date(user.created_at!).toLocaleString()} />
             <DetailRow label="Last Updated" value={new Date(user.updated_at!).toLocaleString()} />
             <DetailRow label="Last Login" value={user.last_login_date ? new Date(user.last_login_date).toLocaleString() : 'Never'} />
-            <DetailRow label="Last Login IP" value={user.last_login_ip || 'N/A'} />
+            <DetailRow label="Last Login IP" value={user.last_login_ip ? String(user.last_login_ip) : 'N/A'} />
             <DetailRow label="2FA Enabled" value={user.two_factor_enabled ? <Badge className="bg-green-500/20 text-green-400">Yes</Badge> : 'No'} />
-            <DetailRow label="IBAN" value={user.bank_details_iban || 'Not provided'} />
+            <DetailRow label="IBAN" value={user.bank_details_iban ? String(user.bank_details_iban) : 'Not provided'} />
           </TableBody>
         </Table>
       </div>

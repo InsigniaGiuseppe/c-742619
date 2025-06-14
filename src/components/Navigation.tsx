@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Command, Menu, LogOut, User, Shield } from "lucide-react";
 import { Button } from "./ui/button";
@@ -25,19 +26,19 @@ const Navigation = () => {
   }, []);
 
   const handleSignOut = async () => {
-    const { error } = await signOut();
-    if (error) {
-      toast({
-        title: "Error",
-        description: "Failed to sign out",
-        variant: "destructive",
-      });
-    } else {
+    try {
+      await signOut();
       toast({
         title: "Success",
         description: "Signed out successfully",
       });
       navigate('/');
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to sign out",
+        variant: "destructive",
+      });
     }
   };
 
