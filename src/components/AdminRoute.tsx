@@ -23,23 +23,26 @@ const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
     });
   };
 
+  // Show loading while checking authentication and admin status
   if (authLoading || adminLoading) {
     logState('Loading...');
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
-          <p className="mt-4 text-muted-foreground">Loading...</p>
+          <p className="mt-4 text-muted-foreground">Verifying admin access...</p>
         </div>
       </div>
     );
   }
 
+  // Redirect to login if no user
   if (!user) {
-    logState('No user, redirecting to /login');
-    return <Navigate to="/login" replace />;
+    logState('No user, redirecting to /admin/login');
+    return <Navigate to="/admin/login" replace />;
   }
 
+  // Redirect to dashboard if user is not admin
   if (!isAdmin) {
     logState(`User ${user.email} is not admin, redirecting to /dashboard`);
     return <Navigate to="/dashboard" replace />;

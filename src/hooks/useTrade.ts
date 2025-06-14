@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -139,14 +140,16 @@ export const useTrade = (crypto: Cryptocurrency | undefined) => {
       if (orderError) throw new Error(`Failed at trading_orders: ${orderError.message}`);
       if (!order) throw new Error('Trading order creation returned no data.');
 
-      // Step 2: Create transaction history record
+      // Step 2: Create transaction history record with correct transaction_type
       console.log(`${logPrefix} 2. Inserting into transaction_history...`);
+      const transactionType = tradeType === 'buy' ? 'purchase' : 'sale';
+      
       const { data: transaction, error: transactionError } = await supabase
         .from('transaction_history')
         .insert({
           user_id: user.id,
           cryptocurrency_id: crypto.id,
-          transaction_type: `${tradeType}_crypto`,
+          transaction_type: transactionType,
           amount: coinAmount,
           usd_value: eurValue,
           fee_amount: feeAmount,

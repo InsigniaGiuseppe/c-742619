@@ -30,6 +30,38 @@ const RecentTransactions = () => {
 
   const recentTransactions = transactions.slice(0, 10);
 
+  const getTransactionIcon = (transactionType: string) => {
+    const isBuy = transactionType === 'purchase' || transactionType === 'buy' || transactionType.includes('buy');
+    return isBuy ? TrendingUp : TrendingDown;
+  };
+
+  const getTransactionColor = (transactionType: string) => {
+    const isBuy = transactionType === 'purchase' || transactionType === 'buy' || transactionType.includes('buy');
+    return isBuy ? 'text-green-500' : 'text-red-500';
+  };
+
+  const getTransactionBgColor = (transactionType: string) => {
+    const isBuy = transactionType === 'purchase' || transactionType === 'buy' || transactionType.includes('buy');
+    return isBuy ? 'bg-green-500/20' : 'bg-red-500/20';
+  };
+
+  const formatTransactionType = (transactionType: string) => {
+    switch (transactionType) {
+      case 'purchase':
+        return 'BUY';
+      case 'sale':
+        return 'SELL';
+      case 'buy':
+      case 'buy_crypto':
+        return 'BUY';
+      case 'sell':
+      case 'sell_crypto':
+        return 'SELL';
+      default:
+        return transactionType.toUpperCase();
+    }
+  };
+
   return (
     <Card className="glass glass-hover">
       <CardHeader>
@@ -46,53 +78,61 @@ const RecentTransactions = () => {
           </div>
         ) : (
           <div className="space-y-3">
-            {recentTransactions.map((transaction, index) => (
-              <div 
-                key={transaction.id} 
-                className="flex items-center justify-between p-4 bg-white/5 rounded-lg hover:bg-white/10 transition-all duration-200 border border-white/10"
-              >
-                <div className="flex items-center gap-4">
-                  <div className={`p-2 rounded-full ${
-                    transaction.transaction_type.startsWith('buy') ? 'bg-green-500/20' : 'bg-red-500/20'
-                  }`}>
-                    {transaction.transaction_type.startsWith('buy') ? (
-                      <TrendingUp className="h-4 w-4 text-green-500" />
-                    ) : (
-                      <TrendingDown className="h-4 w-4 text-red-500" />
-                    )}
+            {recentTransactions.map((transaction, index) => {
+              const Icon = getTransactionIcon(transaction.transaction_type);
+              const transactionColor = getTransactionColor(transaction.transaction_type);
+              const transactionBgColor = getTransactionBgColor(transaction.transaction_type);
+              const formattedType = formatTransactionType(transaction.transaction_type);
+              
+              return (
+                <div 
+                  key={transaction.id} 
+                  className="flex items-center justify-between p-4 bg-white/5 rounded-lg hover:bg-white/10 transition-all duration-200 border border-white/10"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className={`p-2 rounded-full ${transactionBgColor}`}>
+                      <Icon className={`h-4 w-4 ${transactionColor}`} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium truncate">
+                        {transaction.description || `${formattedType} ${transaction.crypto?.symbol || 'CRYPTO'}`}
+                      </p>
+                      <div className="flex items-center gap-2 text-sm text-gray-400">
+                        <span>
+                          {new Date(transaction.created_at).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </span>
+                        {transaction.amount && (
+                          <span className="text-gray-500">
+                            • {transaction.amount.toFixed(6)} {transaction.crypto?.symbol}
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium truncate">
-                      {transaction.description || `${transaction.transaction_type.replace('_crypto', '').toUpperCase()} ${transaction.crypto?.symbol}`}
-                    </p>
-                    <p className="text-sm text-gray-400">
-                      {new Date(transaction.created_at).toLocaleDateString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
-                    </p>
+                  <div className="text-right space-y-1">
+                    <FormattedNumber
+                      value={transaction.usd_value || 0}
+                      type="currency"
+                      showTooltip={false}
+                      className="font-semibold"
+                    />
+                    <div>
+                      <Badge 
+                        variant={transaction.status === 'completed' ? 'default' : 'secondary'}
+                        className="text-xs"
+                      >
+                        {transaction.status}
+                      </Badge>
+                    </div>
                   </div>
                 </div>
-                <div className="text-right space-y-1">
-                  <FormattedNumber
-                    value={transaction.usd_value || 0}
-                    type="currency"
-                    showTooltip={false}
-                    className="font-semibold"
-                  />
-                  <div>
-                    <Badge 
-                      variant={transaction.status === 'completed' ? 'default' : 'secondary'}
-                      className="text-xs"
-                    >
-                      {transaction.status}
-                    </Badge>
-                  </div>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </CardContent>
