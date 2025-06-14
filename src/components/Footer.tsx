@@ -11,7 +11,7 @@ const Footer = () => {
             <div className="space-y-4">
               <div className="flex items-center gap-3">
                 <img 
-                  src="/lovable-uploads/b5177265-9843-4db0-bf60-214fe4560272.png" 
+                  src="/lovable-uploads/13ae56ac-ef6c-4fe4-9393-309f5845f79c.png" 
                   alt="PROMPTO TRADING Logo" 
                   className="w-6 h-6 object-contain"
                 />

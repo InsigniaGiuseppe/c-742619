@@ -1,1 +1,5 @@
+
 project_id = "murvbwhegsauxlkgzcvo"
+
+[functions.binance-websocket]
+verify_jwt = false

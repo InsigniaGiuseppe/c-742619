@@ -28,8 +28,10 @@ export const CryptocurrenciesProvider: React.FC<{ children: ReactNode }> = ({ ch
   const [cryptocurrencies, setCryptocurrencies] = useState<Cryptocurrency[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isRealtimeConnected, setIsRealtimeConnected] = useState(false);
-  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const [isSupabaseRealtimeConnected, setIsSupabaseRealtimeConnected] = useState(false);
+  const [isWebSocketConnected, setIsWebSocketConnected] = useState(false);
+  const supabaseChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const webSocketRef = useRef<WebSocket | null>(null);
   const retryTimeoutRef = useRef<number | null>(null);
 
   const fetchCryptocurrencies = async () => {
@@ -69,10 +71,10 @@ export const CryptocurrenciesProvider: React.FC<{ children: ReactNode }> = ({ ch
     }
   };
 
-  const setupRealtimeSubscription = () => {
-    if (channelRef.current) {
-        supabase.removeChannel(channelRef.current).catch(err => console.error("Failed to remove channel", err));
-        channelRef.current = null;
+  const setupSupabaseSubscription = () => {
+    if (supabaseChannelRef.current) {
+        supabase.removeChannel(supabaseChannelRef.current).catch(err => console.error("Failed to remove channel", err));
+        supabaseChannelRef.current = null;
     }
     if (retryTimeoutRef.current) {
         clearTimeout(retryTimeoutRef.current);
@@ -84,7 +86,7 @@ export const CryptocurrenciesProvider: React.FC<{ children: ReactNode }> = ({ ch
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'cryptocurrencies' },
         (payload) => {
-          console.log('Real-time update received:', payload.new);
+          console.log('Supabase real-time update received:', payload.new);
           const updatedCrypto = payload.new as Cryptocurrency;
           setCryptocurrencies((currentCryptos) =>
             currentCryptos.map((crypto) =>
@@ -95,35 +97,86 @@ export const CryptocurrenciesProvider: React.FC<{ children: ReactNode }> = ({ ch
       )
       .subscribe((status, err) => {
         if (status === 'SUBSCRIBED') {
-          console.log('Subscribed to real-time crypto updates!');
-          setIsRealtimeConnected(true);
+          console.log('Subscribed to Supabase real-time updates!');
+          setIsSupabaseRealtimeConnected(true);
           if (error && error.startsWith('Real-time connection failed')) {
             setError(null);
           }
         }
         if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-          console.error('Real-time channel error:', status, err);
-          setIsRealtimeConnected(false);
+          console.error('Supabase real-time channel error:', status, err);
+          setIsSupabaseRealtimeConnected(false);
           setError('Real-time connection failed. Prices may be outdated.');
           
-          console.log('Attempting to reconnect real-time channel in 5 seconds...');
+          console.log('Attempting to reconnect Supabase real-time channel in 5 seconds...');
           retryTimeoutRef.current = window.setTimeout(() => {
-            setupRealtimeSubscription();
+            setupSupabaseSubscription();
           }, 5000);
         }
         if (status === 'CLOSED') {
-            console.log('Real-time channel closed.');
-            setIsRealtimeConnected(false);
+            console.log('Supabase real-time channel closed.');
+            setIsSupabaseRealtimeConnected(false);
         }
       });
 
-      channelRef.current = channel;
+      supabaseChannelRef.current = channel;
   };
 
+  const setupWebSocket = () => {
+    const supabaseProjectId = "murvbwhegsauxlkgzcvo";
+    const wsUrl = `wss://${supabaseProjectId}.supabase.co/functions/v1/binance-websocket`;
+    
+    // Ensure we don't create duplicate connections
+    if (webSocketRef.current && webSocketRef.current.readyState < 2) { // 0=CONNECTING, 1=OPEN
+      return;
+    }
+    
+    const socket = new WebSocket(wsUrl);
+
+    socket.onopen = () => {
+        console.log("Connected to price-feed WebSocket.");
+        setIsWebSocketConnected(true);
+    };
+
+    socket.onmessage = (event) => {
+        const message = JSON.parse(event.data);
+        if (message.stream && message.data) {
+            const { s: binanceSymbol, p: price } = message.data;
+            // Assuming symbols are like 'BTCUSDT'
+            const cryptoSymbol = binanceSymbol.replace(/USDT$/, '');
+
+            setCryptocurrencies(currentCryptos => {
+                const cryptoIndex = currentCryptos.findIndex(c => c.symbol.toUpperCase() === cryptoSymbol.toUpperCase());
+                if (cryptoIndex === -1) return currentCryptos;
+
+                const newCryptos = [...currentCryptos];
+                const updatedCrypto = { ...newCryptos[cryptoIndex], current_price: parseFloat(price) };
+                newCryptos[cryptoIndex] = updatedCrypto;
+                return newCryptos;
+            });
+        }
+    };
+    
+    socket.onclose = () => {
+        console.log("Disconnected from price-feed WebSocket. Reconnecting in 5s...");
+        setIsWebSocketConnected(false);
+        webSocketRef.current = null;
+        setTimeout(setupWebSocket, 5000);
+    };
+
+    socket.onerror = (error) => {
+        console.error("Price-feed WebSocket error:", error);
+        setIsWebSocketConnected(false);
+        socket.close(); // This will trigger onclose and the reconnect logic
+    };
+    
+    webSocketRef.current = socket;
+  };
 
   useEffect(() => {
     fetchCryptocurrencies();
-    setupRealtimeSubscription();
+    setupSupabaseSubscription();
+    setupWebSocket();
 
     const syncInterval = setInterval(() => {
       syncPrices();
@@ -134,13 +187,18 @@ export const CryptocurrenciesProvider: React.FC<{ children: ReactNode }> = ({ ch
       if (retryTimeoutRef.current) {
         clearTimeout(retryTimeoutRef.current);
       }
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current).catch(err => console.error("Failed to remove channel on unmount", err));
+      if (supabaseChannelRef.current) {
+        supabase.removeChannel(supabaseChannelRef.current).catch(err => console.error("Failed to remove channel on unmount", err));
+      }
+      if (webSocketRef.current) {
+        // Prevent reconnect logic from firing on unmount
+        webSocketRef.current.onclose = null; 
+        webSocketRef.current.close();
       }
     };
   }, []);
 
-  const value = { cryptocurrencies, loading, error, isRealtimeConnected, refetch: fetchCryptocurrencies };
+  const value = { cryptocurrencies, loading, error, isRealtimeConnected: isSupabaseRealtimeConnected || isWebSocketConnected, refetch: fetchCryptocurrencies };
 
   return (
     <CryptocurrenciesContext.Provider value={value}>

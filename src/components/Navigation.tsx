@@ -74,14 +74,14 @@ const Navigation = () => {
         <nav className="flex items-center justify-between h-full">
           <Link to="/" className="flex items-center gap-2">
             <img 
-              src="/lovable-uploads/b5177265-9843-4db0-bf60-214fe4560272.png" 
+              src="/lovable-uploads/13ae56ac-ef6c-4fe4-9393-309f5845f79c.png" 
               alt="PROMPTO TRADING Logo" 
               className="w-8 h-8 object-contain"
               onError={(e) => {
                 e.currentTarget.style.display = 'none';
               }}
             />
-            <span className="font-extrabold text-base tracking-wide">PROMPTO TRADING</span>
+            <span className="font-bold text-base tracking-wide font-sans">PROMPTO TRADING</span>
           </Link>
 
           {/* Desktop Navigation */}
