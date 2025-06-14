@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,6 +12,7 @@ import { useTransactionHistory } from '@/hooks/useTransactionHistory';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { motion } from 'framer-motion';
+import CryptoLogo from '@/components/CryptoLogo';
 
 const WalletPage = () => {
   const navigate = useNavigate();
@@ -145,9 +147,12 @@ const WalletPage = () => {
                     <div key={holding.id} className="flex items-center justify-between p-4 bg-white/5 hover:bg-white/10 transition-colors rounded-lg cursor-pointer"
                          onClick={() => navigate(`/crypto/${holding.crypto.symbol.toLowerCase()}`)}>
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-sm font-bold">
-                          {holding.crypto.symbol.substring(0, 2)}
-                        </div>
+                        <CryptoLogo 
+                          logo_url={holding.crypto.logo_url} 
+                          name={holding.crypto.name} 
+                          symbol={holding.crypto.symbol}
+                          size="md"
+                        />
                         <div>
                           <p className="font-medium">{holding.crypto.name}</p>
                           <p className="text-sm text-gray-400">
@@ -242,3 +247,4 @@ const WalletPage = () => {
 };
 
 export default WalletPage;
+

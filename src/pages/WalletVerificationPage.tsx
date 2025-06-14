@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,6 +12,10 @@ import { toast } from 'sonner';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import { motion } from 'framer-motion';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 
 interface WalletVerification {
   id: string;
@@ -25,16 +28,35 @@ interface WalletVerification {
   created_at: string;
 }
 
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/jpg"];
+
+const walletVerificationSchema = z.object({
+  coin_symbol: z.string({ required_error: "Please select a cryptocurrency." }).min(1, "Please select a cryptocurrency."),
+  wallet_address: z.string().min(1, "Wallet address is required."),
+  wallet_label: z.string().optional(),
+  screenshot: z.any()
+    .optional()
+    .refine((file) => !file || (file instanceof File && file.size <= MAX_FILE_SIZE), `Max file size is 5MB.`)
+    .refine(
+      (file) => !file || (file instanceof File && ACCEPTED_IMAGE_TYPES.includes(file.type)),
+      "Only .jpg, .jpeg, and .png formats are supported."
+    ),
+});
+
 const WalletVerificationPage = () => {
   const { user } = useAuth();
-  const [walletVerifications, setWalletVerifications] = useState<WalletVerification[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    coin_symbol: '',
-    wallet_address: '',
-    wallet_label: '',
-    screenshot: null as File | null
+  const [walletVerifications, setWalletVerifications] = React.useState<WalletVerification[]>([]);
+  
+  const form = useForm<z.infer<typeof walletVerificationSchema>>({
+    resolver: zodResolver(walletVerificationSchema),
+    defaultValues: {
+      coin_symbol: "",
+      wallet_address: "",
+      wallet_label: "",
+    },
   });
+  const { formState: { isSubmitting } } = form;
 
   const cryptoOptions = [
     { value: 'BTC', label: 'Bitcoin (BTC)' },
@@ -66,70 +88,40 @@ const WalletVerificationPage = () => {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const onSubmit = async (values: z.infer<typeof walletVerificationSchema>) => {
     if (!user) return;
-
-    if (!formData.coin_symbol || !formData.wallet_address) {
-      toast.error('Please fill in all required fields');
-      return;
-    }
-
-    setLoading(true);
 
     try {
       let screenshotUrl = '';
 
-      // Upload screenshot if provided
-      if (formData.screenshot) {
-        const fileExt = formData.screenshot.name.split('.').pop();
+      if (values.screenshot) {
+        const file = values.screenshot as File;
+        const fileExt = file.name.split('.').pop();
         const fileName = `${user.id}/${Date.now()}.${fileExt}`;
-
-        // Note: In a real implementation, you would upload to Supabase Storage
-        // For now, we'll just store a placeholder URL
         screenshotUrl = `screenshots/${fileName}`;
       }
 
-      // For now, we'll simulate the insertion and show success
       const insertData = {
         user_id: user.id,
-        coin_symbol: formData.coin_symbol,
-        wallet_address: formData.wallet_address,
-        wallet_label: formData.wallet_label || null,
+        coin_symbol: values.coin_symbol,
+        wallet_address: values.wallet_address,
+        wallet_label: values.wallet_label || null,
         screenshot_url: screenshotUrl || null,
-        status: 'pending'
+        status: 'pending' as const
       };
 
       console.log('Would insert wallet verification:', insertData);
       
       toast.success('Wallet verification request submitted successfully');
-      setFormData({
-        coin_symbol: '',
-        wallet_address: '',
-        wallet_label: '',
-        screenshot: null
-      });
+      form.reset();
+      // To clear the file input display
+      const screenshotInput = document.getElementById('screenshot') as HTMLInputElement;
+      if (screenshotInput) screenshotInput.value = '';
+      
       fetchWalletVerifications();
     } catch (error) {
       console.error('Error submitting wallet verification:', error);
       toast.error('Failed to submit wallet verification');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit
-        toast.error('File size must be less than 5MB');
-        return;
-      }
-      if (!['image/jpeg', 'image/png', 'image/jpg'].includes(file.type)) {
-        toast.error('Only PNG, JPG, and JPEG files are allowed');
-        return;
-      }
-      setFormData(prev => ({ ...prev, screenshot: file }));
     }
   };
 
@@ -167,85 +159,108 @@ const WalletVerificationPage = () => {
               <CardTitle>Add New Wallet</CardTitle>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <Label htmlFor="coin">Cryptocurrency *</Label>
-                  <Select 
-                    value={formData.coin_symbol} 
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, coin_symbol: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select cryptocurrency" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {cryptoOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label htmlFor="address">Wallet Address *</Label>
-                  <Input
-                    id="address"
-                    type="text"
-                    placeholder="Enter your wallet address"
-                    value={formData.wallet_address}
-                    onChange={(e) => setFormData(prev => ({ ...prev, wallet_address: e.target.value }))}
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="label">Wallet Label (Optional)</Label>
-                  <Input
-                    id="label"
-                    type="text"
-                    placeholder="e.g., My MetaMask, Hardware Wallet"
-                    value={formData.wallet_label}
-                    onChange={(e) => setFormData(prev => ({ ...prev, wallet_label: e.target.value }))}
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="screenshot">Screenshot (Optional)</Label>
-                  <div className="mt-2">
-                    <label className="flex items-center justify-center w-full h-32 border-2 border-border border-dashed rounded cursor-pointer hover:border-primary transition-colors">
-                      <div className="text-center">
-                        <Upload className="mx-auto h-8 w-8 text-gray-400" />
-                        <p className="mt-2 text-sm text-gray-400">
-                          Click to upload screenshot
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          PNG, JPG, JPEG up to 5MB
-                        </p>
-                      </div>
-                      <input
-                        id="screenshot"
-                        type="file"
-                        accept="image/*"
-                        onChange={handleFileChange}
-                        className="hidden"
-                      />
-                    </label>
-                    {formData.screenshot && (
-                      <p className="mt-2 text-sm text-green-400">
-                        File selected: {formData.screenshot.name}
-                      </p>
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="coin_symbol"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Cryptocurrency *</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select cryptocurrency" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {cryptoOptions.map((option) => (
+                              <SelectItem key={option.value} value={option.value}>
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
                     )}
-                  </div>
-                </div>
+                  />
 
-                <Button 
-                  type="submit" 
-                  disabled={loading || !user}
-                  className="w-full"
-                >
-                  {loading ? 'Submitting...' : 'Submit for Verification'}
-                </Button>
-              </form>
+                  <FormField
+                    control={form.control}
+                    name="wallet_address"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Wallet Address *</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter your wallet address" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="wallet_label"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Wallet Label (Optional)</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g., My MetaMask, Hardware Wallet" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="screenshot"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Screenshot (Optional)</FormLabel>
+                        <FormControl>
+                          <div className="mt-2">
+                            <label className="flex items-center justify-center w-full h-32 border-2 border-border border-dashed rounded cursor-pointer hover:border-primary transition-colors">
+                              <div className="text-center">
+                                <Upload className="mx-auto h-8 w-8 text-gray-400" />
+                                <p className="mt-2 text-sm text-gray-400">
+                                  Click to upload screenshot
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  PNG, JPG, JPEG up to 5MB
+                                </p>
+                              </div>
+                              <input
+                                id="screenshot"
+                                type="file"
+                                accept="image/png, image/jpeg, image/jpg"
+                                className="hidden"
+                                onChange={(e) => field.onChange(e.target.files ? e.target.files[0] : null)}
+                              />
+                            </label>
+                            {field.value && 'name' in field.value && (
+                              <p className="mt-2 text-sm text-green-400">
+                                File selected: {field.value.name}
+                              </p>
+                            )}
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <Button 
+                    type="submit" 
+                    disabled={isSubmitting || !user}
+                    className="w-full"
+                  >
+                    {isSubmitting ? 'Submitting...' : 'Submit for Verification'}
+                  </Button>
+                </form>
+              </Form>
             </CardContent>
           </Card>
 

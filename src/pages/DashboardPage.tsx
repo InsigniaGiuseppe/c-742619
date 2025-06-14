@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TrendingUp, TrendingDown, DollarSign, Wallet } from 'lucide-react';
@@ -54,19 +53,6 @@ const DashboardPage = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <Card className="glass glass-hover">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Demo Balance</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">${demoBalance.toFixed(2)}</div>
-              <p className="text-xs text-muted-foreground">
-                Available for trading
-              </p>
-            </CardContent>
-          </Card>
-          
-          <Card className="glass glass-hover">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Portfolio Value</CardTitle>
               <Wallet className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
@@ -101,6 +87,19 @@ const DashboardPage = () => {
           
           <Card className="glass glass-hover">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Demo Balance</CardTitle>
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">${demoBalance.toFixed(2)}</div>
+              <p className="text-xs text-muted-foreground">
+                Available for trading
+              </p>
+            </CardContent>
+          </Card>
+          
+          <Card className="glass glass-hover">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Value</CardTitle>
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
@@ -116,8 +115,10 @@ const DashboardPage = () => {
         </div>
 
         {/* Charts and Transactions */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <PortfolioChart />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2">
+            <PortfolioChart />
+          </div>
           <RecentTransactions />
         </div>
       </motion.main>
