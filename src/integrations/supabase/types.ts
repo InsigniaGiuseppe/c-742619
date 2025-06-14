@@ -229,6 +229,66 @@ export type Database = {
         }
         Relationships: []
       }
+      cryptocurrencies: {
+        Row: {
+          circulating_supply: number | null
+          created_at: string | null
+          current_price: number
+          description: string | null
+          id: string
+          is_active: boolean | null
+          logo_url: string | null
+          market_cap: number | null
+          max_supply: number | null
+          name: string
+          price_change_24h: number | null
+          price_change_percentage_24h: number | null
+          symbol: string
+          total_supply: number | null
+          updated_at: string | null
+          volume_24h: number | null
+          website_url: string | null
+        }
+        Insert: {
+          circulating_supply?: number | null
+          created_at?: string | null
+          current_price: number
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          logo_url?: string | null
+          market_cap?: number | null
+          max_supply?: number | null
+          name: string
+          price_change_24h?: number | null
+          price_change_percentage_24h?: number | null
+          symbol: string
+          total_supply?: number | null
+          updated_at?: string | null
+          volume_24h?: number | null
+          website_url?: string | null
+        }
+        Update: {
+          circulating_supply?: number | null
+          created_at?: string | null
+          current_price?: number
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          logo_url?: string | null
+          market_cap?: number | null
+          max_supply?: number | null
+          name?: string
+          price_change_24h?: number | null
+          price_change_percentage_24h?: number | null
+          symbol?: string
+          total_supply?: number | null
+          updated_at?: string | null
+          volume_24h?: number | null
+          website_url?: string | null
+        }
+        Relationships: []
+      }
       document_processing_jobs: {
         Row: {
           created_at: string
@@ -555,6 +615,41 @@ export type Database = {
           },
         ]
       }
+      price_history: {
+        Row: {
+          cryptocurrency_id: string
+          id: string
+          market_cap: number | null
+          price: number
+          timestamp: string | null
+          volume: number | null
+        }
+        Insert: {
+          cryptocurrency_id: string
+          id?: string
+          market_cap?: number | null
+          price: number
+          timestamp?: string | null
+          volume?: number | null
+        }
+        Update: {
+          cryptocurrency_id?: string
+          id?: string
+          market_cap?: number | null
+          price?: number
+          timestamp?: string | null
+          volume?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "price_history_cryptocurrency_id_fkey"
+            columns: ["cryptocurrency_id"]
+            isOneToOne: false
+            referencedRelation: "cryptocurrencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       processed_articles: {
         Row: {
           author: string | null
@@ -715,6 +810,283 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      trading_orders: {
+        Row: {
+          amount: number
+          created_at: string | null
+          cryptocurrency_id: string
+          executed_at: string | null
+          fees: number | null
+          id: string
+          order_status: string | null
+          order_type: string
+          price_per_unit: number
+          total_value: number
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          cryptocurrency_id: string
+          executed_at?: string | null
+          fees?: number | null
+          id?: string
+          order_status?: string | null
+          order_type: string
+          price_per_unit: number
+          total_value: number
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          cryptocurrency_id?: string
+          executed_at?: string | null
+          fees?: number | null
+          id?: string
+          order_status?: string | null
+          order_type?: string
+          price_per_unit?: number
+          total_value?: number
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trading_orders_cryptocurrency_id_fkey"
+            columns: ["cryptocurrency_id"]
+            isOneToOne: false
+            referencedRelation: "cryptocurrencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trading_orders_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "trading_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trading_users: {
+        Row: {
+          account_balance: number | null
+          avatar_url: string | null
+          country: string | null
+          created_at: string | null
+          date_of_birth: string | null
+          email: string
+          full_name: string | null
+          id: string
+          is_active: boolean | null
+          password_hash: string
+          phone: string | null
+          risk_tolerance: string | null
+          total_invested: number | null
+          total_profit_loss: number | null
+          updated_at: string | null
+          username: string
+          verification_status: string | null
+        }
+        Insert: {
+          account_balance?: number | null
+          avatar_url?: string | null
+          country?: string | null
+          created_at?: string | null
+          date_of_birth?: string | null
+          email: string
+          full_name?: string | null
+          id?: string
+          is_active?: boolean | null
+          password_hash: string
+          phone?: string | null
+          risk_tolerance?: string | null
+          total_invested?: number | null
+          total_profit_loss?: number | null
+          updated_at?: string | null
+          username: string
+          verification_status?: string | null
+        }
+        Update: {
+          account_balance?: number | null
+          avatar_url?: string | null
+          country?: string | null
+          created_at?: string | null
+          date_of_birth?: string | null
+          email?: string
+          full_name?: string | null
+          id?: string
+          is_active?: boolean | null
+          password_hash?: string
+          phone?: string | null
+          risk_tolerance?: string | null
+          total_invested?: number | null
+          total_profit_loss?: number | null
+          updated_at?: string | null
+          username?: string
+          verification_status?: string | null
+        }
+        Relationships: []
+      }
+      transaction_history: {
+        Row: {
+          amount: number | null
+          created_at: string | null
+          cryptocurrency_id: string | null
+          description: string | null
+          fee_amount: number | null
+          id: string
+          reference_order_id: string | null
+          status: string | null
+          transaction_type: string
+          usd_value: number | null
+          user_id: string
+        }
+        Insert: {
+          amount?: number | null
+          created_at?: string | null
+          cryptocurrency_id?: string | null
+          description?: string | null
+          fee_amount?: number | null
+          id?: string
+          reference_order_id?: string | null
+          status?: string | null
+          transaction_type: string
+          usd_value?: number | null
+          user_id: string
+        }
+        Update: {
+          amount?: number | null
+          created_at?: string | null
+          cryptocurrency_id?: string | null
+          description?: string | null
+          fee_amount?: number | null
+          id?: string
+          reference_order_id?: string | null
+          status?: string | null
+          transaction_type?: string
+          usd_value?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transaction_history_cryptocurrency_id_fkey"
+            columns: ["cryptocurrency_id"]
+            isOneToOne: false
+            referencedRelation: "cryptocurrencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transaction_history_reference_order_id_fkey"
+            columns: ["reference_order_id"]
+            isOneToOne: false
+            referencedRelation: "trading_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transaction_history_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "trading_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_portfolios: {
+        Row: {
+          average_buy_price: number
+          created_at: string | null
+          cryptocurrency_id: string
+          current_value: number
+          id: string
+          profit_loss: number
+          profit_loss_percentage: number
+          quantity: number
+          total_invested: number
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          average_buy_price?: number
+          created_at?: string | null
+          cryptocurrency_id: string
+          current_value?: number
+          id?: string
+          profit_loss?: number
+          profit_loss_percentage?: number
+          quantity?: number
+          total_invested?: number
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          average_buy_price?: number
+          created_at?: string | null
+          cryptocurrency_id?: string
+          current_value?: number
+          id?: string
+          profit_loss?: number
+          profit_loss_percentage?: number
+          quantity?: number
+          total_invested?: number
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_portfolios_cryptocurrency_id_fkey"
+            columns: ["cryptocurrency_id"]
+            isOneToOne: false
+            referencedRelation: "cryptocurrencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_portfolios_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "trading_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_watchlist: {
+        Row: {
+          created_at: string | null
+          cryptocurrency_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          cryptocurrency_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          cryptocurrency_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_watchlist_cryptocurrency_id_fkey"
+            columns: ["cryptocurrency_id"]
+            isOneToOne: false
+            referencedRelation: "cryptocurrencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_watchlist_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "trading_users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_weapons: {
         Row: {

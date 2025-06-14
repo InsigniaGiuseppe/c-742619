@@ -1,14 +1,18 @@
 
 import { useState, useEffect } from "react";
-import { Command, Menu } from "lucide-react";
+import { Command, Menu, LogOut, User } from "lucide-react";
 import { Button } from "./ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
-import { Link, useNavigate } from "react-router-dom"; // Import Link and useNavigate
+import { Link, useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const Navigation = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const navigate = useNavigate(); // Initialize navigate
+  const [user, setUser] = useState(null);
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -19,12 +23,44 @@ const Navigation = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Simplified nav items for multi-page app
+  useEffect(() => {
+    // Check current session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setUser(session?.user ?? null);
+      }
+    );
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleSignOut = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to sign out",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Success",
+        description: "Signed out successfully",
+      });
+      navigate('/');
+    }
+  };
+
   const navItems = [
     { name: "Home", href: "/", isExternal: false },
     { name: "Dashboard", href: "/dashboard", isExternal: false },
-    { name: "Markets", href: "/trading", isExternal: false }, // Example, can be more dynamic later
-    // Add more pages as needed, e.g. Wallet, Profile etc.
+    { name: "Trading", href: "/trading", isExternal: false },
+    { name: "Wallet", href: "/wallet", isExternal: false },
   ];
 
   const handleMobileNavClick = (href: string) => {
@@ -43,8 +79,12 @@ const Navigation = () => {
       <div className="mx-auto h-full px-6">
         <nav className="flex items-center justify-between h-full">
           <Link to="/" className="flex items-center gap-2">
-            <Command className="w-5 h-5 text-primary" />
-            <span className="font-bold text-base">CryptoTrade</span>
+            <img 
+              src="/lovable-uploads/a2c0bb3a-a47b-40bf-ba26-d79f2f9e741b.png" 
+              alt="PROMPTO TRADING" 
+              className="w-8 h-8"
+            />
+            <span className="font-bold text-base">PROMPTO TRADING</span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -58,21 +98,47 @@ const Navigation = () => {
                 {item.name}
               </Link>
             ))}
-            <Button 
-              onClick={() => navigate('/login')} // Navigate to login page
-              size="sm"
-              variant="outline" // Changed from button-gradient for better contrast
-              className="glass"
-            >
-              Login
-            </Button>
-            <Button 
-              onClick={() => navigate('/register')} // Navigate to register page
-              size="sm"
-              className="button-gradient"
-            >
-              Sign Up
-            </Button>
+            
+            {user ? (
+              <div className="flex items-center gap-2">
+                <Button 
+                  onClick={() => navigate('/profile')} 
+                  size="sm"
+                  variant="outline"
+                  className="glass"
+                >
+                  <User className="w-4 h-4 mr-1" />
+                  Profile
+                </Button>
+                <Button 
+                  onClick={handleSignOut}
+                  size="sm"
+                  variant="outline"
+                  className="glass"
+                >
+                  <LogOut className="w-4 h-4 mr-1" />
+                  Sign Out
+                </Button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Button 
+                  onClick={() => navigate('/login')}
+                  size="sm"
+                  variant="outline"
+                  className="glass"
+                >
+                  Login
+                </Button>
+                <Button 
+                  onClick={() => navigate('/register')}
+                  size="sm"
+                  className="button-gradient"
+                >
+                  Sign Up
+                </Button>
+              </div>
+            )}
           </div>
 
           {/* Mobile Navigation */}
@@ -95,19 +161,43 @@ const Navigation = () => {
                       {item.name}
                     </Button>
                   ))}
-                  <Button 
-                    onClick={() => handleMobileNavClick('/login')}
-                    variant="outline"
-                    className="glass mt-4"
-                  >
-                    Login
-                  </Button>
-                  <Button 
-                    onClick={() => handleMobileNavClick('/register')}
-                    className="button-gradient mt-2" // Adjusted margin
-                  >
-                    Sign Up
-                  </Button>
+                  
+                  {user ? (
+                    <div className="flex flex-col gap-2 mt-4">
+                      <Button 
+                        onClick={() => handleMobileNavClick('/profile')}
+                        variant="outline"
+                        className="glass"
+                      >
+                        <User className="w-4 h-4 mr-1" />
+                        Profile
+                      </Button>
+                      <Button 
+                        onClick={handleSignOut}
+                        variant="outline"
+                        className="glass"
+                      >
+                        <LogOut className="w-4 h-4 mr-1" />
+                        Sign Out
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-2 mt-4">
+                      <Button 
+                        onClick={() => handleMobileNavClick('/login')}
+                        variant="outline"
+                        className="glass"
+                      >
+                        Login
+                      </Button>
+                      <Button 
+                        onClick={() => handleMobileNavClick('/register')}
+                        className="button-gradient"
+                      >
+                        Sign Up
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </SheetContent>
             </Sheet>
