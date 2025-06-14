@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -132,7 +131,7 @@ const PersonalInfoSection: React.FC<PersonalInfoSectionProps> = ({ user }) => {
           <Table>
             <TableBody>
               <DetailRow 
-                label="Demo Balance" 
+                label="Account Balance" 
                 value={user?.demo_balance_usd ? `$${Number(user.demo_balance_usd).toLocaleString()}` : '$0'} 
               />
               <DetailRow label="IBAN" value={user?.bank_details_iban} />

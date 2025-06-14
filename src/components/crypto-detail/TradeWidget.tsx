@@ -34,7 +34,7 @@ const TradeWidget: React.FC<TradeWidgetProps> = ({ crypto }) => {
       <CardHeader>
         <CardTitle>Trade {crypto.symbol.toUpperCase()}</CardTitle>
         <p className="text-sm text-muted-foreground">
-          Demo Balance: {formatCurrency(userBalance)}
+          Account Balance: {formatCurrency(userBalance)}
         </p>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -65,7 +65,7 @@ const TradeWidget: React.FC<TradeWidgetProps> = ({ crypto }) => {
                 if (value) {
                   setPaymentMethod(value as 'balance' | 'ideal');
                   if (value === 'ideal') {
-                    toast.info("iDEAL payments are for demo purposes and not yet functional.");
+                    toast.info("iDEAL payments are currently unavailable. Please use account balance.");
                   }
                 }
               }}

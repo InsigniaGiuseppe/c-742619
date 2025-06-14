@@ -23,7 +23,7 @@ export const useTrade = (crypto: Cryptocurrency | undefined) => {
     console.log('[useTrade] Running fetchUserData for user and crypto', { userId: user.id, cryptoId: crypto.id });
 
     try {
-      // Fetch user's demo balance
+      // Fetch user's account balance
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('*')
