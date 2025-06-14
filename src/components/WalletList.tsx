@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useExternalWallets, ExternalWallet } from '@/hooks/useExternalWallets';
 import { useCryptocurrencies } from '@/hooks/useCryptocurrencies';
@@ -17,6 +16,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import EditWalletModal from './EditWalletModal';
 import WalletListItem from './WalletListItem';
+import { Input } from '@/components/ui/input';
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 const WalletList: React.FC = () => {
   const { wallets, isLoading, error, deleteWallet } = useExternalWallets();
@@ -25,10 +26,28 @@ const WalletList: React.FC = () => {
   const [deletingId, setDeletingId] = React.useState<string | null>(null);
   const [editingWallet, setEditingWallet] = React.useState<ExternalWallet | null>(null);
   const [walletToDelete, setWalletToDelete] = React.useState<ExternalWallet | null>(null);
+  const [searchTerm, setSearchTerm] = React.useState('');
+  const [statusFilter, setStatusFilter] = React.useState('all');
 
   const cryptoMap = React.useMemo(() => {
     return new Map(cryptocurrencies.map(c => [c.symbol, c]));
   }, [cryptocurrencies]);
+
+  const filteredWallets = React.useMemo(() => {
+    return wallets
+      .filter(wallet => {
+        if (statusFilter !== 'all' && wallet.status !== statusFilter) {
+          return false;
+        }
+        if (searchTerm.trim() === '') {
+          return true;
+        }
+        const searchLower = searchTerm.toLowerCase();
+        const labelMatch = wallet.wallet_label?.toLowerCase().includes(searchLower);
+        const addressMatch = wallet.wallet_address.toLowerCase().includes(searchLower);
+        return labelMatch || addressMatch;
+      });
+  }, [wallets, searchTerm, statusFilter]);
 
   const handleDelete = async (walletId: string) => {
     setDeletingId(walletId);
@@ -85,11 +104,36 @@ const WalletList: React.FC = () => {
           <CardTitle>My Wallets</CardTitle>
         </CardHeader>
         <CardContent>
+          {wallets.length > 0 && (
+            <div className="flex flex-col sm:flex-row gap-4 mb-6">
+              <Input
+                placeholder="Search by label or address..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="max-w-sm bg-transparent"
+              />
+              <ToggleGroup
+                type="single"
+                value={statusFilter}
+                onValueChange={(value) => {
+                    if (value) setStatusFilter(value);
+                }}
+                className="w-full sm:w-auto"
+              >
+                <ToggleGroupItem value="all">All</ToggleGroupItem>
+                <ToggleGroupItem value="pending">Pending</ToggleGroupItem>
+                <ToggleGroupItem value="verified">Verified</ToggleGroupItem>
+                <ToggleGroupItem value="rejected">Rejected</ToggleGroupItem>
+              </ToggleGroup>
+            </div>
+          )}
           {wallets.length === 0 ? (
             <p className="text-muted-foreground text-center py-4">You have not added any external wallets yet.</p>
+          ) : filteredWallets.length === 0 ? (
+            <p className="text-muted-foreground text-center py-4">No wallets match your filters.</p>
           ) : (
             <div className="space-y-4">
-              {wallets.map(wallet => (
+              {filteredWallets.map(wallet => (
                 <WalletListItem 
                   key={wallet.id}
                   wallet={wallet}
