@@ -1,11 +1,14 @@
+
 import { useState, useEffect } from "react";
 import { Command, Menu } from "lucide-react";
 import { Button } from "./ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
+import { Link, useNavigate } from "react-router-dom"; // Import Link and useNavigate
 
 const Navigation = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const navigate = useNavigate(); // Initialize navigate
 
   useEffect(() => {
     const handleScroll = () => {
@@ -16,34 +19,18 @@ const Navigation = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const scrollToSection = (sectionId: string) => {
-    if (sectionId === 'testimonials') {
-      const testimonialSection = document.querySelector('.animate-marquee');
-      if (testimonialSection) {
-        const yOffset = -100; // Offset to account for the fixed header
-        const y = testimonialSection.getBoundingClientRect().top + window.pageYOffset + yOffset;
-        window.scrollTo({ top: y, behavior: 'smooth' });
-      }
-    } else if (sectionId === 'cta') {
-      const ctaSection = document.querySelector('.button-gradient');
-      if (ctaSection) {
-        const yOffset = -100;
-        const y = ctaSection.getBoundingClientRect().top + window.pageYOffset + yOffset;
-        window.scrollTo({ top: y, behavior: 'smooth' });
-      }
-    } else {
-      const element = document.getElementById(sectionId);
-      if (element) {
-        element.scrollIntoView({ behavior: 'smooth' });
-      }
-    }
-  };
-
+  // Simplified nav items for multi-page app
   const navItems = [
-    { name: "Features", href: "#features", onClick: () => scrollToSection('features') },
-    { name: "Prices", href: "#pricing", onClick: () => scrollToSection('pricing') },
-    { name: "Testimonials", href: "#testimonials", onClick: () => scrollToSection('testimonials') },
+    { name: "Home", href: "/", isExternal: false },
+    { name: "Dashboard", href: "/dashboard", isExternal: false },
+    { name: "Markets", href: "/trading", isExternal: false }, // Example, can be more dynamic later
+    // Add more pages as needed, e.g. Wallet, Profile etc.
   ];
+
+  const handleMobileNavClick = (href: string) => {
+    setIsMobileMenuOpen(false);
+    navigate(href);
+  };
 
   return (
     <header
@@ -55,34 +42,36 @@ const Navigation = () => {
     >
       <div className="mx-auto h-full px-6">
         <nav className="flex items-center justify-between h-full">
-          <div className="flex items-center gap-2">
+          <Link to="/" className="flex items-center gap-2">
             <Command className="w-5 h-5 text-primary" />
             <span className="font-bold text-base">CryptoTrade</span>
-          </div>
+          </Link>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-6">
             {navItems.map((item) => (
-              <a
+              <Link
                 key={item.name}
-                href={item.href}
-                onClick={(e) => {
-                  e.preventDefault();
-                  if (item.onClick) {
-                    item.onClick();
-                  }
-                }}
+                to={item.href}
                 className="text-sm text-muted-foreground hover:text-foreground transition-all duration-300"
               >
                 {item.name}
-              </a>
+              </Link>
             ))}
             <Button 
-              onClick={() => scrollToSection('cta')}
+              onClick={() => navigate('/login')} // Navigate to login page
+              size="sm"
+              variant="outline" // Changed from button-gradient for better contrast
+              className="glass"
+            >
+              Login
+            </Button>
+            <Button 
+              onClick={() => navigate('/register')} // Navigate to register page
               size="sm"
               className="button-gradient"
             >
-              Start Trading
+              Sign Up
             </Button>
           </div>
 
@@ -97,29 +86,27 @@ const Navigation = () => {
               <SheetContent className="bg-[#1B1B1B]">
                 <div className="flex flex-col gap-4 mt-8">
                   {navItems.map((item) => (
-                    <a
+                    <Button
                       key={item.name}
-                      href={item.href}
-                      className="text-lg text-muted-foreground hover:text-foreground transition-colors"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        setIsMobileMenuOpen(false);
-                        if (item.onClick) {
-                          item.onClick();
-                        }
-                      }}
+                      variant="ghost"
+                      className="text-lg text-muted-foreground hover:text-foreground justify-start"
+                      onClick={() => handleMobileNavClick(item.href)}
                     >
                       {item.name}
-                    </a>
+                    </Button>
                   ))}
                   <Button 
-                    onClick={() => {
-                      setIsMobileMenuOpen(false);
-                      scrollToSection('cta');
-                    }}
-                    className="button-gradient mt-4"
+                    onClick={() => handleMobileNavClick('/login')}
+                    variant="outline"
+                    className="glass mt-4"
                   >
-                    Start Trading
+                    Login
+                  </Button>
+                  <Button 
+                    onClick={() => handleMobileNavClick('/register')}
+                    className="button-gradient mt-2" // Adjusted margin
+                  >
+                    Sign Up
                   </Button>
                 </div>
               </SheetContent>

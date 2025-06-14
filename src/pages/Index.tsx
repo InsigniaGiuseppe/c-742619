@@ -2,12 +2,9 @@ import { motion } from "framer-motion";
 import { ArrowRight, Command } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Navigation from "@/components/Navigation";
-import { FeaturesSection } from "@/components/features/FeaturesSection";
-import { PricingSection } from "@/components/pricing/PricingSection";
-import LogoCarousel from "@/components/LogoCarousel";
-import TestimonialsSection from "@/components/TestimonialsSection";
 import Footer from "@/components/Footer";
 import { TextGenerateEffect } from "@/components/ui/text-generate-effect";
+import { Link } from "react-router-dom"; // Import Link
 
 const Index = () => {
   return (
@@ -19,7 +16,7 @@ const Index = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="relative container px-4 pt-40 pb-20"
+        className="relative container px-4 pt-40 pb-20 flex flex-col items-center text-center" // Centered content
       >
         {/* Background */}
         <div 
@@ -39,7 +36,7 @@ const Index = () => {
         </motion.div>
         
         <div className="max-w-4xl relative z-10">
-          <h1 className="text-5xl md:text-7xl font-normal mb-4 tracking-tight text-left">
+          <h1 className="text-5xl md:text-7xl font-normal mb-4 tracking-tight">
             <span className="text-gray-200">
               <TextGenerateEffect words="Trade crypto with" />
             </span>
@@ -53,7 +50,7 @@ const Index = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
-            className="text-lg md:text-xl text-gray-200 mb-8 max-w-2xl text-left"
+            className="text-lg md:text-xl text-gray-200 mb-8 max-w-2xl mx-auto" // Centered paragraph
           >
             Experience seamless cryptocurrency trading with advanced features, real-time analytics, and institutional-grade security.{" "}
             <span className="text-white">Start trading in minutes.</span>
@@ -63,13 +60,17 @@ const Index = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
-            className="flex flex-col sm:flex-row gap-4 items-start"
+            className="flex flex-col sm:flex-row gap-4 items-center justify-center" // Centered buttons
           >
-            <Button size="lg" className="button-gradient">
-              Start Trading Now
+            <Button asChild size="lg" className="button-gradient">
+              <Link to="/dashboard">
+                Go to Dashboard <ArrowRight className="ml-2 w-4 h-4" />
+              </Link>
             </Button>
-            <Button size="lg" variant="link" className="text-white">
-              View Markets <ArrowRight className="ml-2 w-4 h-4" />
+            <Button asChild size="lg" variant="link" className="text-white">
+               <Link to="/trading"> 
+                View Markets <ArrowRight className="ml-2 w-4 h-4" />
+               </Link>
             </Button>
           </motion.div>
         </div>
@@ -90,25 +91,10 @@ const Index = () => {
         </motion.div>
       </motion.section>
 
-      {/* Logo Carousel */}
-      <LogoCarousel />
+      {/* Sections like LogoCarousel, Features, Pricing, Testimonials, CTA can be removed or moved to other specific pages if desired */}
+      {/* For now, I'm keeping them to maintain some content on the landing page, but they can be selectively removed */}
 
-      {/* Features Section */}
-      <div id="features" className="bg-black">
-        <FeaturesSection />
-      </div>
-
-      {/* Pricing Section */}
-      <div id="pricing" className="bg-black">
-        <PricingSection />
-      </div>
-
-      {/* Testimonials Section */}
-      <div className="bg-black">
-        <TestimonialsSection />
-      </div>
-
-      {/* CTA Section */}
+      {/* CTA Section (Simplified or could be a link to register/dashboard) */}
       <section className="container px-4 py-20 relative bg-black">
         <div 
           className="absolute inset-0 opacity-40"
@@ -130,9 +116,10 @@ const Index = () => {
           <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
             Join thousands of traders who have already discovered the power of our platform.
           </p>
-          <Button size="lg" className="button-gradient">
-            Create Account
-            <ArrowRight className="ml-2 w-4 h-4" />
+          <Button asChild size="lg" className="button-gradient">
+            <Link to="/register">
+              Create Account <ArrowRight className="ml-2 w-4 h-4" />
+            </Link>
           </Button>
         </motion.div>
       </section>
