@@ -1,218 +1,175 @@
 
-import { useState, useEffect } from "react";
-import { Command, Menu, LogOut, User, Shield } from "lucide-react";
-import { Button } from "./ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
-import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
-import { useToast } from "@/hooks/use-toast";
-import { useAdmin } from "@/hooks/useAdmin";
+import React, { useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
+import { Button } from '@/components/ui/button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { User, LogOut, Settings, Menu, X } from 'lucide-react';
 
 const Navigation = () => {
-  const [isScrolled, setIsScrolled] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const navigate = useNavigate();
-  const { toast } = useToast();
   const { user, signOut } = useAuth();
-  const { isAdmin } = useAdmin();
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 50);
-    };
-
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const handleSignOut = async () => {
-    try {
-      await signOut();
-      toast({
-        title: "Success",
-        description: "Signed out successfully",
-      });
-      navigate('/');
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to sign out",
-        variant: "destructive",
-      });
-    }
+    await signOut();
+    navigate('/');
   };
 
-  // Navigation items - only show authenticated routes when user is logged in
-  const navItems = [
-    { name: "Home", href: "/", isExternal: false, requiresAuth: false },
-    ...(user ? [
-      { name: "Dashboard", href: "/dashboard", isExternal: false, requiresAuth: true },
-      { name: "Trading", href: "/trading", isExternal: false, requiresAuth: true },
-      { name: "Wallet", href: "/wallet", isExternal: false, requiresAuth: true },
-    ] : [])
+  const isActive = (path: string) => {
+    return location.pathname === path;
+  };
+
+  const navLinks = [
+    { path: '/dashboard', label: 'Dashboard' },
+    { path: '/trading', label: 'Trading' },
+    { path: '/wallet', label: 'Wallet' },
+    { path: '/lending', label: 'Lending' },
+    { path: '/referrals', label: 'Referrals' },
+    { path: '/messages', label: 'Messages' },
   ];
 
-  const handleMobileNavClick = (href: string) => {
-    setIsMobileMenuOpen(false);
-    navigate(href);
-  };
-
   return (
-    <header
-      className={`fixed top-3.5 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 rounded-full ${
-        isScrolled 
-          ? "h-14 bg-[#1B1B1B]/40 backdrop-blur-xl border border-white/10 scale-95 w-[90%] max-w-2xl" 
-          : "h-14 bg-[#1B1B1B] w-[95%] max-w-3xl"
-      }`}
-    >
-      <div className="mx-auto h-full px-6">
-        <nav className="flex items-center justify-between h-full">
-          <Link to="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-              <span className="text-white font-bold text-xs">PT</span>
-            </div>
-            <span className="font-bold text-base tracking-wide font-sans">PROMPTO TRADING</span>
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-md border-b border-gray-800">
+      <div className="container mx-auto px-4">
+        <div className="flex items-center justify-between h-16">
+          {/* Logo */}
+          <Link to={user ? '/dashboard' : '/'} className="flex items-center gap-3">
+            <img 
+              src="/lovable-uploads/f2e4b091-6735-4cc9-bf78-84aa28f74b0b.png" 
+              alt="PROMPTO Logo" 
+              className="w-8 h-8 object-contain"
+            />
+            <span className="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent">
+              PROMPTO
+            </span>
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-6">
-            {navItems.map((item) => (
+          <div className="hidden md:flex items-center space-x-8">
+            {user && navLinks.map((link) => (
               <Link
-                key={item.name}
-                to={item.href}
-                className="text-sm text-muted-foreground hover:text-foreground transition-all duration-300"
+                key={link.path}
+                to={link.path}
+                className={`text-sm font-medium transition-colors ${
+                  isActive(link.path)
+                    ? 'text-blue-400'
+                    : 'text-gray-300 hover:text-white'
+                }`}
               >
-                {item.name}
+                {link.label}
               </Link>
             ))}
-            
+          </div>
+
+          {/* Desktop User Menu */}
+          <div className="hidden md:flex items-center space-x-4">
             {user ? (
-              <div className="flex items-center gap-2">
-                {isAdmin && (
-                  <Button 
-                    onClick={() => navigate('/admin')} 
-                    size="sm"
-                    variant="outline"
-                    className="glass border-orange-500/30 text-orange-400 hover:bg-orange-500/10"
-                  >
-                    <Shield className="w-4 h-4 mr-1" />
-                    Admin
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                    <User className="h-4 w-4" />
                   </Button>
-                )}
-                <Button 
-                  onClick={() => navigate('/profile')} 
-                  size="sm"
-                  variant="outline"
-                  className="glass"
-                >
-                  <User className="w-4 h-4 mr-1" />
-                  Profile
-                </Button>
-                <Button 
-                  onClick={handleSignOut}
-                  size="sm"
-                  variant="outline"
-                  className="glass"
-                >
-                  <LogOut className="w-4 h-4 mr-1" />
-                  Sign Out
-                </Button>
-              </div>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56" align="end" forceMount>
+                  <DropdownMenuItem onClick={() => navigate('/profile')}>
+                    <Settings className="mr-2 h-4 w-4" />
+                    <span>Profile</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleSignOut}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Sign Out</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             ) : (
-              <div className="flex items-center gap-2">
-                <Button 
-                  onClick={() => navigate('/login')}
-                  size="sm"
-                  variant="outline"
-                  className="glass"
-                >
-                  Login
+              <div className="flex items-center space-x-2">
+                <Button variant="ghost" asChild>
+                  <Link to="/login">Sign In</Link>
                 </Button>
-                <Button 
-                  onClick={() => navigate('/register')}
-                  size="sm"
-                  className="button-gradient"
-                >
-                  Sign Up
+                <Button asChild className="button-gradient">
+                  <Link to="/register">Get Started</Link>
                 </Button>
               </div>
             )}
           </div>
 
-          {/* Mobile Navigation */}
+          {/* Mobile menu button */}
           <div className="md:hidden">
-            <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-              <SheetTrigger asChild>
-                <Button variant="outline" size="icon" className="glass">
-                  <Menu className="h-5 w-5" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent className="bg-[#1B1B1B]">
-                <div className="flex flex-col gap-4 mt-8">
-                  {navItems.map((item) => (
-                    <Button
-                      key={item.name}
-                      variant="ghost"
-                      className="text-lg text-muted-foreground hover:text-foreground justify-start"
-                      onClick={() => handleMobileNavClick(item.href)}
-                    >
-                      {item.name}
-                    </Button>
-                  ))}
-                  
-                  {user ? (
-                    <div className="flex flex-col gap-2 mt-4">
-                      {isAdmin && (
-                        <Button 
-                          onClick={() => handleMobileNavClick('/admin')}
-                          variant="outline"
-                          className="glass border-orange-500/30 text-orange-400"
-                        >
-                          <Shield className="w-4 h-4 mr-1" />
-                          Admin
-                        </Button>
-                      )}
-                      <Button 
-                        onClick={() => handleMobileNavClick('/profile')}
-                        variant="outline"
-                        className="glass"
-                      >
-                        <User className="w-4 h-4 mr-1" />
-                        Profile
-                      </Button>
-                      <Button 
-                        onClick={handleSignOut}
-                        variant="outline"
-                        className="glass"
-                      >
-                        <LogOut className="w-4 h-4 mr-1" />
-                        Sign Out
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col gap-2 mt-4">
-                      <Button 
-                        onClick={() => handleMobileNavClick('/login')}
-                        variant="outline"
-                        className="glass"
-                      >
-                        Login
-                      </Button>
-                      <Button 
-                        onClick={() => handleMobileNavClick('/register')}
-                        className="button-gradient"
-                      >
-                        Sign Up
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              </SheetContent>
-            </Sheet>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            >
+              {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </Button>
           </div>
-        </nav>
+        </div>
+
+        {/* Mobile Navigation */}
+        {isMobileMenuOpen && (
+          <div className="md:hidden border-t border-gray-800 pt-4 pb-4">
+            <div className="flex flex-col space-y-2">
+              {user && navLinks.map((link) => (
+                <Link
+                  key={link.path}
+                  to={link.path}
+                  className={`px-3 py-2 text-sm font-medium transition-colors ${
+                    isActive(link.path)
+                      ? 'text-blue-400 bg-blue-400/10'
+                      : 'text-gray-300 hover:text-white hover:bg-gray-800'
+                  } rounded-md`}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  {link.label}
+                </Link>
+              ))}
+              
+              {user ? (
+                <div className="border-t border-gray-800 pt-2 mt-2">
+                  <Link
+                    to="/profile"
+                    className="flex items-center px-3 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-gray-800 rounded-md"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <Settings className="mr-2 h-4 w-4" />
+                    Profile
+                  </Link>
+                  <button
+                    onClick={() => {
+                      handleSignOut();
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="flex items-center w-full px-3 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-gray-800 rounded-md"
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Sign Out
+                  </button>
+                </div>
+              ) : (
+                <div className="border-t border-gray-800 pt-2 mt-2 space-y-2">
+                  <Link
+                    to="/login"
+                    className="block px-3 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-gray-800 rounded-md"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    Sign In
+                  </Link>
+                  <Link
+                    to="/register"
+                    className="block px-3 py-2 text-sm font-medium bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-md"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    Get Started
+                  </Link>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
-    </header>
+    </nav>
   );
 };
 

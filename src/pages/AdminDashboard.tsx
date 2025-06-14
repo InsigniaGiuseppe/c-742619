@@ -1,22 +1,19 @@
+
 import React from 'react';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Users, DollarSign, Clock, Shield, FileText, Wallet, TrendingUp, AlertTriangle, ArrowRight, ClipboardCheck } from 'lucide-react';
+import { Users, DollarSign, Clock, Shield, FileText, Wallet, TrendingUp, AlertTriangle, ArrowRight, ClipboardCheck, BarChart } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { TextGenerateEffect } from '@/components/ui/text-generate-effect';
+import { useAdminStats } from '@/hooks/useAdminStats';
+import FormattedNumber from '@/components/FormattedNumber';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
-
-  const stats = [
-    { title: 'Total Users', value: '1,234', icon: Users, color: 'text-blue-400' },
-    { title: 'Total Balances', value: '$2.5M', icon: DollarSign, color: 'text-green-400' },
-    { title: 'Pending KYCs', value: '23', icon: Clock, color: 'text-yellow-400' },
-    { title: 'Pending Transactions', value: '8', icon: AlertTriangle, color: 'text-red-400' }
-  ];
+  const { data: stats, isLoading, error } = useAdminStats();
 
   const adminSections = [
     {
@@ -77,6 +74,28 @@ const AdminDashboard = () => {
     },
   };
 
+  const getStatCards = () => {
+    if (isLoading || !stats) {
+      return [
+        { title: 'Total Users', value: 0, icon: Users, color: 'text-blue-400', isLoading: true },
+        { title: 'Total Balances', value: 0, icon: DollarSign, color: 'text-green-400', isLoading: true, type: 'currency' as const },
+        { title: 'Pending KYCs', value: 0, icon: Clock, color: 'text-yellow-400', isLoading: true },
+        { title: 'Pending Transactions', value: 0, icon: AlertTriangle, color: 'text-red-400', isLoading: true },
+        { title: 'Total Trading Profit', value: 0, icon: TrendingUp, color: 'text-purple-400', isLoading: true, type: 'currency' as const },
+        { title: 'Total Trades', value: 0, icon: BarChart, color: 'text-orange-400', isLoading: true }
+      ];
+    }
+
+    return [
+      { title: 'Total Users', value: stats.totalUsers, icon: Users, color: 'text-blue-400' },
+      { title: 'Total Balances', value: stats.totalBalances, icon: DollarSign, color: 'text-green-400', type: 'currency' as const },
+      { title: 'Pending KYCs', value: stats.pendingKycs, icon: Clock, color: 'text-yellow-400' },
+      { title: 'Pending Transactions', value: stats.pendingTransactions, icon: AlertTriangle, color: 'text-red-400' },
+      { title: 'Total Trading Profit', value: stats.totalTradingProfit, icon: TrendingUp, color: 'text-purple-400', type: 'currency' as const },
+      { title: 'Total Trades', value: stats.totalTrades, icon: BarChart, color: 'text-orange-400' }
+    ];
+  };
+
   return (
     <div className="min-h-screen bg-black text-foreground flex flex-col">
       <Navigation />
@@ -109,15 +128,33 @@ const AdminDashboard = () => {
           className="space-y-12 pb-20"
         >
           {/* Stats Cards */}
-          <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {stats.map((stat, index) => (
+          <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {error && (
+              <div className="col-span-full text-center p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
+                <p className="text-red-400">Error loading statistics: {error.message}</p>
+              </div>
+            )}
+            {getStatCards().map((stat, index) => (
               <Card key={index} className="glass glass-hover">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
                   <stat.icon className={`h-4 w-4 ${stat.color}`} />
                 </CardHeader>
                 <CardContent>
-                  <div className={`text-2xl font-bold ${stat.color}`}>{stat.value}</div>
+                  <div className={`text-2xl font-bold ${stat.color}`}>
+                    {stat.isLoading ? (
+                      <div className="h-8 w-20 bg-gray-700 animate-pulse rounded"></div>
+                    ) : stat.type === 'currency' ? (
+                      <FormattedNumber
+                        value={stat.value}
+                        type="currency"
+                        showTooltip={false}
+                        className="text-2xl font-bold"
+                      />
+                    ) : (
+                      stat.value.toLocaleString()
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             ))}
