@@ -96,7 +96,7 @@ const AdvancedTradingChart: React.FC<AdvancedTradingChartProps> = ({ crypto }) =
       const data = generateSampleData();
 
       if (chartType === 'candlestick') {
-        const candlestickSeries = chartRef.current.addSeries('Candlestick', {
+        const candlestickSeries = chartRef.current.addCandlestickSeries({
           upColor: '#26a69a',
           downColor: '#ef5350',
           borderVisible: false,
@@ -105,13 +105,13 @@ const AdvancedTradingChart: React.FC<AdvancedTradingChartProps> = ({ crypto }) =
         });
         candlestickSeries.setData(data);
       } else if (chartType === 'line') {
-        const lineSeries = chartRef.current.addSeries('Line', {
+        const lineSeries = chartRef.current.addLineSeries({
           color: '#2962FF',
           lineWidth: 2,
         });
         lineSeries.setData(data.map(d => ({ time: d.time, value: d.close })));
       } else if (chartType === 'area') {
-        const areaSeries = chartRef.current.addSeries('Area', {
+        const areaSeries = chartRef.current.addAreaSeries({
           lineColor: '#2962FF',
           topColor: 'rgba(41, 98, 255, 0.3)',
           bottomColor: 'rgba(41, 98, 255, 0.05)',
@@ -120,7 +120,7 @@ const AdvancedTradingChart: React.FC<AdvancedTradingChartProps> = ({ crypto }) =
       }
 
       // Add volume series
-      const volumeSeries = chartRef.current.addSeries('Histogram', {
+      const volumeSeries = chartRef.current.addHistogramSeries({
         color: 'rgba(255, 255, 255, 0.3)',
         priceFormat: {
           type: 'volume',
@@ -194,7 +194,7 @@ const AdvancedTradingChart: React.FC<AdvancedTradingChartProps> = ({ crypto }) =
         <div ref={chartContainerRef} className="w-full" />
         
         {/* Technical Indicators */}
-        <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+        <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
           <div>
             <span className="text-muted-foreground">Market Cap:</span>
             <div className="font-semibold">${(crypto.market_cap || 0).toLocaleString()}</div>
@@ -204,12 +204,10 @@ const AdvancedTradingChart: React.FC<AdvancedTradingChartProps> = ({ crypto }) =
             <div className="font-semibold">${(crypto.volume_24h || 0).toLocaleString()}</div>
           </div>
           <div>
-            <span className="text-muted-foreground">Circulating Supply:</span>
-            <div className="font-semibold">{(crypto.circulating_supply || 0).toLocaleString()}</div>
-          </div>
-          <div>
-            <span className="text-muted-foreground">Max Supply:</span>
-            <div className="font-semibold">{crypto.max_supply ? crypto.max_supply.toLocaleString() : 'N/A'}</div>
+            <span className="text-muted-foreground">Price Change 24h:</span>
+            <div className={`font-semibold ${priceChangePercent >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+              {priceChangePercent >= 0 ? '+' : ''}{priceChangePercent.toFixed(2)}%
+            </div>
           </div>
         </div>
       </CardContent>
