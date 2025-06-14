@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, TrendingUp, TrendingDown } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { useCryptocurrencies } from '@/hooks/useCryptocurrencies';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -14,19 +13,10 @@ import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import { motion } from 'framer-motion';
 import CryptoDetailSkeletonPage from './CryptoDetailSkeletonPage';
-import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { formatPrice, formatCurrency, formatPercentage } from '@/lib/formatters';
 import CryptoLogo from '@/components/CryptoLogo';
-import FormattedNumber from '@/components/FormattedNumber';
 import CryptoPriceChart from '@/components/CryptoPriceChart';
-
-const chartConfig = {
-  price: {
-    label: "Price",
-    color: "hsl(var(--primary))",
-  },
-} satisfies ChartConfig;
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 const CryptoDetailPage = () => {
   const { symbol } = useParams<{ symbol: string }>();
@@ -34,7 +24,6 @@ const CryptoDetailPage = () => {
   const { cryptocurrencies, loading } = useCryptocurrencies();
   const { user } = useAuth();
   
-  const [selectedTimeframe, setSelectedTimeframe] = useState('1d');
   const [tradeType, setTradeType] = useState<'buy' | 'sell'>('buy');
   const [paymentMethod, setPaymentMethod] = useState<'balance' | 'ideal'>('balance');
   const [amountEUR, setAmountEUR] = useState('');
@@ -44,30 +33,6 @@ const CryptoDetailPage = () => {
   const [userHoldings, setUserHoldings] = useState(0);
 
   const crypto = cryptocurrencies.find(c => c.symbol.toLowerCase() === symbol?.toLowerCase());
-
-  const timeframes = [
-    { label: '1H', value: '1h' },
-    { label: '4H', value: '4h' },
-    { label: '1D', value: '1d' },
-    { label: '7D', value: '7d' },
-    { label: 'All', value: 'all' }
-  ];
-
-  // Mock chart data - in real implementation, this would come from price_history table
-  const generateMockChartData = () => {
-    const basePrice = crypto?.current_price || 50000;
-    const data = [];
-    for (let i = 30; i >= 0; i--) {
-      const variation = (Math.random() - 0.5) * 0.1;
-      data.push({
-        time: new Date(Date.now() - i * 24 * 60 * 60 * 1000).toLocaleDateString(),
-        price: basePrice * (1 + variation * i * 0.01)
-      });
-    }
-    return data;
-  };
-
-  const chartData = crypto ? generateMockChartData() : [];
 
   useEffect(() => {
     if (user) {
@@ -242,7 +207,26 @@ const CryptoDetailPage = () => {
 
     } catch (error) {
       console.error('Trade error:', error);
-      toast.error('Trade failed. Please try again.');
+      let errorMessage = 'Trade failed. Please try again.';
+      if (error && typeof error === 'object' && 'message' in error) {
+        const supabaseError = error as { message: string; details?: string; hint?: string; code?: string };
+        
+        // Provide more specific error messages based on Supabase error codes
+        switch (supabaseError.code) {
+          case '42501':
+            errorMessage = 'Permission denied. You may not be authorized for this action.';
+            break;
+          case '23505':
+            errorMessage = 'A duplicate record already exists.';
+            break;
+          case '23503':
+             errorMessage = 'Invalid data reference. Please try again.';
+             break;
+          default:
+            errorMessage = `Trade failed: ${supabaseError.message}`;
+        }
+      }
+      toast.error(errorMessage);
     } finally {
       setIsProcessingTrade(false);
     }

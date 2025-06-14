@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -23,9 +22,13 @@ const timeframes = [
 const CustomCandle = (props: any) => {
   const { x, y, width, height, payload } = props;
   const [open, high, low, close] = payload.ohlc;
-  const isGrowing = close > open;
-  const color = isGrowing ? 'hsl(var(--success))' : 'hsl(var(--destructive))';
+  const isGrowing = close >= open;
+  const color = isGrowing ? '#22c55e' : '#ef4444'; // Using hex for green-500 and red-500
   const ratio = Math.abs(height / (open - close));
+
+  if (open === close) {
+    return <line x1={x} y1={y} x2={x + width} y2={y} stroke={color} style={{ strokeWidth: 2 }} />;
+  }
 
   return (
     <g>
@@ -76,10 +79,12 @@ const generateMockCandlestickData = (basePrice: number, timeframe: string): Char
 
     let lastClose = basePrice;
     for (let i = points - 1; i >= 0; i--) {
-        const open = lastClose * (1 + (Math.random() - 0.5) * 0.01);
-        const close = open * (1 + (Math.random() - 0.5) * 0.02);
-        const high = Math.max(open, close) * (1 + Math.random() * 0.01);
-        const low = Math.min(open, close) * (1 - Math.random() * 0.01);
+        // Using sine waves for deterministic, predictable mock data
+        const volatility = 0.02;
+        const open = lastClose * (1 + (Math.sin(i * 0.5) * volatility - volatility / 2) * 0.5);
+        const close = open * (1 + (Math.sin(i * 0.7) * volatility - volatility / 2));
+        const high = Math.max(open, close) * (1 + Math.abs(Math.sin(i * 1.3)) * 0.01);
+        const low = Math.min(open, close) * (1 - Math.abs(Math.sin(i * 1.7)) * 0.01);
         
         data.push({
             time: subtractFn(now, i * step),
@@ -114,8 +119,8 @@ const CryptoPriceChart = ({ crypto }: { crypto: Cryptocurrency }) => {
   const xTickFormatter = (time: Date) => {
     switch (selectedTimeframe) {
         case '1h':
-        case '4h':
-        case '1d': return format(time, 'HH:mm');
+        case '4h': return format(time, 'HH:mm');
+        case '1d': return format(time, 'MMM d');
         case '7d': return format(time, 'MMM d');
         default: return format(time, 'MMM d, yy');
     }
