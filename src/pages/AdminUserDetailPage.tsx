@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Navigation from '@/components/Navigation';
@@ -7,18 +6,22 @@ import { useAdminUser } from '@/hooks/useAdminUser';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, AlertCircle, User, CreditCard, FileText, Activity } from 'lucide-react';
+import { ArrowLeft, AlertCircle, User, CreditCard, FileText, Activity, TrendingUp } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import UserActions from '@/components/admin/UserActions';
 import UserActivityLog from '@/components/admin/UserActivityLog';
+import { useRealtimePortfolio } from '@/hooks/useRealtimePortfolio';
+import PortfolioOverview from '@/components/admin/PortfolioOverview';
+import UserFinancialControls from '@/components/admin/UserFinancialControls';
 
 const AdminUserDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data: user, isLoading, isError, error } = useAdminUser(id);
+  const { portfolio } = useRealtimePortfolio();
 
   const getStatusColor = (status: string | null) => {
     switch (status) {
@@ -135,7 +138,7 @@ const AdminUserDetailPage = () => {
             </CardHeader>
             <CardContent>
               <Tabs defaultValue="personal" className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
+                <TabsList className="grid w-full grid-cols-4">
                   <TabsTrigger value="personal" className="flex items-center gap-2">
                     <User className="w-4 h-4" />
                     Personal Info
@@ -143,6 +146,10 @@ const AdminUserDetailPage = () => {
                   <TabsTrigger value="financial" className="flex items-center gap-2">
                     <CreditCard className="w-4 h-4" />
                     Financial
+                  </TabsTrigger>
+                  <TabsTrigger value="portfolio" className="flex items-center gap-2">
+                    <TrendingUp className="w-4 h-4" />
+                    Portfolio
                   </TabsTrigger>
                   <TabsTrigger value="activity" className="flex items-center gap-2">
                     <Activity className="w-4 h-4" />
@@ -155,33 +162,11 @@ const AdminUserDetailPage = () => {
                 </TabsContent>
                 
                 <TabsContent value="financial" className="mt-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <Card className="glass">
-                      <CardHeader>
-                        <CardTitle className="text-lg">Account Balance</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold">
-                          ${user?.demo_balance_usd ? Number(user.demo_balance_usd).toLocaleString() : '0'}
-                        </div>
-                        <p className="text-sm text-muted-foreground">Demo trading balance</p>
-                      </CardContent>
-                    </Card>
-                    
-                    <Card className="glass">
-                      <CardHeader>
-                        <CardTitle className="text-lg">Payment Info</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-2">
-                          <div>
-                            <span className="text-sm text-muted-foreground">IBAN:</span>
-                            <p className="font-mono text-sm">{user?.bank_details_iban || 'Not provided'}</p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
+                  {user && <UserFinancialControls user={user} portfolio={portfolio} />}
+                </TabsContent>
+                
+                <TabsContent value="portfolio" className="mt-6">
+                  <PortfolioOverview />
                 </TabsContent>
                 
                 <TabsContent value="activity" className="mt-6">
