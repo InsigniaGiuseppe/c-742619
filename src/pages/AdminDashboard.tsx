@@ -1,10 +1,9 @@
-
 import React from 'react';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Users, DollarSign, Clock, Shield, FileText, Wallet, TrendingUp, AlertTriangle, ArrowRight } from 'lucide-react';
+import { Users, DollarSign, Clock, Shield, FileText, Wallet, TrendingUp, AlertTriangle, ArrowRight, ClipboardCheck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { TextGenerateEffect } from '@/components/ui/text-generate-effect';
@@ -22,10 +21,17 @@ const AdminDashboard = () => {
   const adminSections = [
     {
       title: 'User Management',
-      description: 'Manage user accounts, KYC, and permissions',
+      description: 'Manage user accounts and permissions',
       icon: Users,
       path: '/admin/users',
       color: 'border-blue-500/30 hover:bg-blue-500/10'
+    },
+    {
+      title: 'KYC Submissions',
+      description: 'Review and verify user KYC documents',
+      icon: ClipboardCheck,
+      path: '/admin/kyc',
+      color: 'border-cyan-500/30 hover:bg-cyan-500/10'
     },
     {
       title: 'Transaction Monitoring',
@@ -120,7 +126,7 @@ const AdminDashboard = () => {
           {/* Admin Sections */}
           <motion.div variants={itemVariants}>
             <h2 className="text-2xl font-bold text-center mb-6">Management Areas</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {adminSections.map((section, index) => (
                 <Card key={index} className={`glass glass-hover cursor-pointer transition-all duration-300 ${section.color}`}>
                   <CardHeader>
@@ -153,6 +159,7 @@ const AdminDashboard = () => {
               <CardContent>
                 <div className="flex flex-wrap gap-4 justify-center">
                   <Button onClick={() => navigate('/admin/users')} variant="outline" className="glass"><Users className="w-4 h-4 mr-2" />View All Users</Button>
+                  <Button onClick={() => navigate('/admin/kyc')} variant="outline" className="glass"><ClipboardCheck className="w-4 h-4 mr-2" />KYC Submissions</Button>
                   <Button onClick={() => navigate('/admin/transactions')} variant="outline" className="glass"><AlertTriangle className="w-4 h-4 mr-2" />Pending Approvals</Button>
                   <Button onClick={() => navigate('/admin/wallets')} variant="outline" className="glass"><Wallet className="w-4 h-4 mr-2" />Wallet Verifications</Button>
                   <Button onClick={() => navigate('/admin/audit-log')} variant="outline" className="glass"><FileText className="w-4 h-4 mr-2" />View Audit Logs</Button>
