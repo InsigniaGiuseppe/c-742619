@@ -26,12 +26,14 @@ const DashboardPage = () => {
 
     const { data } = await supabase
       .from('profiles')
-      .select('demo_balance_usd')
+      .select('*')
       .eq('id', user.id)
       .single();
 
-    if (data) {
-      setDemoBalance(data.demo_balance_usd || 0);
+    if (data && (data as any).demo_balance_usd !== undefined) {
+      setDemoBalance((data as any).demo_balance_usd || 0);
+    } else {
+      setDemoBalance(10000); // Default demo balance
     }
   };
 

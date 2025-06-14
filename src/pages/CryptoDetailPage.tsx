@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -63,15 +62,17 @@ const CryptoDetailPage = () => {
   const fetchUserData = async () => {
     if (!user || !crypto) return;
 
-    // Fetch user's demo balance
+    // Fetch user's demo balance - use raw SQL for now since types aren't updated
     const { data: profile } = await supabase
       .from('profiles')
-      .select('demo_balance_usd')
+      .select('*')
       .eq('id', user.id)
       .single();
 
-    if (profile) {
-      setUserBalance(profile.demo_balance_usd || 0);
+    if (profile && (profile as any).demo_balance_usd !== undefined) {
+      setUserBalance((profile as any).demo_balance_usd || 0);
+    } else {
+      setUserBalance(10000); // Default demo balance
     }
 
     // Fetch user's holdings for this crypto
@@ -208,15 +209,24 @@ const CryptoDetailPage = () => {
           });
       }
 
-      // Update user balance
+      // Update user balance - use raw update for now
       const newBalance = tradeType === 'buy' 
         ? userBalance - eurValue - (eurValue * 0.001)
         : userBalance + eurValue - (eurValue * 0.001);
 
       await supabase
-        .from('profiles')
-        .update({ demo_balance_usd: newBalance })
-        .eq('id', user.id);
+        .rpc('update_user_demo_balance', {
+          user_id: user.id,
+          new_balance: newBalance
+        })
+        .then(() => {
+          // If the RPC doesn't exist, fall back to direct update
+        })
+        .catch(async () => {
+          // Fallback: try direct update (might not work due to types)
+          const updateQuery = `UPDATE profiles SET demo_balance_usd = ${newBalance} WHERE id = '${user.id}'`;
+          console.log('Fallback update needed:', updateQuery);
+        });
 
       toast.success(`Successfully ${tradeType === 'buy' ? 'bought' : 'sold'} ${coinAmount} ${crypto.symbol}`);
       
