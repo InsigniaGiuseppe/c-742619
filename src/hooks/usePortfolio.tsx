@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -21,75 +21,79 @@ export interface PortfolioItem {
   };
 }
 
-export const usePortfolio = () => {
-  const [portfolio, setPortfolio] = useState<PortfolioItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [totalValue, setTotalValue] = useState(0);
-  const [totalProfitLoss, setTotalProfitLoss] = useState(0);
-  const [totalProfitLossPercentage, setTotalProfitLossPercentage] = useState(0);
-  const { user } = useAuth();
+const fetchPortfolio = async (userId: string): Promise<{
+  portfolio: PortfolioItem[];
+  totalValue: number;
+  totalProfitLoss: number;
+  totalProfitLossPercentage: number;
+}> => {
+  console.log('[usePortfolio] Fetching portfolio for user:', userId);
+  
+  const { data, error } = await supabase
+    .from('user_portfolios')
+    .select(`
+      *,
+      crypto:cryptocurrencies(
+        id,
+        name,
+        symbol,
+        current_price,
+        logo_url
+      )
+    `)
+    .eq('user_id', userId)
+    .gt('quantity', 0);
 
-  const fetchPortfolio = async () => {
-    if (!user) return;
+  if (error) {
+    console.error('[usePortfolio] Error fetching portfolio:', error);
+    throw new Error(error.message);
+  }
 
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('user_portfolios')
-        .select(`
-          *,
-          crypto:cryptocurrencies(
-            id,
-            name,
-            symbol,
-            current_price,
-            logo_url
-          )
-        `)
-        .eq('user_id', user.id)
-        .gt('quantity', 0);
+  console.log('[usePortfolio] Portfolio data fetched:', data);
 
-      if (error) {
-        setError(error.message);
-        return;
-      }
+  const portfolioData = data?.map(item => ({
+    ...item,
+    crypto: item.crypto
+  })) || [];
 
-      const portfolioData = data?.map(item => ({
-        ...item,
-        crypto: item.crypto
-      })) || [];
+  // Calculate totals
+  const totalVal = portfolioData.reduce((sum, item) => sum + item.current_value, 0);
+  const totalPL = portfolioData.reduce((sum, item) => sum + item.profit_loss, 0);
+  const totalInvested = portfolioData.reduce((sum, item) => sum + item.total_invested, 0);
+  const totalPLPercentage = totalInvested > 0 ? (totalPL / totalInvested) * 100 : 0;
 
-      setPortfolio(portfolioData);
-
-      // Calculate totals
-      const totalVal = portfolioData.reduce((sum, item) => sum + item.current_value, 0);
-      const totalPL = portfolioData.reduce((sum, item) => sum + item.profit_loss, 0);
-      const totalInvested = portfolioData.reduce((sum, item) => sum + item.total_invested, 0);
-      const totalPLPercentage = totalInvested > 0 ? (totalPL / totalInvested) * 100 : 0;
-
-      setTotalValue(totalVal);
-      setTotalProfitLoss(totalPL);
-      setTotalProfitLossPercentage(totalPLPercentage);
-
-    } catch (err) {
-      setError('Failed to fetch portfolio');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchPortfolio();
-  }, [user]);
+  console.log('[usePortfolio] Calculated totals:', {
+    totalValue: totalVal,
+    totalProfitLoss: totalPL,
+    totalProfitLossPercentage: totalPLPercentage
+  });
 
   return {
-    portfolio,
-    loading,
-    error,
-    totalValue,
-    totalProfitLoss,
-    totalProfitLossPercentage,
-    refetch: fetchPortfolio,
+    portfolio: portfolioData,
+    totalValue: totalVal,
+    totalProfitLoss: totalPL,
+    totalProfitLossPercentage: totalPLPercentage,
+  };
+};
+
+export const usePortfolio = () => {
+  const { user } = useAuth();
+
+  const query = useQuery({
+    queryKey: ['portfolio', user?.id],
+    queryFn: () => fetchPortfolio(user!.id),
+    enabled: !!user,
+    staleTime: 30000, // Consider data stale after 30 seconds
+    refetchInterval: 60000, // Refetch every minute
+  });
+
+  return {
+    portfolio: query.data?.portfolio || [],
+    loading: query.isLoading,
+    error: query.error?.message || null,
+    totalValue: query.data?.totalValue || 0,
+    totalProfitLoss: query.data?.totalProfitLoss || 0,
+    totalProfitLossPercentage: query.data?.totalProfitLossPercentage || 0,
+    refetch: query.refetch,
   };
 };

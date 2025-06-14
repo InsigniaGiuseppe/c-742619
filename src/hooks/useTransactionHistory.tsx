@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -20,52 +20,47 @@ export interface Transaction {
   };
 }
 
+const fetchTransactions = async (userId: string): Promise<Transaction[]> => {
+  console.log('[useTransactionHistory] Fetching transactions for user:', userId);
+  
+  const { data, error } = await supabase
+    .from('transaction_history')
+    .select(`
+      *,
+      crypto:cryptocurrencies(
+        name,
+        symbol,
+        logo_url
+      )
+    `)
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(50);
+
+  if (error) {
+    console.error('[useTransactionHistory] Error fetching transactions:', error);
+    throw new Error(error.message);
+  }
+
+  console.log('[useTransactionHistory] Transactions fetched:', data?.length || 0, 'records');
+  return data || [];
+};
+
 export const useTransactionHistory = () => {
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
 
-  const fetchTransactions = async () => {
-    if (!user) return;
-
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('transaction_history')
-        .select(`
-          *,
-          crypto:cryptocurrencies(
-            name,
-            symbol,
-            logo_url
-          )
-        `)
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(50);
-
-      if (error) {
-        setError(error.message);
-        return;
-      }
-
-      setTransactions(data || []);
-    } catch (err) {
-      setError('Failed to fetch transaction history');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchTransactions();
-  }, [user]);
+  const query = useQuery({
+    queryKey: ['transaction-history', user?.id],
+    queryFn: () => fetchTransactions(user!.id),
+    enabled: !!user,
+    staleTime: 30000, // Consider data stale after 30 seconds
+    refetchInterval: 60000, // Refetch every minute
+  });
 
   return {
-    transactions,
-    loading,
-    error,
-    refetch: fetchTransactions,
+    transactions: query.data || [],
+    loading: query.isLoading,
+    error: query.error?.message || null,
+    refetch: query.refetch,
   };
 };

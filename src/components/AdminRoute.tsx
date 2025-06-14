@@ -18,6 +18,7 @@ const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
       authLoading,
       adminLoading,
       userExists: !!user,
+      userEmail: user?.email,
       isAdmin,
     });
   };
@@ -40,11 +41,11 @@ const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
   }
 
   if (!isAdmin) {
-    logState('User is not admin, redirecting to /dashboard');
+    logState(`User ${user.email} is not admin, redirecting to /dashboard`);
     return <Navigate to="/dashboard" replace />;
   }
 
-  logState('Access granted, rendering children');
+  logState(`Access granted for admin user ${user.email}, rendering children`);
   return <>{children}</>;
 };
 
