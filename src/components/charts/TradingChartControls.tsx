@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ChartType } from './ChartSeriesManager';
+import { ChartType } from './AdvancedTradingChart';
 
 interface TradingChartControlsProps {
   chartType: ChartType;
