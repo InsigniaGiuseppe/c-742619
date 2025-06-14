@@ -9,6 +9,36 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      admin_audit_log: {
+        Row: {
+          action_type: string
+          admin_id: string
+          created_at: string
+          details: Json | null
+          id: string
+          ip_address: unknown | null
+          target_user_id: string | null
+        }
+        Insert: {
+          action_type: string
+          admin_id: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          ip_address?: unknown | null
+          target_user_id?: string | null
+        }
+        Update: {
+          action_type?: string
+          admin_id?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          ip_address?: unknown | null
+          target_user_id?: string | null
+        }
+        Relationships: []
+      }
       conversation_analysis: {
         Row: {
           analysis_type: string
@@ -693,6 +723,33 @@ export type Database = {
           },
         ]
       }
+      platform_settings: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          key: string
+          updated_at?: string
+          value: Json
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
+      }
       price_history: {
         Row: {
           cryptocurrency_id: string
@@ -775,6 +832,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          account_status: Database["public"]["Enums"]["account_status_type"]
           account_type: string
           address: string | null
           avatar_url: string | null
@@ -807,6 +865,7 @@ export type Database = {
           vip_rank: Database["public"]["Enums"]["vip_rank"] | null
         }
         Insert: {
+          account_status?: Database["public"]["Enums"]["account_status_type"]
           account_type?: string
           address?: string | null
           avatar_url?: string | null
@@ -839,6 +898,7 @@ export type Database = {
           vip_rank?: Database["public"]["Enums"]["vip_rank"] | null
         }
         Update: {
+          account_status?: Database["public"]["Enums"]["account_status_type"]
           account_type?: string
           address?: string | null
           avatar_url?: string | null
@@ -879,6 +939,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      security_events_log: {
+        Row: {
+          created_at: string
+          details: Json | null
+          event_type: string
+          id: string
+          ip_address: unknown | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          details?: Json | null
+          event_type: string
+          id?: string
+          ip_address?: unknown | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          details?: Json | null
+          event_type?: string
+          id?: string
+          ip_address?: unknown | null
+          user_id?: string | null
+        }
+        Relationships: []
       }
       sync_status: {
         Row: {
@@ -1166,6 +1253,27 @@ export type Database = {
           },
         ]
       }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_sessions: {
         Row: {
           created_at: string
@@ -1336,6 +1444,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_user_role: {
+        Args: {
+          user_id_to_check: string
+          required_role: Database["public"]["Enums"]["app_role"]
+        }
+        Returns: boolean
+      }
       is_admin: {
         Args: { user_id: string }
         Returns: boolean
@@ -1346,6 +1461,8 @@ export type Database = {
       }
     }
     Enums: {
+      account_status_type: "active" | "frozen" | "blocked"
+      app_role: "admin" | "support" | "compliance"
       gang_role: "leader" | "member"
       kyc_document_type:
         | "id_card"
@@ -1470,6 +1587,8 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      account_status_type: ["active", "frozen", "blocked"],
+      app_role: ["admin", "support", "compliance"],
       gang_role: ["leader", "member"],
       kyc_document_type: [
         "id_card",
