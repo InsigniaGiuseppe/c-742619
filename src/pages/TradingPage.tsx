@@ -38,14 +38,14 @@ const TradingPage = () => {
         </div>
 
         <div className="flex flex-col sm:flex-row gap-4 mb-8 max-w-2xl mx-auto">
-          <div className="relative flex-1">
+          <div className="relative flex-1 glass rounded-md">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
             <Input
               type="text"
               placeholder="Search cryptocurrencies..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 bg-background/80"
+              className="pl-10 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0"
             />
           </div>
         </div>

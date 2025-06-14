@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -76,7 +75,7 @@ const CryptoCard: React.FC<CryptoCardProps> = ({ crypto, onTrade }) => {
           <div className="flex gap-2">
             <Button 
               onClick={() => onTrade(crypto)}
-              className="flex-1 button-gradient"
+              className="flex-1"
               size="sm"
             >
               Trade {crypto.symbol}

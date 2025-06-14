@@ -62,7 +62,7 @@ const Index = () => {
             transition={{ delay: 0.5 }}
             className="flex flex-col sm:flex-row gap-4 items-center justify-center" // Centered buttons
           >
-            <Button asChild size="lg" className="button-gradient">
+            <Button asChild size="lg" className="rounded-full">
               <Link to="/dashboard">
                 Go to Dashboard <ArrowRight className="ml-2 w-4 h-4" />
               </Link>
@@ -116,7 +116,7 @@ const Index = () => {
           <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
             Join thousands of traders who have already discovered the power of our platform.
           </p>
-          <Button asChild size="lg" className="button-gradient">
+          <Button asChild size="lg" className="rounded-full">
             <Link to="/register">
               Create Account <ArrowRight className="ml-2 w-4 h-4" />
             </Link>

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
@@ -11,7 +10,7 @@ const PortfolioChart = () => {
 
   if (loading) {
     return (
-      <Card className="bg-gray-900 border-gray-700">
+      <Card className="glass glass-hover">
         <CardHeader>
           <CardTitle>Portfolio Distribution</CardTitle>
         </CardHeader>
@@ -26,7 +25,7 @@ const PortfolioChart = () => {
 
   if (portfolio.length === 0) {
     return (
-      <Card className="bg-gray-900 border-gray-700">
+      <Card className="glass glass-hover">
         <CardHeader>
           <CardTitle>Portfolio Distribution</CardTitle>
         </CardHeader>
@@ -65,7 +64,7 @@ const PortfolioChart = () => {
   };
 
   return (
-    <Card className="bg-gray-900 border-gray-700">
+    <Card className="glass glass-hover">
       <CardHeader>
         <CardTitle>Portfolio Distribution</CardTitle>
       </CardHeader>
@@ -93,7 +92,7 @@ const PortfolioChart = () => {
         
         <div className="mt-4 space-y-2">
           {chartData.map((item, index) => (
-            <div key={item.name} className="flex items-center justify-between text-sm">
+            <div key={item.name} className="flex items-center justify-between text-sm p-2 rounded-md bg-white/5">
               <div className="flex items-center gap-2">
                 <div 
                   className="w-3 h-3 rounded-full"

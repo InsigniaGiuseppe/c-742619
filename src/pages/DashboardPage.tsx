@@ -45,7 +45,7 @@ const DashboardPage = () => {
         
         {/* Overview Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card className="bg-gray-900 border-gray-700">
+          <Card className="glass glass-hover">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Demo Balance</CardTitle>
               <DollarSign className="h-4 w-4 text-muted-foreground" />
@@ -58,7 +58,7 @@ const DashboardPage = () => {
             </CardContent>
           </Card>
           
-          <Card className="bg-gray-900 border-gray-700">
+          <Card className="glass glass-hover">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Portfolio Value</CardTitle>
               <Wallet className="h-4 w-4 text-muted-foreground" />
@@ -73,7 +73,7 @@ const DashboardPage = () => {
             </CardContent>
           </Card>
           
-          <Card className="bg-gray-900 border-gray-700">
+          <Card className="glass glass-hover">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total P&L</CardTitle>
               {totalProfitLoss >= 0 ? (
@@ -92,7 +92,7 @@ const DashboardPage = () => {
             </CardContent>
           </Card>
           
-          <Card className="bg-gray-900 border-gray-700">
+          <Card className="glass glass-hover">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Value</CardTitle>
               <DollarSign className="h-4 w-4 text-muted-foreground" />

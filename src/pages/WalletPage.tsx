@@ -50,7 +50,7 @@ const WalletPage = () => {
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-4xl font-bold">My Wallet</h1>
           <div className="flex gap-3">
-            <Button onClick={() => navigate('/wallet-verification')} variant="outline">
+            <Button onClick={() => navigate('/wallet-verification')}>
               <Plus className="mr-2 h-4 w-4" />
               Verify Wallet
             </Button>
@@ -59,7 +59,7 @@ const WalletPage = () => {
 
         {/* Balance Overview */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card className="bg-gray-900 border-gray-700">
+          <Card className="glass glass-hover">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Available Balance</CardTitle>
               <Wallet className="h-4 w-4 text-muted-foreground" />
@@ -72,7 +72,7 @@ const WalletPage = () => {
             </CardContent>
           </Card>
 
-          <Card className="bg-gray-900 border-gray-700">
+          <Card className="glass glass-hover">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Portfolio Value</CardTitle>
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
@@ -87,7 +87,7 @@ const WalletPage = () => {
             </CardContent>
           </Card>
 
-          <Card className="bg-gray-900 border-gray-700">
+          <Card className="glass glass-hover">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total P&L</CardTitle>
               {totalProfitLoss >= 0 ? (
@@ -109,7 +109,7 @@ const WalletPage = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Portfolio Holdings */}
-          <Card className="bg-gray-900 border-gray-700">
+          <Card className="glass glass-hover">
             <CardHeader>
               <CardTitle>Portfolio Holdings</CardTitle>
             </CardHeader>
@@ -136,7 +136,7 @@ const WalletPage = () => {
               ) : (
                 <div className="space-y-4">
                   {portfolio.map((holding) => (
-                    <div key={holding.id} className="flex items-center justify-between p-4 bg-gray-800 rounded cursor-pointer hover:bg-gray-700 transition-colors"
+                    <div key={holding.id} className="flex items-center justify-between p-4 bg-white/5 hover:bg-white/10 transition-colors rounded-lg cursor-pointer"
                          onClick={() => navigate(`/crypto/${holding.crypto.symbol.toLowerCase()}`)}>
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-sm font-bold">
@@ -168,7 +168,7 @@ const WalletPage = () => {
           </Card>
 
           {/* Recent Transactions */}
-          <Card className="bg-gray-900 border-gray-700">
+          <Card className="glass glass-hover">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle>Recent Transactions</CardTitle>
@@ -194,7 +194,7 @@ const WalletPage = () => {
               ) : (
                 <div className="space-y-3">
                   {recentTransactions.map((transaction) => (
-                    <div key={transaction.id} className="flex items-center justify-between p-3 bg-gray-800 rounded">
+                    <div key={transaction.id} className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
                       <div className="flex items-center gap-3">
                         <div className={`p-2 rounded-full ${
                           transaction.transaction_type === 'buy' ? 'bg-green-500/20' : 'bg-red-500/20'

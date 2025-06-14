@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -155,7 +154,7 @@ const WalletVerificationPage = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Submission Form */}
-          <Card className="bg-gray-900 border-gray-700">
+          <Card className="glass glass-hover">
             <CardHeader>
               <CardTitle>Add New Wallet</CardTitle>
             </CardHeader>
@@ -167,7 +166,7 @@ const WalletVerificationPage = () => {
                     value={formData.coin_symbol} 
                     onValueChange={(value) => setFormData(prev => ({ ...prev, coin_symbol: value }))}
                   >
-                    <SelectTrigger className="bg-gray-800 border-gray-600">
+                    <SelectTrigger>
                       <SelectValue placeholder="Select cryptocurrency" />
                     </SelectTrigger>
                     <SelectContent>
@@ -188,7 +187,6 @@ const WalletVerificationPage = () => {
                     placeholder="Enter your wallet address"
                     value={formData.wallet_address}
                     onChange={(e) => setFormData(prev => ({ ...prev, wallet_address: e.target.value }))}
-                    className="bg-gray-800 border-gray-600"
                   />
                 </div>
 
@@ -200,14 +198,13 @@ const WalletVerificationPage = () => {
                     placeholder="e.g., My MetaMask, Hardware Wallet"
                     value={formData.wallet_label}
                     onChange={(e) => setFormData(prev => ({ ...prev, wallet_label: e.target.value }))}
-                    className="bg-gray-800 border-gray-600"
                   />
                 </div>
 
                 <div>
                   <Label htmlFor="screenshot">Screenshot (Optional)</Label>
                   <div className="mt-2">
-                    <label className="flex items-center justify-center w-full h-32 border-2 border-gray-600 border-dashed rounded cursor-pointer hover:border-gray-500">
+                    <label className="flex items-center justify-center w-full h-32 border-2 border-border border-dashed rounded cursor-pointer hover:border-primary transition-colors">
                       <div className="text-center">
                         <Upload className="mx-auto h-8 w-8 text-gray-400" />
                         <p className="mt-2 text-sm text-gray-400">
@@ -245,7 +242,7 @@ const WalletVerificationPage = () => {
           </Card>
 
           {/* Wallet History */}
-          <Card className="bg-gray-900 border-gray-700">
+          <Card className="glass glass-hover">
             <CardHeader>
               <CardTitle>Your Wallets</CardTitle>
             </CardHeader>
@@ -257,7 +254,7 @@ const WalletVerificationPage = () => {
               ) : (
                 <div className="space-y-4">
                   {walletVerifications.map((wallet) => (
-                    <div key={wallet.id} className="p-4 bg-gray-800 rounded">
+                    <div key={wallet.id} className="p-4 bg-white/5 rounded-lg">
                       <div className="flex items-start justify-between mb-2">
                         <div>
                           <h3 className="font-medium">{wallet.coin_symbol}</h3>

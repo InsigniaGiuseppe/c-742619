@@ -10,7 +10,7 @@ const RecentTransactions = () => {
 
   if (loading) {
     return (
-      <Card className="bg-gray-900 border-gray-700">
+      <Card className="glass glass-hover">
         <CardHeader>
           <CardTitle>Recent Transactions</CardTitle>
         </CardHeader>
@@ -30,7 +30,7 @@ const RecentTransactions = () => {
   const recentTransactions = transactions.slice(0, 10);
 
   return (
-    <Card className="bg-gray-900 border-gray-700">
+    <Card className="glass glass-hover">
       <CardHeader>
         <CardTitle>Recent Transactions</CardTitle>
       </CardHeader>
@@ -42,7 +42,7 @@ const RecentTransactions = () => {
         ) : (
           <div className="space-y-3">
             {recentTransactions.map((transaction) => (
-              <div key={transaction.id} className="flex items-center justify-between p-3 bg-gray-800 rounded">
+              <div key={transaction.id} className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
                 <div className="flex items-center gap-3">
                   <div className={`p-2 rounded-full ${
                     transaction.transaction_type === 'buy' ? 'bg-green-500/20' : 'bg-red-500/20'

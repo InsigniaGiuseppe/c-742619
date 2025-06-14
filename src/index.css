@@ -68,7 +68,3 @@
 .text-gradient {
   @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-[#22c55e];
 }
-
-.button-gradient {
-  @apply bg-gradient-to-r from-primary to-[#22c55e] hover:opacity-90 transition-opacity rounded-full;
-}

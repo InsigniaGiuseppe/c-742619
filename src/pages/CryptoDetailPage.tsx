@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -307,7 +306,7 @@ const CryptoDetailPage = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Chart Section */}
           <div className="lg:col-span-2">
-            <Card className="bg-gray-900 border-gray-700">
+            <Card className="glass glass-hover">
               <CardHeader>
                 <div className="flex justify-between items-center">
                   <CardTitle>Price Chart</CardTitle>
@@ -333,15 +332,15 @@ const CryptoDetailPage = () => {
                     <YAxis stroke="#9CA3AF" />
                     <Tooltip 
                       contentStyle={{ 
-                        backgroundColor: '#1F2937', 
+                        backgroundColor: '#111827',
                         border: '1px solid #374151',
-                        borderRadius: '8px'
+                        borderRadius: '0.75rem'
                       }}
                     />
                     <Line 
                       type="monotone" 
                       dataKey="price" 
-                      stroke="#8B5CF6" 
+                      stroke="hsl(var(--primary))"
                       strokeWidth={2}
                       dot={false}
                     />
@@ -353,7 +352,7 @@ const CryptoDetailPage = () => {
 
           {/* Trading Section */}
           <div>
-            <Card className="bg-gray-900 border-gray-700">
+            <Card className="glass glass-hover">
               <CardHeader>
                 <CardTitle>Trade {crypto.symbol}</CardTitle>
                 <p className="text-sm text-gray-400">
@@ -386,7 +385,6 @@ const CryptoDetailPage = () => {
                       placeholder="0.00"
                       value={amountEUR}
                       onChange={(e) => handleAmountEURChange(e.target.value)}
-                      className="bg-gray-800 border-gray-600"
                     />
                   </div>
 
@@ -397,12 +395,11 @@ const CryptoDetailPage = () => {
                       placeholder="0.00000000"
                       value={amountCoin}
                       onChange={(e) => handleAmountCoinChange(e.target.value)}
-                      className="bg-gray-800 border-gray-600"
                     />
                   </div>
 
                   {amountEUR && (
-                    <div className="p-3 bg-gray-800 rounded">
+                    <div className="p-3 bg-white/5 rounded-lg">
                       <div className="text-sm space-y-1">
                         <div className="flex justify-between">
                           <span>Price per {crypto.symbol}:</span>
