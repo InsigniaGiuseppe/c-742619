@@ -1,6 +1,6 @@
 
 import React from 'react';
-import EnhancedPortfolioChart from './EnhancedPortfolioChart';
+import AdvancedPortfolioAnalytics from './portfolio/AdvancedPortfolioAnalytics';
 import PortfolioHoldingsTable from './PortfolioHoldingsTable';
 import { useRealtimePortfolio } from '@/hooks/useRealtimePortfolio';
 
@@ -9,7 +9,7 @@ const PortfolioOverview = () => {
 
   return (
     <div className="space-y-6">
-      <EnhancedPortfolioChart />
+      <AdvancedPortfolioAnalytics />
       <PortfolioHoldingsTable portfolio={portfolio} isRealtime={isRealtime} />
     </div>
   );
