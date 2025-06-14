@@ -45,7 +45,7 @@ const AdminDashboard = () => {
       title: 'Logs & History',
       description: 'View audit logs and admin actions',
       icon: FileText,
-      path: '/admin/logs',
+      path: '/admin/audit-log',
       color: 'border-orange-500/30 hover:bg-orange-500/10'
     }
   ];
@@ -155,7 +155,7 @@ const AdminDashboard = () => {
                   <Button onClick={() => navigate('/admin/users')} variant="outline" className="glass"><Users className="w-4 h-4 mr-2" />View All Users</Button>
                   <Button onClick={() => navigate('/admin/transactions')} variant="outline" className="glass"><AlertTriangle className="w-4 h-4 mr-2" />Pending Approvals</Button>
                   <Button onClick={() => navigate('/admin/wallets')} variant="outline" className="glass"><Wallet className="w-4 h-4 mr-2" />Wallet Verifications</Button>
-                  <Button onClick={() => navigate('/admin/logs')} variant="outline" className="glass"><FileText className="w-4 h-4 mr-2" />View Audit Logs</Button>
+                  <Button onClick={() => navigate('/admin/audit-log')} variant="outline" className="glass"><FileText className="w-4 h-4 mr-2" />View Audit Logs</Button>
                 </div>
               </CardContent>
             </Card>
