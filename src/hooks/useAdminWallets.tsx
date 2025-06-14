@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
@@ -25,7 +24,7 @@ const fetchAllExternalWallets = async (): Promise<AdminExternalWallet[]> => {
     throw new Error(error.message);
   }
 
-  return data as AdminExternalWallet[];
+  return data as unknown as AdminExternalWallet[];
 };
 
 
@@ -33,7 +32,7 @@ export const useAdminWallets = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  const { data: wallets = [], isLoading, error } = useQuery<AdminExternalWallet[]>({
+  const { data: wallets = [], isLoading, error, isError } = useQuery<AdminExternalWallet[]>({
     queryKey: ['adminExternalWallets'],
     queryFn: fetchAllExternalWallets,
     enabled: !!user,
@@ -63,6 +62,7 @@ export const useAdminWallets = () => {
   return {
     wallets,
     isLoading,
+    isError,
     error: error?.message,
     updateWalletStatus: updateWalletStatusMutation.mutateAsync,
     isUpdating: updateWalletStatusMutation.isPending,
