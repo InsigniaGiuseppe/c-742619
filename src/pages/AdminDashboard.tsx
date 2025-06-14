@@ -4,8 +4,10 @@ import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Users, DollarSign, Clock, Shield, FileText, Wallet, TrendingUp, AlertTriangle } from 'lucide-react';
+import { Users, DollarSign, Clock, Shield, FileText, Wallet, TrendingUp, AlertTriangle, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { TextGenerateEffect } from '@/components/ui/text-generate-effect';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -48,112 +50,117 @@ const AdminDashboard = () => {
     }
   ];
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: {
+        duration: 0.5,
+      },
+    },
+  };
+
   return (
     <div className="min-h-screen bg-black text-foreground flex flex-col">
       <Navigation />
-      <main className="flex-grow container mx-auto px-4 py-20 pt-24">
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-4">
-            <img 
-              src="/lovable-uploads/a2c0bb3a-a47b-40bf-ba26-d79f2f9e741b.png" 
-              alt="PROMPTO TRADING Logo" 
-              className="w-10 h-10 object-contain"
-              onError={(e) => {
-                e.currentTarget.style.display = 'none';
-              }}
-            />
-            <div>
-              <h1 className="text-4xl font-bold">PROMPTO TRADING</h1>
-              <h2 className="text-xl text-muted-foreground flex items-center gap-2">
-                <Shield className="w-5 h-5 text-orange-400" />
-                Admin Dashboard
-              </h2>
-            </div>
+      <main className="flex-grow container mx-auto px-4">
+        {/* Hero Section */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="pt-40 pb-20 flex flex-col items-center text-center"
+        >
+          <div className="inline-block mb-4 px-4 py-1.5 rounded-full glass border-orange-500/30">
+            <span className="text-sm font-medium flex items-center gap-2 text-orange-400">
+              <Shield className="w-4 h-4" /> Platform Administration
+            </span>
           </div>
-          <p className="text-muted-foreground">Manage platform operations, users, and transactions</p>
-        </div>
+          <h1 className="text-5xl md:text-6xl font-normal mb-4 tracking-tight">
+            <TextGenerateEffect words="Admin Dashboard" />
+          </h1>
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            Oversee platform operations, manage users, and monitor critical system activities from one central hub.
+          </p>
+        </motion.section>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {stats.map((stat, index) => (
-            <Card key={index} className="glass glass-hover">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-                <stat.icon className={`h-4 w-4 ${stat.color}`} />
-              </CardHeader>
-              <CardContent>
-                <div className={`text-2xl font-bold ${stat.color}`}>{stat.value}</div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        {/* Content Sections */}
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="space-y-12 pb-20"
+        >
+          {/* Stats Cards */}
+          <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {stats.map((stat, index) => (
+              <Card key={index} className="glass glass-hover">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
+                  <stat.icon className={`h-4 w-4 ${stat.color}`} />
+                </CardHeader>
+                <CardContent>
+                  <div className={`text-2xl font-bold ${stat.color}`}>{stat.value}</div>
+                </CardContent>
+              </Card>
+            ))}
+          </motion.div>
 
-        {/* Admin Sections */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {adminSections.map((section, index) => (
-            <Card key={index} className={`glass glass-hover cursor-pointer transition-all duration-300 ${section.color}`}>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-3">
-                  <section.icon className="w-6 h-6" />
-                  {section.title}
-                </CardTitle>
-                <CardDescription>{section.description}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button 
-                  onClick={() => navigate(section.path)}
-                  className="w-full button-gradient"
-                >
-                  Open {section.title}
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        {/* Quick Actions */}
-        <Card className="glass glass-hover mt-8">
-          <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
-            <CardDescription>Common administrative tasks</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-4">
-              <Button 
-                onClick={() => navigate('/admin/users')} 
-                variant="outline" 
-                className="glass"
-              >
-                <Users className="w-4 h-4 mr-2" />
-                View All Users
-              </Button>
-              <Button 
-                onClick={() => navigate('/admin/transactions')} 
-                variant="outline" 
-                className="glass"
-              >
-                <AlertTriangle className="w-4 h-4 mr-2" />
-                Pending Approvals
-              </Button>
-              <Button 
-                onClick={() => navigate('/admin/wallets')} 
-                variant="outline" 
-                className="glass"
-              >
-                <Wallet className="w-4 h-4 mr-2" />
-                Wallet Verifications
-              </Button>
-              <Button 
-                onClick={() => navigate('/admin/logs')} 
-                variant="outline" 
-                className="glass"
-              >
-                <FileText className="w-4 h-4 mr-2" />
-                View Audit Logs
-              </Button>
+          {/* Admin Sections */}
+          <motion.div variants={itemVariants}>
+            <h2 className="text-2xl font-bold text-center mb-6">Management Areas</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {adminSections.map((section, index) => (
+                <Card key={index} className={`glass glass-hover cursor-pointer transition-all duration-300 ${section.color}`}>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-3">
+                      <section.icon className="w-6 h-6" />
+                      {section.title}
+                    </CardTitle>
+                    <CardDescription>{section.description}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Button 
+                      onClick={() => navigate(section.path)}
+                      className="w-full button-gradient"
+                    >
+                      Open Section <ArrowRight className="w-4 h-4 ml-2" />
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
-          </CardContent>
-        </Card>
+          </motion.div>
+
+          {/* Quick Actions */}
+          <motion.div variants={itemVariants}>
+            <Card className="glass glass-hover mt-8">
+              <CardHeader className="text-center">
+                <CardTitle className="text-2xl">Quick Actions</CardTitle>
+                <CardDescription>Common administrative tasks for quick access</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-4 justify-center">
+                  <Button onClick={() => navigate('/admin/users')} variant="outline" className="glass"><Users className="w-4 h-4 mr-2" />View All Users</Button>
+                  <Button onClick={() => navigate('/admin/transactions')} variant="outline" className="glass"><AlertTriangle className="w-4 h-4 mr-2" />Pending Approvals</Button>
+                  <Button onClick={() => navigate('/admin/wallets')} variant="outline" className="glass"><Wallet className="w-4 h-4 mr-2" />Wallet Verifications</Button>
+                  <Button onClick={() => navigate('/admin/logs')} variant="outline" className="glass"><FileText className="w-4 h-4 mr-2" />View Audit Logs</Button>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </motion.div>
       </main>
       <Footer />
     </div>

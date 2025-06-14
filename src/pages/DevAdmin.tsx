@@ -7,162 +7,164 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { User, Shield, ArrowRight, Home } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { TextGenerateEffect } from '@/components/ui/text-generate-effect';
 
 const DevAdmin = () => {
   const navigate = useNavigate();
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: {
+        duration: 0.5,
+      },
+    },
+  };
 
   return (
     <DevRoute mockUserType="admin">
       <div className="min-h-screen bg-black text-foreground flex flex-col">
         <Navigation />
-        <main className="flex-grow container mx-auto px-4 py-20 pt-32">
-          <div className="mb-8">
-            <div className="flex items-center gap-3 mb-4">
-              <img 
-                src="/lovable-uploads/a2c0bb3a-a47b-40bf-ba26-d79f2f9e741b.png" 
-                alt="PROMPTO TRADING Logo" 
-                className="w-10 h-10 object-contain"
-                onError={(e) => {
-                  e.currentTarget.style.display = 'none';
-                }}
-              />
-              <div>
-                <h1 className="text-4xl font-bold">Development Admin</h1>
-                <h2 className="text-xl text-muted-foreground flex items-center gap-2">
-                  <Shield className="w-5 h-5 text-orange-400" />
-                  Testing admin functionality
-                </h2>
-              </div>
+        <main className="flex-grow container mx-auto px-4">
+           {/* Hero Section */}
+          <motion.section
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="pt-40 pb-20 flex flex-col items-center text-center"
+          >
+            <div className="inline-block mb-4 px-4 py-1.5 rounded-full glass border-orange-500/30">
+              <span className="text-sm font-medium flex items-center gap-2 text-orange-400">
+                <Shield className="w-4 h-4" /> Development Admin Mode
+              </span>
             </div>
-          </div>
+            <h1 className="text-5xl md:text-6xl font-normal mb-4 tracking-tight">
+              <TextGenerateEffect words="Admin Testing Dashboard" />
+            </h1>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              This is where you can test all features available to an admin. Switch to other modes using the cards below.
+            </p>
+          </motion.section>
 
-          {/* Quick Navigation */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-            <Card className="glass glass-hover border-orange-500/30">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-orange-400">
-                  <Shield className="w-5 h-5" />
-                  Admin Dashboard
-                </CardTitle>
-                <CardDescription>Admin view (current)</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button 
-                  onClick={() => navigate('/admin')}
-                  className="w-full button-gradient"
-                >
-                  <ArrowRight className="w-4 h-4 mr-2" />
-                  Go to Real Admin
-                </Button>
-              </CardContent>
-            </Card>
+          {/* Quick Navigation & Features */}
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="space-y-12 pb-20"
+          >
+            {/* Quick Navigation */}
+            <motion.div variants={itemVariants}>
+              <h2 className="text-2xl font-bold text-center mb-6">Quick Navigation</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <Card className="glass glass-hover border-orange-500/30">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-orange-400">
+                      <Shield className="w-5 h-5" />
+                      Admin Dashboard
+                    </CardTitle>
+                    <CardDescription>Go to the real admin dashboard</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Button 
+                      onClick={() => navigate('/admin')}
+                      className="w-full button-gradient"
+                    >
+                      <ArrowRight className="w-4 h-4 mr-2" />
+                      Real Admin
+                    </Button>
+                  </CardContent>
+                </Card>
 
-            <Card className="glass glass-hover">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <User className="w-5 h-5" />
-                  User Dashboard
-                </CardTitle>
-                <CardDescription>Switch to user view</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button 
-                  onClick={() => navigate('/dev-dashboard')}
-                  variant="outline"
-                  className="w-full glass"
-                >
-                  <User className="w-4 h-4 mr-2" />
-                  Switch to User
-                </Button>
-              </CardContent>
-            </Card>
+                <Card className="glass glass-hover">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <User className="w-5 h-5" />
+                      User View
+                    </CardTitle>
+                    <CardDescription>Switch to user development view</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Button 
+                      onClick={() => navigate('/dev-dashboard')}
+                      variant="outline"
+                      className="w-full glass"
+                    >
+                      <User className="w-4 h-4 mr-2" />
+                      Switch to User
+                    </Button>
+                  </CardContent>
+                </Card>
 
-            <Card className="glass glass-hover">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Home className="w-5 h-5" />
-                  Home Page
-                </CardTitle>
-                <CardDescription>Return to landing page</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button 
-                  onClick={() => navigate('/')}
-                  variant="outline"
-                  className="w-full glass"
-                >
-                  <Home className="w-4 h-4 mr-2" />
-                  Go Home
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Admin Features Testing */}
-          <Card className="glass glass-hover border-orange-500/30">
-            <CardHeader>
-              <CardTitle className="text-orange-400">Admin Features</CardTitle>
-              <CardDescription>Test admin functionality</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-wrap gap-4">
-                <Button 
-                  onClick={() => navigate('/admin')}
-                  variant="outline"
-                  className="glass border-orange-500/30 text-orange-400"
-                >
-                  Admin Dashboard
-                </Button>
-                <Button 
-                  onClick={() => navigate('/admin/users')}
-                  variant="outline"
-                  className="glass border-orange-500/30 text-orange-400"
-                >
-                  User Management
-                </Button>
+                <Card className="glass glass-hover">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Home className="w-5 h-5" />
+                      Home Page
+                    </CardTitle>
+                    <CardDescription>Return to the landing page</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Button 
+                      onClick={() => navigate('/')}
+                      variant="outline"
+                      className="w-full glass"
+                    >
+                      <Home className="w-4 h-4 mr-2" />
+                      Go Home
+                    </Button>
+                  </CardContent>
+                </Card>
               </div>
-            </CardContent>
-          </Card>
+            </motion.div>
 
-          {/* User Features Available to Admin */}
-          <Card className="glass glass-hover mt-6">
-            <CardHeader>
-              <CardTitle>User Features (Admin Access)</CardTitle>
-              <CardDescription>Test user features as admin</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-wrap gap-4">
-                <Button 
-                  onClick={() => navigate('/wallet')}
-                  variant="outline"
-                  className="glass"
-                >
-                  Wallet
-                </Button>
-                <Button 
-                  onClick={() => navigate('/trading')}
-                  variant="outline"
-                  className="glass"
-                >
-                  Trading
-                </Button>
-                <Button 
-                  onClick={() => navigate('/lending')}
-                  variant="outline"
-                  className="glass"
-                >
-                  Lending
-                </Button>
-                <Button 
-                  onClick={() => navigate('/profile')}
-                  variant="outline"
-                  className="glass"
-                >
-                  Profile
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+            {/* Admin Features Testing */}
+            <motion.div variants={itemVariants}>
+                <Card className="glass glass-hover border-orange-500/30">
+                <CardHeader className="text-center">
+                  <CardTitle className="text-2xl text-orange-400">Admin Features</CardTitle>
+                  <CardDescription>Test admin functionality below</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-wrap gap-4 justify-center">
+                    <Button onClick={() => navigate('/admin')} variant="outline" className="glass border-orange-500/30 text-orange-400">Admin Dashboard</Button>
+                    <Button onClick={() => navigate('/admin/users')} variant="outline" className="glass border-orange-500/30 text-orange-400">User Management</Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            {/* User Features Available to Admin */}
+            <motion.div variants={itemVariants}>
+              <Card className="glass glass-hover mt-6">
+                <CardHeader className="text-center">
+                  <CardTitle className="text-2xl">User Features (Admin Access)</CardTitle>
+                  <CardDescription>Test user features available to admins</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-wrap gap-4 justify-center">
+                    <Button onClick={() => navigate('/wallet')} variant="outline" className="glass">Wallet</Button>
+                    <Button onClick={() => navigate('/trading')} variant="outline" className="glass">Trading</Button>
+                    <Button onClick={() => navigate('/lending')} variant="outline" className="glass">Lending</Button>
+                    <Button onClick={() => navigate('/profile')} variant="outline" className="glass">Profile</Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </motion.div>
         </main>
         <Footer />
       </div>
