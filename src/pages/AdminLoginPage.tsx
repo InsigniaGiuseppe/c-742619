@@ -46,8 +46,14 @@ const AdminLoginPage = () => {
       } else if (data?.user) {
         console.log('Admin login successful:', data.user);
         
-        // Check if user is admin
-        if (data.user.email === 'admin@prompto.trading') {
+        // Check if user is admin via profile
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('is_admin')
+          .eq('id', data.user.id)
+          .single();
+        
+        if (profile?.is_admin) {
           toast({
             title: "Admin Access Granted",
             description: "Welcome, Administrator!",
@@ -74,19 +80,17 @@ const AdminLoginPage = () => {
     }
   };
 
-  const handleQuickAdminLogin = () => {
-    setFormData({
-      email: 'admin@prompto.trading',
-      password: 'admin123'
-    });
-  };
-
   return (
     <div className="min-h-screen bg-black text-foreground flex flex-col">
       <Navigation />
       <main className="flex-grow container mx-auto px-4 py-20 pt-24 flex items-center justify-center">
         <div className="glass glass-hover rounded-xl p-8 w-full max-w-md border-orange-500/20">
           <div className="text-center mb-6">
+            <img 
+              src="/lovable-uploads/bf56a0c6-48e4-49f7-b286-8e3fda9a3385.png" 
+              alt="PROMPTO TRADING" 
+              className="w-16 h-16 mx-auto mb-4"
+            />
             <div className="w-16 h-16 mx-auto mb-4 bg-orange-500/20 rounded-full flex items-center justify-center">
               <Shield className="w-8 h-8 text-orange-400" />
             </div>
@@ -122,15 +126,6 @@ const AdminLoginPage = () => {
               />
             </div>
             <div className="flex items-center justify-between">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={handleQuickAdminLogin}
-                className="text-xs text-orange-400 hover:text-orange-300"
-              >
-                Use Admin Credentials
-              </Button>
               <Link to="/login" className="text-sm text-primary hover:underline">
                 Regular Login
               </Link>
@@ -143,12 +138,6 @@ const AdminLoginPage = () => {
               {loading ? 'Authenticating...' : 'Admin Sign In'}
             </Button>
           </form>
-          
-          <div className="mt-6 text-center">
-            <p className="text-xs text-muted-foreground">
-              Admin credentials: admin@prompto.trading / admin123
-            </p>
-          </div>
         </div>
       </main>
       <Footer />

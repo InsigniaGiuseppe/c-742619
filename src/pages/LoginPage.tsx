@@ -69,7 +69,7 @@ const LoginPage = () => {
         <div className="glass glass-hover rounded-xl p-8 w-full max-w-md">
           <div className="text-center mb-6">
             <img 
-              src="/lovable-uploads/a2c0bb3a-a47b-40bf-ba26-d79f2f9e741b.png" 
+              src="/lovable-uploads/bf56a0c6-48e4-49f7-b286-8e3fda9a3385.png" 
               alt="PROMPTO TRADING" 
               className="w-16 h-16 mx-auto mb-4"
               onError={(e) => {

@@ -17,12 +17,18 @@ export const useAdmin = () => {
       }
 
       try {
-        // For now, check if email is admin@prompto.trading
-        // Later this will be replaced with proper database check
-        if (user.email === 'admin@prompto.trading') {
-          setIsAdmin(true);
-        } else {
+        // Check admin status from profiles table
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('is_admin')
+          .eq('id', user.id)
+          .single();
+
+        if (error) {
+          console.error('Error checking admin status:', error);
           setIsAdmin(false);
+        } else {
+          setIsAdmin(profile?.is_admin || false);
         }
       } catch (error) {
         console.error('Error checking admin status:', error);
