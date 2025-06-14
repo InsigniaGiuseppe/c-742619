@@ -11,6 +11,8 @@ export type NewWalletPayload =
   Pick<Tables<'external_wallets'>, 'coin_symbol' | 'network' | 'wallet_address'>
   & Partial<Pick<Tables<'external_wallets'>, 'wallet_label' | 'screenshot_url'>>;
 
+export type UpdateWalletPayload = { id: string } & Partial<Pick<Tables<'external_wallets'>, 'wallet_label' | 'wallet_address' | 'network'>>;
+
 export const useExternalWallets = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -53,6 +55,29 @@ export const useExternalWallets = () => {
     },
   });
 
+  const updateWalletMutation = useMutation({
+    mutationFn: async (walletToUpdate: UpdateWalletPayload) => {
+        if (!user) throw new Error("User not authenticated");
+        
+        const { id, ...updateData } = walletToUpdate;
+
+        const { data, error } = await supabase
+            .from('external_wallets')
+            .update({ ...updateData, status: 'pending', admin_notes: null })
+            .eq('id', id)
+            .eq('user_id', user.id)
+            .select();
+
+        if (error) {
+            throw new Error(error.message);
+        }
+        return data;
+    },
+    onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['externalWallets', user?.id] });
+    },
+  });
+
   const deleteWalletMutation = useMutation({
     mutationFn: async (walletId: string) => {
         if (!user) throw new Error("User not authenticated");
@@ -76,6 +101,7 @@ export const useExternalWallets = () => {
     isLoading,
     error: error?.message,
     addWallet: addWalletMutation.mutateAsync,
+    updateWallet: updateWalletMutation.mutateAsync,
     deleteWallet: deleteWalletMutation.mutateAsync,
   };
 };

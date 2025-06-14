@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useExternalWallets, ExternalWallet } from '@/hooks/useExternalWallets';
 import { useCryptocurrencies } from '@/hooks/useCryptocurrencies';
@@ -7,13 +6,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import CryptoLogo from './CryptoLogo';
-import { Trash2, Loader2, AlertCircle, ExternalLink } from 'lucide-react';
+import { Trash2, Loader2, AlertCircle, ExternalLink, Pencil } from 'lucide-react';
 import { format } from 'date-fns';
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import EditWalletModal from './EditWalletModal';
 
 const statusStyles: { [key: string]: string } = {
   pending: 'bg-yellow-500/20 text-yellow-300 border-yellow-400/30',
@@ -21,7 +21,7 @@ const statusStyles: { [key: string]: string } = {
   rejected: 'bg-red-500/20 text-red-300 border-red-400/30',
 };
 
-const WalletListItem: React.FC<{ wallet: ExternalWallet; logo_url?: string; onDelete: (id: string) => void; isDeleting: boolean }> = ({ wallet, logo_url, onDelete, isDeleting }) => {
+const WalletListItem: React.FC<{ wallet: ExternalWallet; logo_url?: string; onDelete: (id: string) => void; onEdit: (wallet: ExternalWallet) => void; isDeleting: boolean }> = ({ wallet, logo_url, onDelete, onEdit, isDeleting }) => {
   return (
     <div className="flex items-center justify-between p-4 rounded-lg glass-hover">
       <div className="flex items-center gap-4">
@@ -67,6 +67,17 @@ const WalletListItem: React.FC<{ wallet: ExternalWallet; logo_url?: string; onDe
 
         <Tooltip>
           <TooltipTrigger asChild>
+            <Button variant="ghost" size="icon" onClick={() => onEdit(wallet)} disabled={isDeleting}>
+              <Pencil className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Edit Wallet</p>
+          </TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
             <Button variant="ghost" size="icon" onClick={() => onDelete(wallet.id)} disabled={isDeleting}>
               <Trash2 className="h-4 w-4" />
             </Button>
@@ -85,6 +96,7 @@ const WalletList: React.FC = () => {
   const { cryptocurrencies, loading: cryptosLoading } = useCryptocurrencies();
   const { toast } = useToast();
   const [deletingId, setDeletingId] = React.useState<string | null>(null);
+  const [editingWallet, setEditingWallet] = React.useState<ExternalWallet | null>(null);
 
   const cryptoMap = React.useMemo(() => {
     return new Map(cryptocurrencies.map(c => [c.symbol, c]));
@@ -100,6 +112,14 @@ const WalletList: React.FC = () => {
     } finally {
       setDeletingId(null);
     }
+  };
+
+  const handleEdit = (wallet: ExternalWallet) => {
+    setEditingWallet(wallet);
+  };
+
+  const handleCloseModal = () => {
+    setEditingWallet(null);
   };
 
   if (isLoading || cryptosLoading) {
@@ -126,28 +146,36 @@ const WalletList: React.FC = () => {
   }
 
   return (
-    <Card className="glass">
-      <CardHeader>
-        <CardTitle>My Wallets</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {wallets.length === 0 ? (
-          <p className="text-muted-foreground text-center py-4">You have not added any external wallets yet.</p>
-        ) : (
-          <div className="space-y-4">
-            {wallets.map(wallet => (
-              <WalletListItem 
-                key={wallet.id}
-                wallet={wallet}
-                logo_url={cryptoMap.get(wallet.coin_symbol)?.logo_url}
-                onDelete={handleDelete}
-                isDeleting={deletingId === wallet.id}
-              />
-            ))}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+    <>
+      <Card className="glass">
+        <CardHeader>
+          <CardTitle>My Wallets</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {wallets.length === 0 ? (
+            <p className="text-muted-foreground text-center py-4">You have not added any external wallets yet.</p>
+          ) : (
+            <div className="space-y-4">
+              {wallets.map(wallet => (
+                <WalletListItem 
+                  key={wallet.id}
+                  wallet={wallet}
+                  logo_url={cryptoMap.get(wallet.coin_symbol)?.logo_url}
+                  onDelete={handleDelete}
+                  onEdit={handleEdit}
+                  isDeleting={deletingId === wallet.id}
+                />
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+      <EditWalletModal
+        wallet={editingWallet}
+        isOpen={!!editingWallet}
+        onClose={handleCloseModal}
+      />
+    </>
   );
 };
 
