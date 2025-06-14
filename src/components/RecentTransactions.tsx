@@ -53,9 +53,9 @@ const RecentTransactions = () => {
               >
                 <div className="flex items-center gap-4">
                   <div className={`p-2 rounded-full ${
-                    transaction.transaction_type === 'buy' ? 'bg-green-500/20' : 'bg-red-500/20'
+                    transaction.transaction_type.startsWith('buy') ? 'bg-green-500/20' : 'bg-red-500/20'
                   }`}>
-                    {transaction.transaction_type === 'buy' ? (
+                    {transaction.transaction_type.startsWith('buy') ? (
                       <TrendingUp className="h-4 w-4 text-green-500" />
                     ) : (
                       <TrendingDown className="h-4 w-4 text-red-500" />
@@ -63,7 +63,7 @@ const RecentTransactions = () => {
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="font-medium truncate">
-                      {transaction.description || `${transaction.transaction_type.toUpperCase()} ${transaction.crypto?.symbol}`}
+                      {transaction.description || `${transaction.transaction_type.replace('_crypto', '').toUpperCase()} ${transaction.crypto?.symbol}`}
                     </p>
                     <p className="text-sm text-gray-400">
                       {new Date(transaction.created_at).toLocaleDateString('en-US', {

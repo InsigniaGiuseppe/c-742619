@@ -146,7 +146,7 @@ export const useTrade = (crypto: Cryptocurrency | undefined) => {
         .insert({
           user_id: user.id,
           cryptocurrency_id: crypto.id,
-          transaction_type: tradeType,
+          transaction_type: `${tradeType}_crypto`,
           amount: coinAmount,
           usd_value: eurValue,
           fee_amount: feeAmount,

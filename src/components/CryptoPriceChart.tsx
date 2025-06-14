@@ -10,6 +10,7 @@ import {
   CartesianGrid,
   ReferenceLine,
   Label,
+  Cell,
 } from 'recharts';
 import { Card, CardContent } from '@/components/ui/card';
 import { formatPrice } from '@/lib/formatters';
@@ -17,20 +18,32 @@ import { Cryptocurrency } from '@/hooks/useCryptocurrencies';
 import { Skeleton } from './ui/skeleton';
 import { useBinanceChartData } from '@/hooks/useBinanceChartData';
 import ChartControls, { Timeframe } from './charts/ChartControls';
-import CustomCandle from './charts/CustomCandle';
 import CustomTooltip, { formatXAxisTick } from './charts/CustomTooltip';
 
 const CryptoPriceChart = ({ crypto }: { crypto: Cryptocurrency }) => {
   const [timeframe, setTimeframe] = useState<Timeframe>('7d');
   const { chartData, loading, error } = useBinanceChartData(crypto?.symbol, timeframe);
   
+  const processedChartData = useMemo(() => {
+    if (!chartData) return [];
+    return chartData.map(d => {
+      const isGain = d.close >= d.open;
+      return {
+        ...d,
+        bodyRange: isGain ? [d.open, d.close] : [d.close, d.open],
+        wickRange: [d.low, d.high],
+        fill: isGain ? 'hsl(var(--chart-2))' : 'hsl(var(--chart-1))',
+      };
+    });
+  }, [chartData]);
+  
   const domain = useMemo((): [number, number] => {
     if (!chartData || chartData.length === 0) return [0, 0];
     const lows = chartData.map(d => d.low);
     const highs = chartData.map(d => d.high);
     return [
-      Math.min(...lows),
-      Math.max(...highs)
+      Math.min(...lows) * 0.99,
+      Math.max(...highs) * 1.01
     ];
   }, [chartData]);
 
@@ -59,7 +72,7 @@ const CryptoPriceChart = ({ crypto }: { crypto: Cryptocurrency }) => {
            <div className="w-full h-[400px] flex items-center justify-center text-muted-foreground">No chart data available for this timeframe.</div>
         ) : (
           <ResponsiveContainer width="100%" height={400}>
-            <ComposedChart data={chartData} margin={{ top: 5, right: 30, bottom: 5, left: 0 }}>
+            <ComposedChart data={processedChartData} margin={{ top: 5, right: 30, bottom: 5, left: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border) / 0.5)" />
               <XAxis
                 dataKey="time"
@@ -84,7 +97,16 @@ const CryptoPriceChart = ({ crypto }: { crypto: Cryptocurrency }) => {
                 content={<CustomTooltip timeframe={timeframe} formatter={formatPrice} />} 
                 cursor={{ fill: 'hsl(var(--accent) / 0.2)' }}
               />
-              <Bar dataKey="close" shape={<CustomCandle />} />
+              <Bar dataKey="wickRange" barSize={1.5} isAnimationActive={false}>
+                {processedChartData.map((entry, index) => (
+                  <Cell key={`cell-wick-${index}`} fill={entry.fill} />
+                ))}
+              </Bar>
+              <Bar dataKey="bodyRange" isAnimationActive={false}>
+                 {processedChartData.map((entry, index) => (
+                  <Cell key={`cell-body-${index}`} fill={entry.fill} />
+                ))}
+              </Bar>
               {crypto.current_price > 0 && (
                 <ReferenceLine y={crypto.current_price} stroke="hsl(var(--primary))" strokeDasharray="3 3">
                   <Label value="Current Price" position="insideTopLeft" fill="hsl(var(--primary))" fontSize={12} dy={-10} />
