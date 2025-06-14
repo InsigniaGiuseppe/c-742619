@@ -1,5 +1,4 @@
-
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
 const fetchUsers = async (searchTerm: string) => {
@@ -43,6 +42,6 @@ export const useAdminUsers = (searchTerm: string) => {
   return useQuery({
     queryKey: ['admin-users', searchTerm],
     queryFn: () => fetchUsers(searchTerm),
-    keepPreviousData: true, // To avoid flickering when typing
+    placeholderData: keepPreviousData, // To avoid flickering when typing
   });
 };
