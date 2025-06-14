@@ -32,15 +32,18 @@ const LoginPage = () => {
     setLoading(true);
 
     try {
+      console.log('Login attempt:', formData.email);
       const { data, error } = await signIn(formData.email, formData.password);
 
       if (error) {
+        console.error('Login error:', error);
         toast({
           title: "Login Error",
-          description: error.message,
+          description: error.message || "Failed to sign in",
           variant: "destructive",
         });
-      } else {
+      } else if (data?.user) {
+        console.log('Login successful:', data.user);
         toast({
           title: "Success",
           description: "Logged in successfully!",
@@ -48,7 +51,7 @@ const LoginPage = () => {
         navigate('/dashboard');
       }
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('Login catch error:', error);
       toast({
         title: "Error",
         description: "An unexpected error occurred",
@@ -62,7 +65,7 @@ const LoginPage = () => {
   const handleTestLogin = () => {
     setFormData({
       email: 'test@prompto.trading',
-      password: 'password'
+      password: 'password123'
     });
   };
 
@@ -133,7 +136,7 @@ const LoginPage = () => {
           
           <div className="mt-6 text-center">
             <p className="text-sm text-muted-foreground mb-2">
-              Test Credentials: test@prompto.trading / password
+              Test Credentials: test@prompto.trading / password123
             </p>
             <p className="text-sm text-muted-foreground">
               Don't have an account?{' '}

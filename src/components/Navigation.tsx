@@ -4,15 +4,15 @@ import { Command, Menu, LogOut, User } from "lucide-react";
 import { Button } from "./ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
 import { Link, useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 
 const Navigation = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [user, setUser] = useState(null);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user, signOut } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -23,24 +23,8 @@ const Navigation = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  useEffect(() => {
-    // Check current session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-    });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setUser(session?.user ?? null);
-      }
-    );
-
-    return () => subscription.unsubscribe();
-  }, []);
-
   const handleSignOut = async () => {
-    const { error } = await supabase.auth.signOut();
+    const { error } = await signOut();
     if (error) {
       toast({
         title: "Error",
@@ -56,11 +40,14 @@ const Navigation = () => {
     }
   };
 
+  // Navigation items - only show authenticated routes when user is logged in
   const navItems = [
-    { name: "Home", href: "/", isExternal: false },
-    { name: "Dashboard", href: "/dashboard", isExternal: false },
-    { name: "Trading", href: "/trading", isExternal: false },
-    { name: "Wallet", href: "/wallet", isExternal: false },
+    { name: "Home", href: "/", isExternal: false, requiresAuth: false },
+    ...(user ? [
+      { name: "Dashboard", href: "/dashboard", isExternal: false, requiresAuth: true },
+      { name: "Trading", href: "/trading", isExternal: false, requiresAuth: true },
+      { name: "Wallet", href: "/wallet", isExternal: false, requiresAuth: true },
+    ] : [])
   ];
 
   const handleMobileNavClick = (href: string) => {
