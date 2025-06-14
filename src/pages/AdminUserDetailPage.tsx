@@ -11,6 +11,7 @@ import { ArrowLeft, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
+import UserActions from '@/components/admin/UserActions';
 
 const AdminUserDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -119,6 +120,9 @@ const AdminUserDetailPage = () => {
             {renderContent()}
           </CardContent>
         </Card>
+
+        {user && <UserActions user={user} />}
+        
       </main>
       <Footer />
     </div>
