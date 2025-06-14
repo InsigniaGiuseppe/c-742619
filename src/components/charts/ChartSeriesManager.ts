@@ -38,28 +38,33 @@ export class ChartSeriesManager {
       this.currentSeries = null;
     }
 
-    if (chartType === 'candlestick') {
-      this.currentSeries = this.chart.addSeries('candlestick', candlestickSeriesOptions as CandlestickSeriesPartialOptions);
-      const candlestickData = data.map(d => ({
-        time: d.time as any,
-        open: d.open,
-        high: d.high,
-        low: d.low,
-        close: d.close
-      })) as CandlestickData[];
-      this.currentSeries.setData(candlestickData);
-    } else if (chartType === 'line') {
-      this.currentSeries = this.chart.addSeries('line', lineSeriesOptions as LineSeriesPartialOptions);
-      const lineData = data.map(d => ({ time: d.time as any, value: d.close })) as LineData[];
-      this.currentSeries.setData(lineData);
-    } else if (chartType === 'area') {
-      this.currentSeries = this.chart.addSeries('area', areaSeriesOptions as AreaSeriesPartialOptions);
-      const areaData = data.map(d => ({ time: d.time as any, value: d.close })) as LineData[];
-      this.currentSeries.setData(areaData);
-    }
+    try {
+      if (chartType === 'candlestick') {
+        this.currentSeries = this.chart.addSeries({ type: 'Candlestick' }, candlestickSeriesOptions as CandlestickSeriesPartialOptions);
+        const candlestickData = data.map(d => ({
+          time: d.time as any,
+          open: d.open,
+          high: d.high,
+          low: d.low,
+          close: d.close
+        })) as CandlestickData[];
+        this.currentSeries.setData(candlestickData);
+      } else if (chartType === 'line') {
+        this.currentSeries = this.chart.addSeries({ type: 'Line' }, lineSeriesOptions as LineSeriesPartialOptions);
+        const lineData = data.map(d => ({ time: d.time as any, value: d.close })) as LineData[];
+        this.currentSeries.setData(lineData);
+      } else if (chartType === 'area') {
+        this.currentSeries = this.chart.addSeries({ type: 'Area' }, areaSeriesOptions as AreaSeriesPartialOptions);
+        const areaData = data.map(d => ({ time: d.time as any, value: d.close })) as LineData[];
+        this.currentSeries.setData(areaData);
+      }
 
-    console.log(`[ChartSeriesManager] Successfully added ${chartType} series`);
-    return this.currentSeries;
+      console.log(`[ChartSeriesManager] Successfully added ${chartType} series`);
+      return this.currentSeries;
+    } catch (error) {
+      console.error(`[ChartSeriesManager] Error adding ${chartType} series:`, error);
+      return null;
+    }
   }
 
   addVolumeSeries(volumeData: Array<{ time: number; value: number; color: string }>) {
@@ -71,23 +76,28 @@ export class ChartSeriesManager {
       this.volumeSeries = null;
     }
 
-    this.volumeSeries = this.chart.addSeries('histogram', volumeSeriesOptions as HistogramSeriesPartialOptions);
-    const histogramData = volumeData.map(d => ({
-      time: d.time as any,
-      value: d.value,
-      color: d.color
-    })) as HistogramData[];
-    this.volumeSeries.setData(histogramData);
-    
-    this.volumeSeries.priceScale().applyOptions({
-      scaleMargins: {
-        top: 0.8,
-        bottom: 0,
-      },
-    });
-    
-    console.log('[ChartSeriesManager] Successfully added volume series');
-    return this.volumeSeries;
+    try {
+      this.volumeSeries = this.chart.addSeries({ type: 'Histogram' }, volumeSeriesOptions as HistogramSeriesPartialOptions);
+      const histogramData = volumeData.map(d => ({
+        time: d.time as any,
+        value: d.value,
+        color: d.color
+      })) as HistogramData[];
+      this.volumeSeries.setData(histogramData);
+      
+      this.volumeSeries.priceScale().applyOptions({
+        scaleMargins: {
+          top: 0.8,
+          bottom: 0,
+        },
+      });
+      
+      console.log('[ChartSeriesManager] Successfully added volume series');
+      return this.volumeSeries;
+    } catch (error) {
+      console.error('[ChartSeriesManager] Error adding volume series:', error);
+      return null;
+    }
   }
 
   clearAllSeries() {
