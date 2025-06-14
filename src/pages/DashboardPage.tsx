@@ -1,3 +1,4 @@
+
 import React from 'react';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
@@ -6,7 +7,6 @@ import { useAuth } from '@/hooks/useAuth';
 import { usePortfolio } from '@/hooks/usePortfolio';
 import FormattedNumber from '@/components/FormattedNumber';
 import { motion } from 'framer-motion';
-import PortfolioChart from '@/components/PortfolioChart';
 import RecentTransactions from '@/components/RecentTransactions';
 import PortfolioOverview from '@/components/PortfolioOverview';
 import { TrendingUp, TrendingDown, Wallet, DollarSign } from 'lucide-react';
@@ -111,9 +111,8 @@ const DashboardPage = () => {
           </div>
         </div>
 
-        {/* Portfolio and Transactions */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <PortfolioChart />
+        {/* Recent Transactions Only */}
+        <div className="grid grid-cols-1 gap-8">
           <RecentTransactions />
         </div>
       </main>

@@ -2,7 +2,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import LivePortfolioMetrics from './LivePortfolioMetrics';
-import PortfolioAllocation from './PortfolioAllocation';
+import PortfolioGrowthChart from './PortfolioGrowthChart';
 import EnhancedPortfolioChart from '@/components/EnhancedPortfolioChart';
 
 const AdvancedPortfolioAnalytics = () => {
@@ -16,10 +16,10 @@ const AdvancedPortfolioAnalytics = () => {
       {/* Live Portfolio Metrics */}
       <LivePortfolioMetrics />
 
-      {/* Portfolio Charts and Allocation */}
+      {/* Portfolio Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <PortfolioGrowthChart />
         <EnhancedPortfolioChart />
-        <PortfolioAllocation />
       </div>
     </motion.div>
   );

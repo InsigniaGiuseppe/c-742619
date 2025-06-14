@@ -91,7 +91,7 @@ export const useTrade = (crypto: Cryptocurrency | undefined) => {
 
     const eurValue = parseFloat(amountEUR);
     const coinAmount = parseFloat(amountCoin);
-    const feeAmount = eurValue * 0.001;
+    const feeAmount = eurValue * 0.0035; // Updated to 0.35%
     const totalCost = eurValue + feeAmount;
 
     console.log('[useTrade] Initiating trade with params:', {

@@ -109,12 +109,12 @@ const TradeWidget: React.FC<TradeWidgetProps> = ({ crypto }) => {
                 <span>{formatPrice(crypto.current_price)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Fee (0.1%)</span>
-                <span>{formatCurrency(parseFloat(amountEUR) * 0.001, { maximumFractionDigits: 4 })}</span>
+                <span className="text-muted-foreground">Fee (0.35%)</span>
+                <span>{formatCurrency(parseFloat(amountEUR) * 0.0035, { maximumFractionDigits: 4 })}</span>
               </div>
               <div className="flex justify-between font-bold text-base border-t border-white/10 pt-2 mt-2">
                 <span>Total</span>
-                <span>{formatCurrency(parseFloat(amountEUR) * 1.001)}</span>
+                <span>{formatCurrency(parseFloat(amountEUR) * 1.0035)}</span>
               </div>
             </div>
           )}
