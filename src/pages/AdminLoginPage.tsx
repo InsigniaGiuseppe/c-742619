@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
@@ -18,9 +18,30 @@ const AdminLoginPage = () => {
   });
   const [loading, setLoading] = useState(false);
   
-  const { signIn } = useAuth();
+  const { signIn, user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  // Redirect if already logged in and is admin
+  useEffect(() => {
+    const checkAdminAndRedirect = async () => {
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('is_admin')
+          .eq('id', user.id)
+          .single();
+        
+        if (profile?.is_admin) {
+          navigate('/admin');
+        } else {
+          navigate('/dashboard');
+        }
+      }
+    };
+    
+    checkAdminAndRedirect();
+  }, [user, navigate]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -34,19 +55,15 @@ const AdminLoginPage = () => {
     setLoading(true);
 
     try {
-      console.log('Admin login attempt:', formData.email);
       const { data, error } = await signIn(formData.email, formData.password);
 
       if (error) {
-        console.error('Admin login error:', error);
         toast({
           title: "Login Error",
-          description: error.message || "Failed to sign in",
+          description: error.message,
           variant: "destructive",
         });
       } else if (data?.user) {
-        console.log('Admin login successful:', data.user);
-        
         // Check if user is admin via profile
         const { data: profile } = await supabase
           .from('profiles')
@@ -70,7 +87,7 @@ const AdminLoginPage = () => {
         }
       }
     } catch (error) {
-      console.error('Admin login catch error:', error);
+      console.error('Admin login error:', error);
       toast({
         title: "Error",
         description: "An unexpected error occurred",
@@ -87,11 +104,6 @@ const AdminLoginPage = () => {
       <main className="flex-grow container mx-auto px-4 py-20 pt-24 flex items-center justify-center">
         <div className="glass glass-hover rounded-xl p-8 w-full max-w-md border-orange-500/20">
           <div className="text-center mb-6">
-            <img 
-              src="/lovable-uploads/bf56a0c6-48e4-49f7-b286-8e3fda9a3385.png" 
-              alt="PROMPTO TRADING" 
-              className="w-16 h-16 mx-auto mb-4"
-            />
             <div className="w-16 h-16 mx-auto mb-4 bg-orange-500/20 rounded-full flex items-center justify-center">
               <Shield className="w-8 h-8 text-orange-400" />
             </div>
@@ -139,6 +151,14 @@ const AdminLoginPage = () => {
               {loading ? 'Authenticating...' : 'Admin Sign In'}
             </Button>
           </form>
+          
+          <div className="mt-6 text-center">
+            <p className="text-sm text-muted-foreground">
+              Admin Credentials:<br />
+              Email: admin@prompto.trading<br />
+              Password: admin123
+            </p>
+          </div>
         </div>
       </main>
       <Footer />

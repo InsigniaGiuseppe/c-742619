@@ -701,6 +701,7 @@ export type Database = {
           created_at: string | null
           email: string | null
           energy: number | null
+          full_name: string | null
           gang_id: string | null
           hospital_until: string | null
           id: string
@@ -721,6 +722,7 @@ export type Database = {
           created_at?: string | null
           email?: string | null
           energy?: number | null
+          full_name?: string | null
           gang_id?: string | null
           hospital_until?: string | null
           id: string
@@ -741,6 +743,7 @@ export type Database = {
           created_at?: string | null
           email?: string | null
           energy?: number | null
+          full_name?: string | null
           gang_id?: string | null
           hospital_until?: string | null
           id?: string

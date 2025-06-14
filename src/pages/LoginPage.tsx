@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
@@ -16,9 +16,16 @@ const LoginPage = () => {
   });
   const [loading, setLoading] = useState(false);
   
-  const { signIn } = useAuth();
+  const { signIn, user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      navigate('/dashboard');
+    }
+  }, [user, navigate]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -32,18 +39,15 @@ const LoginPage = () => {
     setLoading(true);
 
     try {
-      console.log('Login attempt:', formData.email);
       const { data, error } = await signIn(formData.email, formData.password);
 
       if (error) {
-        console.error('Login error:', error);
         toast({
           title: "Login Error",
-          description: error.message || "Failed to sign in",
+          description: error.message,
           variant: "destructive",
         });
       } else if (data?.user) {
-        console.log('Login successful:', data.user);
         toast({
           title: "Success",
           description: "Logged in successfully!",
@@ -51,7 +55,7 @@ const LoginPage = () => {
         navigate('/dashboard');
       }
     } catch (error) {
-      console.error('Login catch error:', error);
+      console.error('Login form error:', error);
       toast({
         title: "Error",
         description: "An unexpected error occurred",
@@ -122,6 +126,11 @@ const LoginPage = () => {
           </form>
           
           <div className="mt-6 text-center">
+            <p className="text-sm text-muted-foreground mb-4">
+              Test Credentials:<br />
+              Email: test@prompto.trading<br />
+              Password: password123
+            </p>
             <p className="text-sm text-muted-foreground">
               Don't have an account?{' '}
               <Link to="/register" className="text-primary hover:underline">
