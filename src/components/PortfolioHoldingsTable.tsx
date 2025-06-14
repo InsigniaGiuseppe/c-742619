@@ -5,6 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import FormattedNumber from '@/components/FormattedNumber';
 import { TrendingUp, TrendingDown } from 'lucide-react';
+import { formatCryptoQuantity } from '@/lib/cryptoFormatters';
 
 // Define Portfolio type locally since it's not exported from usePortfolio
 interface Portfolio {
@@ -13,11 +14,12 @@ interface Portfolio {
   quantity: number;
   current_value: number;
   total_invested: number;
-  cryptocurrencies?: {
+  crypto?: {
     symbol: string;
     name: string;
     current_price: number;
     price_change_percentage_24h: number;
+    logo_url?: string;
   };
 }
 
@@ -62,32 +64,40 @@ const PortfolioHoldingsTable: React.FC<PortfolioHoldingsTableProps> = ({ portfol
                   const profitLossPercentage = holding.total_invested > 0 
                     ? ((profitLoss / holding.total_invested) * 100) 
                     : 0;
-                  const priceChange24h = holding.cryptocurrencies?.price_change_percentage_24h || 0;
+                  const priceChange24h = holding.crypto?.price_change_percentage_24h || 0;
 
                   return (
                     <TableRow key={holding.cryptocurrency_id} className="hover:bg-white/5">
                       <TableCell>
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-xs font-bold">
-                            {holding.cryptocurrencies?.symbol.slice(0, 2).toUpperCase()}
-                          </div>
+                          {holding.crypto?.logo_url ? (
+                            <img 
+                              src={holding.crypto.logo_url} 
+                              alt={holding.crypto.symbol}
+                              className="w-8 h-8 rounded-full"
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                              }}
+                            />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-xs font-bold">
+                              {holding.crypto?.symbol?.slice(0, 2).toUpperCase() || 'CR'}
+                            </div>
+                          )}
                           <div>
-                            <div className="font-medium">{holding.cryptocurrencies?.name}</div>
-                            <div className="text-xs text-muted-foreground">{holding.cryptocurrencies?.symbol.toUpperCase()}</div>
+                            <div className="font-medium">{holding.crypto?.name || 'Unknown Cryptocurrency'}</div>
+                            <div className="text-xs text-muted-foreground">{holding.crypto?.symbol?.toUpperCase() || 'N/A'}</div>
                           </div>
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
-                        <FormattedNumber 
-                          value={holding.quantity} 
-                          type="currency"
-                          showTooltip={false}
-                          className="font-mono"
-                        />
+                        <span className="font-mono">
+                          {formatCryptoQuantity(holding.quantity)}
+                        </span>
                       </TableCell>
                       <TableCell className="text-right">
                         <FormattedNumber 
-                          value={holding.cryptocurrencies?.current_price || 0} 
+                          value={holding.crypto?.current_price || 0} 
                           type="currency"
                           showTooltip={false}
                           className="font-mono"

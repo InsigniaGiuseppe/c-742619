@@ -13,6 +13,7 @@ import { usePortfolio } from '@/hooks/usePortfolio';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import FormattedNumber from '@/components/FormattedNumber';
+import { formatCryptoQuantity, formatCryptoValue } from '@/lib/cryptoFormatters';
 
 interface UserFinancialControlsProps {
   userId: string;
@@ -34,13 +35,30 @@ const UserFinancialControls: React.FC<UserFinancialControlsProps> = ({ userId })
 
     setIsProcessing(true);
     try {
+      // Get the current price of the selected cryptocurrency
+      const { data: cryptoData, error: cryptoError } = await supabase
+        .from('cryptocurrencies')
+        .select('current_price')
+        .eq('id', selectedCrypto)
+        .single();
+
+      if (cryptoError) throw cryptoError;
+
+      const quantity = parseFloat(cryptoAmount);
+      const currentPrice = cryptoData.current_price;
+      const currentValue = quantity * currentPrice;
+
       const { error } = await supabase
         .from('user_portfolios')
         .upsert({
           user_id: userId,
           cryptocurrency_id: selectedCrypto,
-          quantity: parseFloat(cryptoAmount),
-          total_invested: 0, // Admin adjustment
+          quantity: quantity,
+          average_buy_price: currentPrice,
+          total_invested: currentValue,
+          current_value: currentValue,
+          profit_loss: 0,
+          profit_loss_percentage: 0,
         }, {
           onConflict: 'user_id,cryptocurrency_id'
         });
@@ -145,22 +163,30 @@ const UserFinancialControls: React.FC<UserFinancialControlsProps> = ({ userId })
                   <TableRow key={holding.cryptocurrency_id}>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-xs font-bold">
-                          {holding.cryptocurrency_id.slice(0, 2).toUpperCase()}
-                        </div>
+                        {holding.crypto?.logo_url ? (
+                          <img 
+                            src={holding.crypto.logo_url} 
+                            alt={holding.crypto.symbol}
+                            className="w-8 h-8 rounded-full"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                            }}
+                          />
+                        ) : (
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-xs font-bold">
+                            {holding.crypto?.symbol?.slice(0, 2).toUpperCase() || 'CR'}
+                          </div>
+                        )}
                         <div>
-                          <div className="font-medium">Cryptocurrency</div>
-                          <div className="text-xs text-muted-foreground">Asset</div>
+                          <div className="font-medium">{holding.crypto?.name || 'Unknown'}</div>
+                          <div className="text-xs text-muted-foreground">{holding.crypto?.symbol?.toUpperCase() || 'N/A'}</div>
                         </div>
                       </div>
                     </TableCell>
                     <TableCell className="text-right">
-                      <FormattedNumber 
-                        value={holding.quantity} 
-                        type="currency"
-                        showTooltip={false}
-                        className="font-mono"
-                      />
+                      <span className="font-mono">
+                        {formatCryptoQuantity(holding.quantity)}
+                      </span>
                     </TableCell>
                     <TableCell className="text-right">
                       <FormattedNumber 
@@ -208,6 +234,16 @@ const UserFinancialControls: React.FC<UserFinancialControlsProps> = ({ userId })
                   {cryptocurrencies.map((crypto) => (
                     <SelectItem key={crypto.id} value={crypto.id}>
                       <div className="flex items-center gap-2">
+                        {crypto.logo_url && (
+                          <img 
+                            src={crypto.logo_url} 
+                            alt={crypto.symbol}
+                            className="w-4 h-4 rounded-full"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                            }}
+                          />
+                        )}
                         <span className="font-medium">{crypto.symbol.toUpperCase()}</span>
                         <span className="text-muted-foreground">{crypto.name}</span>
                       </div>

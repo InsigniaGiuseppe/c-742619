@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { usePortfolio } from '@/hooks/usePortfolio';
 import FormattedNumber from './FormattedNumber';
+import { formatCryptoQuantity } from '@/lib/cryptoFormatters';
 
 const COLORS = ['#8B5CF6', '#06B6D4', '#10B981', '#F59E0B', '#EF4444', '#EC4899'];
 
@@ -42,10 +43,13 @@ const PortfolioChart = () => {
   }
 
   const chartData = portfolio.map((item, index) => ({
-    name: item.crypto.symbol,
+    name: item.crypto?.symbol?.toUpperCase() || 'Unknown',
+    fullName: item.crypto?.name || 'Unknown',
     value: item.current_value,
+    quantity: item.quantity,
     percentage: totalValue > 0 ? (item.current_value / totalValue) * 100 : 0,
-    color: COLORS[index % COLORS.length]
+    color: COLORS[index % COLORS.length],
+    logo_url: item.crypto?.logo_url
   }));
 
   const CustomTooltip = ({ active, payload }: any) => {
@@ -53,12 +57,29 @@ const PortfolioChart = () => {
       const data = payload[0].payload;
       return (
         <div className="bg-gray-800 p-3 rounded-lg border border-gray-600 shadow-lg">
-          <p className="font-medium text-white">{data.name}</p>
+          <div className="flex items-center gap-2 mb-2">
+            {data.logo_url ? (
+              <img 
+                src={data.logo_url} 
+                alt={data.name}
+                className="w-4 h-4 rounded-full"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                }}
+              />
+            ) : (
+              <div className="w-4 h-4 rounded-full bg-gradient-to-r from-blue-500 to-purple-500" />
+            )}
+            <p className="font-medium text-white">{data.fullName} ({data.name})</p>
+          </div>
+          <p className="text-sm text-gray-300">
+            Holdings: {formatCryptoQuantity(data.quantity)} {data.name}
+          </p>
           <p className="text-sm text-gray-300">
             Value: <FormattedNumber value={data.value} type="currency" showTooltip={false} />
           </p>
           <p className="text-sm text-gray-300">
-            {data.percentage.toFixed(1)}%
+            {data.percentage.toFixed(1)}% of portfolio
           </p>
         </div>
       );
@@ -104,7 +125,26 @@ const PortfolioChart = () => {
                   className="w-4 h-4 rounded-full"
                   style={{ backgroundColor: item.color }}
                 />
-                <span className="font-medium">{item.name}</span>
+                {item.logo_url ? (
+                  <img 
+                    src={item.logo_url} 
+                    alt={item.name}
+                    className="w-5 h-5 rounded-full"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
+                ) : (
+                  <div className="w-5 h-5 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-xs font-bold">
+                    {item.name.slice(0, 1)}
+                  </div>
+                )}
+                <div>
+                  <span className="font-medium">{item.name}</span>
+                  <span className="text-xs text-muted-foreground ml-2">
+                    {formatCryptoQuantity(item.quantity)} {item.name}
+                  </span>
+                </div>
                 <span className="text-xs text-muted-foreground">
                   {item.percentage.toFixed(1)}%
                 </span>

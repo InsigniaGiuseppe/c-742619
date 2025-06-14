@@ -5,6 +5,7 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import FormattedNumber from '@/components/FormattedNumber';
 import { usePortfolio } from '@/hooks/usePortfolio';
+import { formatCryptoQuantity } from '@/lib/cryptoFormatters';
 
 const PortfolioAllocation = () => {
   const { portfolio, totalValue } = usePortfolio();
@@ -59,11 +60,27 @@ const PortfolioAllocation = () => {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className={`w-3 h-3 rounded-full ${getColorForIndex(index)}`} />
-                <div>
-                  <span className="font-medium">{allocation.crypto.symbol.toUpperCase()}</span>
-                  <span className="text-xs text-muted-foreground ml-2">
-                    {allocation.crypto.name}
-                  </span>
+                <div className="flex items-center gap-2">
+                  {allocation.crypto?.logo_url ? (
+                    <img 
+                      src={allocation.crypto.logo_url} 
+                      alt={allocation.crypto.symbol}
+                      className="w-5 h-5 rounded-full"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                      }}
+                    />
+                  ) : (
+                    <div className="w-5 h-5 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-xs font-bold">
+                      {allocation.crypto?.symbol?.slice(0, 1).toUpperCase() || 'C'}
+                    </div>
+                  )}
+                  <div>
+                    <span className="font-medium">{allocation.crypto?.symbol?.toUpperCase() || 'Unknown'}</span>
+                    <span className="text-xs text-muted-foreground ml-2">
+                      {allocation.crypto?.name || 'Unknown'}
+                    </span>
+                  </div>
                 </div>
               </div>
               <div className="text-right">
@@ -80,6 +97,9 @@ const PortfolioAllocation = () => {
               </div>
             </div>
             <Progress value={allocation.percentage} className="h-2" />
+            <div className="text-xs text-muted-foreground text-right">
+              {formatCryptoQuantity(allocation.quantity)} {allocation.crypto?.symbol?.toUpperCase()}
+            </div>
           </div>
         ))}
         
@@ -90,7 +110,7 @@ const PortfolioAllocation = () => {
             <div>
               <span className="text-muted-foreground">Top Asset:</span>
               <div className="font-medium">
-                {allocations[0]?.crypto.symbol.toUpperCase()} ({allocations[0]?.percentage.toFixed(1)}%)
+                {allocations[0]?.crypto?.symbol?.toUpperCase() || 'N/A'} ({allocations[0]?.percentage.toFixed(1)}%)
               </div>
             </div>
             <div>
