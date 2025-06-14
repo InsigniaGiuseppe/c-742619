@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, TrendingUp, TrendingDown } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { useCryptocurrencies } from '@/hooks/useCryptocurrencies';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -15,6 +14,16 @@ import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import { motion } from 'framer-motion';
 import CryptoDetailSkeletonPage from './CryptoDetailSkeletonPage';
+import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import CryptoLogo from '@/components/CryptoLogo';
+
+const chartConfig = {
+  price: {
+    label: "Price",
+    color: "hsl(var(--primary))",
+  },
+} satisfies ChartConfig;
 
 const CryptoDetailPage = () => {
   const { symbol } = useParams<{ symbol: string }>();
@@ -24,6 +33,7 @@ const CryptoDetailPage = () => {
   
   const [selectedTimeframe, setSelectedTimeframe] = useState('1d');
   const [tradeType, setTradeType] = useState<'buy' | 'sell'>('buy');
+  const [paymentMethod, setPaymentMethod] = useState<'balance' | 'ideal'>('balance');
   const [amountEUR, setAmountEUR] = useState('');
   const [amountCoin, setAmountCoin] = useState('');
   const [isProcessingTrade, setIsProcessingTrade] = useState(false);
@@ -54,7 +64,7 @@ const CryptoDetailPage = () => {
     return data;
   };
 
-  const chartData = generateMockChartData();
+  const chartData = crypto ? generateMockChartData() : [];
 
   useEffect(() => {
     if (user) {
@@ -258,7 +268,7 @@ const CryptoDetailPage = () => {
         <Button 
           variant="ghost" 
           onClick={() => navigate('/trading')}
-          className="mb-6 text-white hover:text-white/80"
+          className="mb-6"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Trading
@@ -267,12 +277,15 @@ const CryptoDetailPage = () => {
         {/* Coin Header */}
         <div className="mb-8">
           <div className="flex items-center gap-4 mb-4">
-            <div className="w-16 h-16 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-2xl font-bold">
-              {crypto.symbol.substring(0, 2)}
-            </div>
+            <CryptoLogo 
+              logo_url={crypto.logo_url}
+              name={crypto.name}
+              symbol={crypto.symbol}
+              size="lg"
+            />
             <div>
               <h1 className="text-3xl font-bold">{crypto.name}</h1>
-              <p className="text-gray-400">{crypto.symbol.toUpperCase()}</p>
+              <p className="text-muted-foreground">{crypto.symbol.toUpperCase()}</p>
             </div>
           </div>
           
@@ -280,11 +293,11 @@ const CryptoDetailPage = () => {
             <span className="text-4xl font-bold">${crypto.current_price.toLocaleString()}</span>
             <Badge 
               variant={crypto.price_change_percentage_24h && crypto.price_change_percentage_24h >= 0 ? "default" : "destructive"}
-              className="flex items-center gap-1"
+              className="flex items-center gap-1 text-base"
             >
               {crypto.price_change_percentage_24h && crypto.price_change_percentage_24h >= 0 ? 
-                <TrendingUp className="h-3 w-3" /> : 
-                <TrendingDown className="h-3 w-3" />
+                <TrendingUp className="h-4 w-4" /> : 
+                <TrendingDown className="h-4 w-4" />
               }
               {crypto.price_change_percentage_24h?.toFixed(2)}%
             </Badge>
@@ -293,15 +306,15 @@ const CryptoDetailPage = () => {
           {crypto.market_cap && (
             <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
               <div>
-                <span className="text-gray-400">Market Cap: </span>
+                <span className="text-muted-foreground">Market Cap: </span>
                 <span>${crypto.market_cap.toLocaleString()}</span>
               </div>
               <div>
-                <span className="text-gray-400">24h Volume: </span>
+                <span className="text-muted-foreground">24h Volume: </span>
                 <span>${crypto.volume_24h?.toLocaleString()}</span>
               </div>
               <div>
-                <span className="text-gray-400">Your Holdings: </span>
+                <span className="text-muted-foreground">Your Holdings: </span>
                 <span>{userHoldings.toFixed(8)} {crypto.symbol}</span>
               </div>
             </div>
@@ -330,27 +343,36 @@ const CryptoDetailPage = () => {
                 </div>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={400}>
+                <ChartContainer config={chartConfig} className="h-[400px] w-full">
                   <LineChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                    <XAxis dataKey="time" stroke="#9CA3AF" />
-                    <YAxis stroke="#9CA3AF" />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: '#111827',
-                        border: '1px solid #374151',
-                        borderRadius: '0.75rem'
-                      }}
+                    <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="hsla(var(--muted-foreground), 0.2)" />
+                    <XAxis 
+                      dataKey="time" 
+                      tickLine={false}
+                      axisLine={false}
+                      tickMargin={8}
+                      stroke="hsl(var(--muted-foreground))"
+                    />
+                    <YAxis 
+                      tickLine={false}
+                      axisLine={false}
+                      tickMargin={8}
+                      stroke="hsl(var(--muted-foreground))"
+                      tickFormatter={(value) => `$${value.toLocaleString()}`}
+                    />
+                    <ChartTooltip 
+                      cursor={false}
+                      content={<ChartTooltipContent indicator="line" />}
                     />
                     <Line 
-                      type="monotone" 
                       dataKey="price" 
-                      stroke="hsl(var(--primary))"
+                      type="monotone"
+                      stroke="var(--color-price)"
                       strokeWidth={2}
                       dot={false}
                     />
                   </LineChart>
-                </ResponsiveContainer>
+                </ChartContainer>
               </CardContent>
             </Card>
           </div>
@@ -360,7 +382,7 @@ const CryptoDetailPage = () => {
             <Card className="glass glass-hover">
               <CardHeader>
                 <CardTitle>Trade {crypto.symbol}</CardTitle>
-                <p className="text-sm text-gray-400">
+                <p className="text-sm text-muted-foreground">
                   Demo Balance: ${userBalance.toFixed(2)}
                 </p>
               </CardHeader>
@@ -382,49 +404,73 @@ const CryptoDetailPage = () => {
                   </Button>
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-4">
                   <div>
-                    <label className="text-sm text-gray-400">Amount (USD)</label>
+                    <label className="text-sm text-muted-foreground mb-2 block">Payment Method</label>
+                    <ToggleGroup
+                      type="single"
+                      value={paymentMethod}
+                      onValueChange={(value) => {
+                        if (value) {
+                          setPaymentMethod(value as 'balance' | 'ideal');
+                          if (value === 'ideal') {
+                            toast.info("iDEAL payments are for demo purposes and not yet functional.");
+                          }
+                        }
+                      }}
+                      className="grid grid-cols-2"
+                    >
+                      <ToggleGroupItem value="balance" aria-label="Pay with balance">
+                        Pay with Balance
+                      </ToggleGroupItem>
+                      <ToggleGroupItem value="ideal" aria-label="Pay with iDEAL">
+                        Pay with iDEAL
+                      </ToggleGroupItem>
+                    </ToggleGroup>
+                  </div>
+
+                  <div>
+                    <label className="text-sm text-muted-foreground">Amount (USD)</label>
                     <Input
                       type="number"
                       placeholder="0.00"
                       value={amountEUR}
                       onChange={(e) => handleAmountEURChange(e.target.value)}
+                      className="bg-transparent"
                     />
                   </div>
 
                   <div>
-                    <label className="text-sm text-gray-400">Amount ({crypto.symbol})</label>
+                    <label className="text-sm text-muted-foreground">Amount ({crypto.symbol})</label>
                     <Input
                       type="number"
                       placeholder="0.00000000"
                       value={amountCoin}
                       onChange={(e) => handleAmountCoinChange(e.target.value)}
+                      className="bg-transparent"
                     />
                   </div>
 
                   {amountEUR && (
-                    <div className="p-3 bg-white/5 rounded-lg">
-                      <div className="text-sm space-y-1">
-                        <div className="flex justify-between">
-                          <span>Price per {crypto.symbol}:</span>
-                          <span>${crypto.current_price.toFixed(2)}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Fee (0.1%):</span>
-                          <span>${(parseFloat(amountEUR) * 0.001).toFixed(2)}</span>
-                        </div>
-                        <div className="flex justify-between font-bold">
-                          <span>Total:</span>
-                          <span>${(parseFloat(amountEUR) + (parseFloat(amountEUR) * 0.001)).toFixed(2)}</span>
-                        </div>
+                    <div className="p-3 bg-white/5 rounded-lg text-sm space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Price</span>
+                        <span>${crypto.current_price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Fee (0.1%)</span>
+                        <span>${(parseFloat(amountEUR) * 0.001).toFixed(4)}</span>
+                      </div>
+                      <div className="flex justify-between font-bold text-base border-t border-white/10 pt-2 mt-2">
+                        <span>Total</span>
+                        <span>${(parseFloat(amountEUR) * 1.001).toFixed(2)}</span>
                       </div>
                     </div>
                   )}
 
                   <Button 
                     onClick={handleTrade}
-                    disabled={!amountEUR || !amountCoin || isProcessingTrade || !user}
+                    disabled={!amountEUR || !amountCoin || isProcessingTrade || !user || paymentMethod === 'ideal'}
                     className="w-full"
                   >
                     {isProcessingTrade ? 'Processing...' : `${tradeType === 'buy' ? 'Buy' : 'Sell'} ${crypto.symbol}`}
