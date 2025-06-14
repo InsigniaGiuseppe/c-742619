@@ -1,4 +1,3 @@
-
 import { Github, Twitter, Shield } from "lucide-react";
 import { Button } from "./ui/button";
 import { Link } from "react-router-dom";
@@ -10,7 +9,14 @@ const Footer = () => {
         <div className="glass glass-hover rounded-xl p-8">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             <div className="space-y-4">
-              <h3 className="font-medium text-lg">CryptoTrade</h3>
+              <div className="flex items-center gap-3">
+                <img 
+                  src="/lovable-uploads/b5177265-9843-4db0-bf60-214fe4560272.png" 
+                  alt="PROMPTO TRADING Logo" 
+                  className="w-6 h-6 object-contain"
+                />
+                <h3 className="font-medium text-lg">PROMPTO TRADING</h3>
+              </div>
               <p className="text-sm text-muted-foreground">
                 Empowering traders with advanced crypto trading solutions.
               </p>
@@ -95,7 +101,7 @@ const Footer = () => {
 
           <div className="mt-8 pt-8 border-t border-white/10">
             <p className="text-sm text-muted-foreground text-center">
-              © {new Date().getFullYear()} CryptoTrade. All rights reserved.
+              © {new Date().getFullYear()} PROMPTO TRADING. All rights reserved.
             </p>
           </div>
         </div>

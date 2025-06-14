@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -128,7 +127,7 @@ export const CryptocurrenciesProvider: React.FC<{ children: ReactNode }> = ({ ch
 
     const syncInterval = setInterval(() => {
       syncPrices();
-    }, 30000);
+    }, 10000); // Reduced from 30 seconds to 10 seconds
       
     return () => {
       clearInterval(syncInterval);

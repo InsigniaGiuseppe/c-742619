@@ -109,6 +109,13 @@ const CryptoDetailPage = () => {
     setIsProcessingTrade(true);
 
     try {
+      console.log('--- Initiating Trade ---');
+      console.log('User ID:', user.id);
+      console.log('Crypto Info:', { id: crypto.id, symbol: crypto.symbol, name: crypto.name });
+      console.log('Trade Type:', tradeType);
+      console.log('USD Value:', eurValue);
+      console.log('Coin Amount:', coinAmount);
+
       // Create trading order
       const { data: order, error: orderError } = await supabase
         .from('trading_orders')
@@ -126,7 +133,12 @@ const CryptoDetailPage = () => {
         .select()
         .single();
 
-      if (orderError) throw orderError;
+      if (orderError) {
+        console.error('Order creation error:', orderError);
+        throw orderError;
+      }
+      
+      console.log('--- Trade Order Created ---', order);
 
       // Create transaction history
       await supabase
@@ -197,16 +209,19 @@ const CryptoDetailPage = () => {
         .from('profiles')
         .update({ demo_balance_usd: newBalance })
         .eq('id', user.id);
-
+        
+      console.log('--- User Balance Updated ---');
+      
       toast.success(`Successfully ${tradeType === 'buy' ? 'bought' : 'sold'} ${coinAmount} ${crypto.symbol}`);
       
-      // Reset form and refresh data
+      // Reset form and fetch user data
       setAmountEUR('');
       setAmountCoin('');
       fetchUserData();
 
     } catch (error) {
-      console.error('Trade error:', error);
+      console.error('--- Trade Error ---');
+      console.error('Raw Error Object:', error);
       let errorMessage = 'Trade failed. Please try again.';
       if (error && typeof error === 'object' && 'message' in error) {
         const supabaseError = error as { message: string; details?: string; hint?: string; code?: string };
