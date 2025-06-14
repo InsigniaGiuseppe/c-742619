@@ -37,7 +37,7 @@ const Navigation = () => {
           {/* Logo */}
           <Link to={user ? '/dashboard' : '/'} className="flex items-center gap-3">
             <img 
-              src="/lovable-uploads/f2e4b091-6735-4cc9-bf78-84aa28f74b0b.png" 
+              src="/lovable-uploads/b0e06c59-c716-48eb-af56-83b02e9c928c.png" 
               alt="PROMPTO Logo" 
               className="w-8 h-8 object-contain"
             />

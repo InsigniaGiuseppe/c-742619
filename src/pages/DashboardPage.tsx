@@ -49,7 +49,7 @@ const DashboardPage = () => {
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
             <img 
-              src="/lovable-uploads/f2e4b091-6735-4cc9-bf78-84aa28f74b0b.png" 
+              src="/lovable-uploads/b0e06c59-c716-48eb-af56-83b02e9c928c.png" 
               alt="PROMPTO Logo" 
               className="w-10 h-10 object-contain"
             />
