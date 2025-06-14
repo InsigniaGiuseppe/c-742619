@@ -34,6 +34,20 @@ const WalletListItem: React.FC<{ wallet: ExternalWallet; logo_url?: string; onDe
       </div>
       <div className="flex items-center gap-2">
         <Badge className={`capitalize ${statusStyles[wallet.status]}`}>{wallet.status}</Badge>
+        
+        {wallet.status === 'rejected' && wallet.admin_notes && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="cursor-help">
+                <AlertCircle className="h-4 w-4 text-red-400" />
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p className="max-w-xs"><strong>Rejection Reason:</strong> {wallet.admin_notes}</p>
+            </TooltipContent>
+          </Tooltip>
+        )}
+
         <span className="text-sm text-muted-foreground hidden md:block">{format(new Date(wallet.created_at), 'MMM d, yyyy')}</span>
         
         {wallet.screenshot_url && (
