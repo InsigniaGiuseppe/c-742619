@@ -54,6 +54,30 @@ export const useAuth = () => {
     console.log('Current origin:', window.location.origin);
     console.log('Supabase client status:', !!supabase);
     
+    // Add database state logging before attempting signin
+    try {
+      console.log('=== CHECKING DATABASE STATE ===');
+      
+      // Check if user exists in auth.users via a simple query
+      const { data: profiles, error: profileError } = await supabase
+        .from('profiles')
+        .select('id, email, is_admin')
+        .eq('email', email);
+      
+      console.log('Profiles query result:', { profiles, profileError });
+      
+      // Try to get user count to test basic connectivity
+      const { count, error: countError } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true });
+      
+      console.log('Profiles count query:', { count, countError });
+      
+    } catch (dbError) {
+      console.error('=== DATABASE CHECK ERROR ===');
+      console.error('Database check error:', dbError);
+    }
+    
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -70,6 +94,17 @@ export const useAuth = () => {
         console.error('Error status:', error.status);
         console.error('Error name:', error.name);
         console.error('Full error object:', JSON.stringify(error, null, 2));
+        
+        // Additional error analysis
+        if (error.message.includes('Database error')) {
+          console.error('=== DATABASE ERROR ANALYSIS ===');
+          console.error('This appears to be a database schema/data issue');
+          console.error('Potential causes:');
+          console.error('1. NULL values in required auth.users fields');
+          console.error('2. Missing or invalid auth.identities records'); 
+          console.error('3. Email confirmation status issues');
+          console.error('4. Invalid user record structure');
+        }
       }
       
       if (data?.user) {
