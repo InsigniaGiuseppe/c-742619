@@ -53,18 +53,30 @@ const fetchPortfolio = async (userId: string): Promise<{
 
   console.log('[usePortfolio] Raw data fetched from supabase:', data);
 
-  const portfolioData = data?.map(item => ({
-    ...item,
-    crypto: item.crypto
-  })) || [];
+  const portfolioData = data?.map(item => {
+    // Calculate live current value using current market price
+    const liveCurrentValue = item.quantity * (item.crypto?.current_price || 0);
+    
+    // Calculate profit/loss based on live current value vs total invested
+    const profitLoss = liveCurrentValue - item.total_invested;
+    const profitLossPercentage = item.total_invested > 0 ? (profitLoss / item.total_invested) * 100 : 0;
 
-  // Calculate totals
+    return {
+      ...item,
+      current_value: liveCurrentValue, // Override with live calculated value
+      profit_loss: profitLoss,
+      profit_loss_percentage: profitLossPercentage,
+      crypto: item.crypto
+    };
+  }) || [];
+
+  // Calculate totals using live values
   const totalVal = portfolioData.reduce((sum, item) => sum + item.current_value, 0);
   const totalPL = portfolioData.reduce((sum, item) => sum + item.profit_loss, 0);
   const totalInvested = portfolioData.reduce((sum, item) => sum + item.total_invested, 0);
   const totalPLPercentage = totalInvested > 0 ? (totalPL / totalInvested) * 100 : 0;
 
-  console.log('[usePortfolio] Processed data being returned:', {
+  console.log('[usePortfolio] Processed data with live pricing:', {
     portfolio: portfolioData,
     totalValue: totalVal,
     totalProfitLoss: totalPL,
@@ -90,8 +102,8 @@ export const usePortfolio = () => {
       return fetchPortfolio(user!.id);
     },
     enabled: !!user,
-    staleTime: 30000, // Consider data stale after 30 seconds
-    refetchInterval: 60000, // Refetch every minute
+    staleTime: 10000, // Consider data stale after 10 seconds for more frequent updates
+    refetchInterval: 30000, // Refetch every 30 seconds for live pricing
   });
 
   return {

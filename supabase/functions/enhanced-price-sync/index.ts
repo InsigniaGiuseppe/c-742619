@@ -112,19 +112,55 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Update user portfolios with new current values
-    const { error: portfolioError } = await supabaseClient.rpc('update_portfolio_values');
+    // Now update all user portfolios with new current values
+    console.log('Updating user portfolios with live prices...');
     
-    if (portfolioError) {
-      console.log('Portfolio update function not available, continuing...');
+    // Get all portfolio entries with their crypto data
+    const { data: portfolios, error: portfolioFetchError } = await supabaseClient
+      .from('user_portfolios')
+      .select(`
+        id,
+        quantity,
+        total_invested,
+        cryptocurrency_id,
+        crypto:cryptocurrencies!inner(current_price)
+      `);
+
+    if (portfolioFetchError) {
+      console.error('Error fetching portfolios:', portfolioFetchError);
+    } else if (portfolios) {
+      // Update each portfolio entry with live current value and P&L
+      for (const portfolio of portfolios) {
+        const currentPrice = portfolio.crypto?.current_price || 0;
+        const liveCurrentValue = portfolio.quantity * currentPrice;
+        const profitLoss = liveCurrentValue - portfolio.total_invested;
+        const profitLossPercentage = portfolio.total_invested > 0 ? (profitLoss / portfolio.total_invested) * 100 : 0;
+
+        const { error: portfolioUpdateError } = await supabaseClient
+          .from('user_portfolios')
+          .update({
+            current_value: liveCurrentValue,
+            profit_loss: profitLoss,
+            profit_loss_percentage: profitLossPercentage,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', portfolio.id);
+
+        if (portfolioUpdateError) {
+          console.error(`Error updating portfolio ${portfolio.id}:`, portfolioUpdateError);
+        }
+      }
+      
+      console.log(`Updated ${portfolios.length} portfolio entries with live prices`);
     }
 
-    console.log(`Enhanced price sync completed. Updated ${updatedCount} cryptocurrencies.`);
+    console.log(`Enhanced price sync completed. Updated ${updatedCount} cryptocurrencies and portfolios.`);
 
     return new Response(
       JSON.stringify({
         success: true,
         updated_count: updatedCount,
+        portfolios_updated: portfolios?.length || 0,
         message: 'Enhanced price sync completed successfully'
       }),
       {
