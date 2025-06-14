@@ -21,11 +21,20 @@ const TradingChartDisplay: React.FC<TradingChartDisplayProps> = ({
   const chartRef = useRef<IChartApi | null>(null);
   const seriesManagerRef = useRef<ChartSeriesManager | null>(null);
 
+  // Initialize chart once
   useEffect(() => {
-    if (chartContainerRef.current) {
-      const config = getChartConfig(chartContainerRef.current.clientWidth);
-      chartRef.current = createChart(chartContainerRef.current, config);
-      seriesManagerRef.current = new ChartSeriesManager(chartRef.current);
+    if (chartContainerRef.current && !chartRef.current) {
+      console.log('[TradingChartDisplay] Initializing chart');
+      
+      try {
+        const config = getChartConfig(chartContainerRef.current.clientWidth);
+        chartRef.current = createChart(chartContainerRef.current, config);
+        seriesManagerRef.current = new ChartSeriesManager(chartRef.current);
+        
+        console.log('[TradingChartDisplay] Chart initialized successfully');
+      } catch (error) {
+        console.error('[TradingChartDisplay] Error initializing chart:', error);
+      }
 
       const handleResize = () => {
         if (chartRef.current && chartContainerRef.current) {
@@ -40,34 +49,40 @@ const TradingChartDisplay: React.FC<TradingChartDisplayProps> = ({
       return () => {
         window.removeEventListener('resize', handleResize);
         if (chartRef.current) {
+          console.log('[TradingChartDisplay] Cleaning up chart');
           chartRef.current.remove();
+          chartRef.current = null;
+          seriesManagerRef.current = null;
         }
       };
     }
   }, []);
 
+  // Update chart data when props change
   useEffect(() => {
     if (chartRef.current && seriesManagerRef.current) {
-      // Remove existing series by recreating the chart
-      if (chartContainerRef.current) {
-        chartRef.current.remove();
-        const config = getChartConfig(chartContainerRef.current.clientWidth);
-        chartRef.current = createChart(chartContainerRef.current, config);
-        seriesManagerRef.current = new ChartSeriesManager(chartRef.current);
-      }
-
-      const data = generateSampleData(crypto);
-      const volumeData = generateVolumeData(data);
-
-      // Add price series
-      seriesManagerRef.current.addPriceSeries(chartType, data);
+      console.log(`[TradingChartDisplay] Updating chart: ${chartType}, ${crypto.symbol}, ${timeframe}`);
       
-      // Add volume series
-      seriesManagerRef.current.addVolumeSeries(volumeData);
+      try {
+        // Clear existing series
+        seriesManagerRef.current.clearAllSeries();
+
+        // Generate new data
+        const data = generateSampleData(crypto);
+        const volumeData = generateVolumeData(data);
+
+        // Add new series
+        seriesManagerRef.current.addPriceSeries(chartType, data);
+        seriesManagerRef.current.addVolumeSeries(volumeData);
+        
+        console.log('[TradingChartDisplay] Chart data updated successfully');
+      } catch (error) {
+        console.error('[TradingChartDisplay] Error updating chart data:', error);
+      }
     }
   }, [chartType, crypto, timeframe]);
 
-  return <div ref={chartContainerRef} className="w-full" />;
+  return <div ref={chartContainerRef} className="w-full h-[400px]" />;
 };
 
 export default TradingChartDisplay;
