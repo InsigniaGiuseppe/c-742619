@@ -35,7 +35,7 @@ const DashboardPage = () => {
     {
       title: 'Holdings',
       value: portfolio.length,
-      type: 'number' as const,
+      type: 'holdings' as const,
       icon: DollarSign,
       trend: 'neutral' as const,
       trendValue: 0,
@@ -75,6 +75,8 @@ const DashboardPage = () => {
                   <div className="text-2xl font-bold">
                     {loading ? (
                       <div className="h-8 w-24 bg-gray-700 animate-pulse rounded"></div>
+                    ) : stat.type === 'holdings' ? (
+                      <span className="text-2xl font-bold">{stat.value}</span>
                     ) : (
                       <FormattedNumber
                         value={stat.value}
