@@ -13,6 +13,16 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import EditWalletModal from './EditWalletModal';
 
 const statusStyles: { [key: string]: string } = {
@@ -21,7 +31,7 @@ const statusStyles: { [key: string]: string } = {
   rejected: 'bg-red-500/20 text-red-300 border-red-400/30',
 };
 
-const WalletListItem: React.FC<{ wallet: ExternalWallet; logo_url?: string; onDelete: (id: string) => void; onEdit: (wallet: ExternalWallet) => void; isDeleting: boolean }> = ({ wallet, logo_url, onDelete, onEdit, isDeleting }) => {
+const WalletListItem: React.FC<{ wallet: ExternalWallet; logo_url?: string; onDelete: (wallet: ExternalWallet) => void; onEdit: (wallet: ExternalWallet) => void; isDeleting: boolean }> = ({ wallet, logo_url, onDelete, onEdit, isDeleting }) => {
   return (
     <div className="flex items-center justify-between p-4 rounded-lg glass-hover">
       <div className="flex items-center gap-4">
@@ -78,8 +88,8 @@ const WalletListItem: React.FC<{ wallet: ExternalWallet; logo_url?: string; onDe
 
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" onClick={() => onDelete(wallet.id)} disabled={isDeleting}>
-              <Trash2 className="h-4 w-4" />
+            <Button variant="ghost" size="icon" onClick={() => onDelete(wallet)} disabled={isDeleting}>
+              {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
             </Button>
           </TooltipTrigger>
           <TooltipContent>
@@ -97,6 +107,7 @@ const WalletList: React.FC = () => {
   const { toast } = useToast();
   const [deletingId, setDeletingId] = React.useState<string | null>(null);
   const [editingWallet, setEditingWallet] = React.useState<ExternalWallet | null>(null);
+  const [walletToDelete, setWalletToDelete] = React.useState<ExternalWallet | null>(null);
 
   const cryptoMap = React.useMemo(() => {
     return new Map(cryptocurrencies.map(c => [c.symbol, c]));
@@ -107,6 +118,7 @@ const WalletList: React.FC = () => {
     try {
       await deleteWallet(walletId);
       toast({ title: 'Success', description: 'Wallet removed.' });
+      setWalletToDelete(null);
     } catch (error: any) {
       toast({ title: 'Error', description: 'Failed to remove wallet.', variant: 'destructive' });
     } finally {
@@ -120,6 +132,10 @@ const WalletList: React.FC = () => {
 
   const handleCloseModal = () => {
     setEditingWallet(null);
+  };
+  
+  const handleRequestDelete = (wallet: ExternalWallet) => {
+    setWalletToDelete(wallet);
   };
 
   if (isLoading || cryptosLoading) {
@@ -161,7 +177,7 @@ const WalletList: React.FC = () => {
                   key={wallet.id}
                   wallet={wallet}
                   logo_url={cryptoMap.get(wallet.coin_symbol)?.logo_url}
-                  onDelete={handleDelete}
+                  onDelete={handleRequestDelete}
                   onEdit={handleEdit}
                   isDeleting={deletingId === wallet.id}
                 />
@@ -175,6 +191,29 @@ const WalletList: React.FC = () => {
         isOpen={!!editingWallet}
         onClose={handleCloseModal}
       />
+      <AlertDialog open={!!walletToDelete} onOpenChange={(isOpen) => !isOpen && setWalletToDelete(null)}>
+        <AlertDialogContent className="glass">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete your{' '}
+              <span className="font-bold text-foreground">
+                {walletToDelete?.wallet_label || `${walletToDelete?.coin_symbol} Wallet`}
+              </span>.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setWalletToDelete(null)} disabled={!!deletingId}>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => walletToDelete && handleDelete(walletToDelete.id)} 
+              disabled={!!deletingId}
+            >
+              {deletingId === walletToDelete?.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Continue
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };
