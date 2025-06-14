@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,6 +13,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
+import { motion } from 'framer-motion';
+import CryptoDetailSkeletonPage from './CryptoDetailSkeletonPage';
 
 const CryptoDetailPage = () => {
   const { symbol } = useParams<{ symbol: string }>();
@@ -231,11 +234,7 @@ const CryptoDetailPage = () => {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
-        <div>Loading...</div>
-      </div>
-    );
+    return <CryptoDetailSkeletonPage />;
   }
 
   if (!crypto) {
@@ -249,7 +248,13 @@ const CryptoDetailPage = () => {
   return (
     <div className="min-h-screen bg-black text-white">
       <Navigation />
-      <main className="container mx-auto px-4 py-20 pt-24">
+      <motion.main
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -20 }}
+        transition={{ duration: 0.5 }}
+        className="container mx-auto px-4 py-20 pt-24"
+      >
         <Button 
           variant="ghost" 
           onClick={() => navigate('/trading')}
@@ -429,7 +434,7 @@ const CryptoDetailPage = () => {
             </Card>
           </div>
         </div>
-      </main>
+      </motion.main>
       <Footer />
     </div>
   );

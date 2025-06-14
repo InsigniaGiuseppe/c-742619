@@ -9,6 +9,7 @@ import RecentTransactions from '@/components/RecentTransactions';
 import { usePortfolio } from '@/hooks/usePortfolio';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import { motion } from 'framer-motion';
 
 const DashboardPage = () => {
   const { user } = useAuth();
@@ -40,7 +41,13 @@ const DashboardPage = () => {
   return (
     <div className="min-h-screen bg-black text-foreground flex flex-col">
       <Navigation />
-      <main className="flex-grow container mx-auto px-4 py-20 pt-24">
+      <motion.main
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -20 }}
+        transition={{ duration: 0.5 }}
+        className="flex-grow container mx-auto px-4 py-20 pt-24"
+      >
         <h1 className="text-4xl font-bold mb-8">Dashboard</h1>
         
         {/* Overview Cards */}
@@ -113,7 +120,7 @@ const DashboardPage = () => {
           <PortfolioChart />
           <RecentTransactions />
         </div>
-      </main>
+      </motion.main>
       <Footer />
     </div>
   );

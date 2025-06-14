@@ -8,6 +8,8 @@ import { Search } from 'lucide-react';
 import { useCryptocurrencies } from '@/hooks/useCryptocurrencies';
 import CryptoCard from '@/components/CryptoCard';
 import { useToast } from '@/hooks/use-toast';
+import { motion } from 'framer-motion';
+import CryptoCardSkeleton from '@/components/CryptoCardSkeleton';
 
 const TradingPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -29,7 +31,13 @@ const TradingPage = () => {
   return (
     <div className="min-h-screen bg-black text-foreground flex flex-col">
       <Navigation />
-      <main className="flex-grow container mx-auto px-4 py-20 pt-24">
+      <motion.main
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -20 }}
+        transition={{ duration: 0.5 }}
+        className="flex-grow container mx-auto px-4 py-20 pt-24"
+      >
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold mb-4">Cryptocurrency Trading</h1>
           <p className="text-muted-foreground text-lg">
@@ -51,9 +59,10 @@ const TradingPage = () => {
         </div>
 
         {loading ? (
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto"></div>
-            <p className="mt-4 text-muted-foreground">Loading cryptocurrencies...</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {Array.from({ length: 12 }).map((_, i) => (
+              <CryptoCardSkeleton key={i} />
+            ))}
           </div>
         ) : error ? (
           <div className="text-center">
@@ -77,7 +86,7 @@ const TradingPage = () => {
             ))}
           </div>
         )}
-      </main>
+      </motion.main>
       <Footer />
     </div>
   );

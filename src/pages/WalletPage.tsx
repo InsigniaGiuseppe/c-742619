@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,6 +10,7 @@ import { usePortfolio } from '@/hooks/usePortfolio';
 import { useTransactionHistory } from '@/hooks/useTransactionHistory';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import { motion } from 'framer-motion';
 
 const WalletPage = () => {
   const navigate = useNavigate();
@@ -46,7 +46,13 @@ const WalletPage = () => {
   return (
     <div className="min-h-screen bg-black text-foreground flex flex-col">
       <Navigation />
-      <main className="flex-grow container mx-auto px-4 py-20 pt-24">
+      <motion.main
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -20 }}
+        transition={{ duration: 0.5 }}
+        className="flex-grow container mx-auto px-4 py-20 pt-24"
+      >
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-4xl font-bold">My Wallet</h1>
           <div className="flex gap-3">
@@ -229,7 +235,7 @@ const WalletPage = () => {
             </CardContent>
           </Card>
         </div>
-      </main>
+      </motion.main>
       <Footer />
     </div>
   );

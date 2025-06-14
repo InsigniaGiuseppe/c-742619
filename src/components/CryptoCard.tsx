@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 import { Cryptocurrency } from '@/hooks/useCryptocurrencies';
+import CryptoLogo from './CryptoLogo';
 
 interface CryptoCardProps {
   crypto: Cryptocurrency;
@@ -40,16 +41,11 @@ const CryptoCard: React.FC<CryptoCardProps> = ({ crypto, onTrade }) => {
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {crypto.logo_url && (
-              <img
-                src={crypto.logo_url}
-                alt={`${crypto.name} logo`}
-                className="w-10 h-10 rounded-full"
-                onError={(e) => {
-                  e.currentTarget.style.display = 'none';
-                }}
-              />
-            )}
+            <CryptoLogo 
+              logo_url={crypto.logo_url}
+              name={crypto.name}
+              symbol={crypto.symbol}
+            />
             <div>
               <CardTitle className="text-lg">{crypto.symbol}</CardTitle>
               <p className="text-sm text-muted-foreground">{crypto.name}</p>
