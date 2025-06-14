@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -72,16 +73,22 @@ export const CryptocurrenciesProvider: React.FC<{ children: ReactNode }> = ({ ch
   };
 
   const setupSupabaseSubscription = () => {
+    // Clean up existing channel first
     if (supabaseChannelRef.current) {
-        supabase.removeChannel(supabaseChannelRef.current).catch(err => console.error("Failed to remove channel", err));
-        supabaseChannelRef.current = null;
+      supabase.removeChannel(supabaseChannelRef.current).catch(err => console.error("Failed to remove channel", err));
+      supabaseChannelRef.current = null;
     }
+    
+    // Clear any existing retry timeout
     if (retryTimeoutRef.current) {
-        clearTimeout(retryTimeoutRef.current);
+      clearTimeout(retryTimeoutRef.current);
+      retryTimeoutRef.current = null;
     }
 
+    // Create a new channel with a unique name
+    const channelName = `cryptocurrencies-changes-${Date.now()}`;
     const channel = supabase
-      .channel('cryptocurrencies-changes')
+      .channel(channelName)
       .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'cryptocurrencies' },
@@ -96,30 +103,34 @@ export const CryptocurrenciesProvider: React.FC<{ children: ReactNode }> = ({ ch
         }
       )
       .subscribe((status, err) => {
+        console.log('Supabase subscription status:', status);
+        
         if (status === 'SUBSCRIBED') {
           console.log('Subscribed to Supabase real-time updates!');
           setIsSupabaseRealtimeConnected(true);
           if (error && error.startsWith('Real-time connection failed')) {
             setError(null);
           }
-        }
-        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
           console.error('Supabase real-time channel error:', status, err);
           setIsSupabaseRealtimeConnected(false);
           setError('Real-time connection failed. Prices may be outdated.');
           
-          console.log('Attempting to reconnect Supabase real-time channel in 5 seconds...');
-          retryTimeoutRef.current = window.setTimeout(() => {
-            setupSupabaseSubscription();
-          }, 5000);
-        }
-        if (status === 'CLOSED') {
-            console.log('Supabase real-time channel closed.');
-            setIsSupabaseRealtimeConnected(false);
+          // Only retry if we don't already have a retry scheduled
+          if (!retryTimeoutRef.current) {
+            console.log('Attempting to reconnect Supabase real-time channel in 5 seconds...');
+            retryTimeoutRef.current = window.setTimeout(() => {
+              retryTimeoutRef.current = null;
+              setupSupabaseSubscription();
+            }, 5000);
+          }
+        } else if (status === 'CLOSED') {
+          console.log('Supabase real-time channel closed.');
+          setIsSupabaseRealtimeConnected(false);
         }
       });
 
-      supabaseChannelRef.current = channel;
+    supabaseChannelRef.current = channel;
   };
 
   const setupWebSocket = () => {
