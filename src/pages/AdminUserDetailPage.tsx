@@ -97,17 +97,17 @@ const AdminUserDetailPage = () => {
               <Wallet className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">${String(user.demo_balance || '0.00')}</div>
+              <div className="text-2xl font-bold">${String(user.demo_balance_usd || '0.00')}</div>
             </CardContent>
           </Card>
 
           <Card className="glass glass-hover">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Status</CardTitle>
+              <CardTitle className="text-sm font-medium">Account Status</CardTitle>
               <Activity className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold capitalize">{String(user.status || 'active')}</div>
+              <div className="text-2xl font-bold capitalize">{String(user.account_status || 'active')}</div>
             </CardContent>
           </Card>
         </div>

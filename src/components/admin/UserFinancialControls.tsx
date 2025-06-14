@@ -39,8 +39,8 @@ const UserFinancialControls: React.FC<UserFinancialControlsProps> = ({ userId })
         .upsert({
           user_id: userId,
           cryptocurrency_id: selectedCrypto,
-          amount: parseFloat(cryptoAmount),
-          invested_amount: 0, // Admin adjustment
+          quantity: parseFloat(cryptoAmount),
+          total_invested: 0, // Admin adjustment
         }, {
           onConflict: 'user_id,cryptocurrency_id'
         });
@@ -86,16 +86,16 @@ const UserFinancialControls: React.FC<UserFinancialControlsProps> = ({ userId })
 
     setIsProcessing(true);
     try {
-      // First get current balance
+      // First get current balance using the correct field name
       const { data: currentProfile, error: fetchError } = await supabase
         .from('profiles')
-        .select('demo_balance')
+        .select('demo_balance_usd')
         .eq('id', userId)
         .single();
 
       if (fetchError) throw fetchError;
 
-      const currentBalance = currentProfile.demo_balance || 0;
+      const currentBalance = currentProfile.demo_balance_usd || 0;
       const adjustmentAmount = parseFloat(balanceAmount);
       const newBalance = action === 'add' 
         ? currentBalance + adjustmentAmount 
@@ -103,7 +103,7 @@ const UserFinancialControls: React.FC<UserFinancialControlsProps> = ({ userId })
 
       const { error } = await supabase
         .from('profiles')
-        .update({ demo_balance: newBalance })
+        .update({ demo_balance_usd: newBalance })
         .eq('id', userId);
 
       if (error) throw error;
@@ -135,7 +135,7 @@ const UserFinancialControls: React.FC<UserFinancialControlsProps> = ({ userId })
               <TableHeader>
                 <TableRow>
                   <TableHead>Asset</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
+                  <TableHead className="text-right">Quantity</TableHead>
                   <TableHead className="text-right">Value</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -146,17 +146,17 @@ const UserFinancialControls: React.FC<UserFinancialControlsProps> = ({ userId })
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <div className="w-6 h-6 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-xs font-bold">
-                          {holding.cryptocurrencies?.symbol.slice(0, 2).toUpperCase()}
+                          {holding.cryptocurrency_id.slice(0, 2).toUpperCase()}
                         </div>
                         <div>
-                          <div className="font-medium">{holding.cryptocurrencies?.name}</div>
-                          <div className="text-xs text-muted-foreground">{holding.cryptocurrencies?.symbol.toUpperCase()}</div>
+                          <div className="font-medium">Cryptocurrency</div>
+                          <div className="text-xs text-muted-foreground">Asset</div>
                         </div>
                       </div>
                     </TableCell>
                     <TableCell className="text-right">
                       <FormattedNumber 
-                        value={holding.amount} 
+                        value={holding.quantity} 
                         type="currency"
                         showTooltip={false}
                         className="font-mono"

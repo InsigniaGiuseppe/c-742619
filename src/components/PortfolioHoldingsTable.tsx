@@ -5,7 +5,21 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import FormattedNumber from '@/components/FormattedNumber';
 import { TrendingUp, TrendingDown } from 'lucide-react';
-import { Portfolio } from '@/hooks/usePortfolio';
+
+// Define Portfolio type locally since it's not exported from usePortfolio
+interface Portfolio {
+  id: string;
+  cryptocurrency_id: string;
+  quantity: number;
+  current_value: number;
+  total_invested: number;
+  cryptocurrencies?: {
+    symbol: string;
+    name: string;
+    current_price: number;
+    price_change_percentage_24h: number;
+  };
+}
 
 interface PortfolioHoldingsTableProps {
   portfolio: Portfolio[];
@@ -44,9 +58,9 @@ const PortfolioHoldingsTable: React.FC<PortfolioHoldingsTableProps> = ({ portfol
               </TableHeader>
               <TableBody>
                 {portfolio.map((holding) => {
-                  const profitLoss = holding.current_value - holding.invested_amount;
-                  const profitLossPercentage = holding.invested_amount > 0 
-                    ? ((profitLoss / holding.invested_amount) * 100) 
+                  const profitLoss = holding.current_value - holding.total_invested;
+                  const profitLossPercentage = holding.total_invested > 0 
+                    ? ((profitLoss / holding.total_invested) * 100) 
                     : 0;
                   const priceChange24h = holding.cryptocurrencies?.price_change_percentage_24h || 0;
 
@@ -65,7 +79,7 @@ const PortfolioHoldingsTable: React.FC<PortfolioHoldingsTableProps> = ({ portfol
                       </TableCell>
                       <TableCell className="text-right">
                         <FormattedNumber 
-                          value={holding.amount} 
+                          value={holding.quantity} 
                           type="currency"
                           showTooltip={false}
                           className="font-mono"

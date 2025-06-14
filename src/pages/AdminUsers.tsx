@@ -4,15 +4,17 @@ import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Search, Eye, ArrowLeft, AlertCircle, UserX } from 'lucide-react';
+import { Eye, ArrowLeft, AlertCircle, UserX } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAdminUsers } from '@/hooks/useAdminUsers';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useUpdateUserStatus } from '@/hooks/useUpdateUserStatus';
+import { Checkbox } from '@/components/ui/checkbox';
+import BulkUserOperations from '@/components/admin/BulkUserOperations';
+import AdvancedUserFilters from '@/components/admin/AdvancedUserFilters';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,6 +30,18 @@ const AdminUsers = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+  
+  // Advanced filter state
+  const [filters, setFilters] = useState({
+    search: '',
+    accountStatus: '',
+    kycStatus: '',
+    accountType: '',
+    dateRange: undefined,
+    balanceMin: '',
+    balanceMax: '',
+  });
 
   // Debounce search term
   useEffect(() => {
@@ -37,7 +51,7 @@ const AdminUsers = () => {
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
-  const { data: users, isLoading, isError, error } = useAdminUsers(debouncedSearchTerm);
+  const { data: users, isLoading, isError, error, refetch } = useAdminUsers(debouncedSearchTerm);
   
   type User = NonNullable<typeof users>[number];
   const [userToBlock, setUserToBlock] = useState<User | null>(null);
@@ -76,10 +90,30 @@ const AdminUsers = () => {
     }
   };
 
+  const getActiveFilterCount = () => {
+    return Object.values(filters).filter(value => 
+      value !== '' && value !== undefined && value !== null
+    ).length;
+  };
+
+  const resetFilters = () => {
+    setFilters({
+      search: '',
+      accountStatus: '',
+      kycStatus: '',
+      accountType: '',
+      dateRange: undefined,
+      balanceMin: '',
+      balanceMax: '',
+    });
+    setSearchTerm('');
+  };
+
   const renderTableContent = () => {
     if (isLoading) {
       return Array.from({ length: 5 }).map((_, index) => (
         <TableRow key={index}>
+          <TableCell><Skeleton className="h-4 w-[50px]" /></TableCell>
           <TableCell><Skeleton className="h-4 w-[150px]" /></TableCell>
           <TableCell><Skeleton className="h-4 w-[200px]" /></TableCell>
           <TableCell><Skeleton className="h-4 w-[80px]" /></TableCell>
@@ -95,7 +129,7 @@ const AdminUsers = () => {
     if (isError) {
       return (
         <TableRow>
-          <TableCell colSpan={8}>
+          <TableCell colSpan={9}>
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>Error Fetching Users</AlertTitle>
@@ -111,7 +145,7 @@ const AdminUsers = () => {
     if (!users || users.length === 0) {
       return (
         <TableRow>
-          <TableCell colSpan={8} className="text-center py-10">
+          <TableCell colSpan={9} className="text-center py-10">
             No users found.
           </TableCell>
         </TableRow>
@@ -120,6 +154,18 @@ const AdminUsers = () => {
 
     return users.map((user) => (
       <TableRow key={user.id} className="hover:bg-muted/5">
+        <TableCell>
+          <Checkbox
+            checked={selectedUsers.includes(user.id)}
+            onCheckedChange={(checked) => {
+              if (checked) {
+                setSelectedUsers([...selectedUsers, user.id]);
+              } else {
+                setSelectedUsers(selectedUsers.filter(id => id !== user.id));
+              }
+            }}
+          />
+        </TableCell>
         <TableCell className="font-medium">{user.full_name || 'N/A'}</TableCell>
         <TableCell>{user.email}</TableCell>
         <TableCell>
@@ -188,27 +234,21 @@ const AdminUsers = () => {
           </div>
         </div>
 
-        {/* Search and Filters */}
-        <Card className="glass glass-hover mb-8">
-          <CardHeader>
-            <CardTitle>Search Users</CardTitle>
-            <CardDescription>Find users by name, email, or user ID</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex gap-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search by name, email, or ID..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 bg-background/80"
-                />
-              </div>
-              <Button className="button-gradient" onClick={() => setDebouncedSearchTerm(searchTerm)}>Search</Button>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Advanced Filters */}
+        <AdvancedUserFilters
+          filters={filters}
+          onFiltersChange={setFilters}
+          onReset={resetFilters}
+          activeFilterCount={getActiveFilterCount()}
+        />
+
+        {/* Bulk Operations */}
+        <BulkUserOperations
+          users={users || []}
+          selectedUsers={selectedUsers}
+          onSelectionChange={setSelectedUsers}
+          onRefresh={refetch}
+        />
 
         {/* Users Table */}
         <Card className="glass glass-hover">
@@ -221,6 +261,7 @@ const AdminUsers = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead>Select</TableHead>
                     <TableHead>Full Name</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Account Status</TableHead>
@@ -240,6 +281,7 @@ const AdminUsers = () => {
         </Card>
       </main>
       <Footer />
+      
       {userToBlock && (
         <AlertDialog open={!!userToBlock} onOpenChange={(open) => !open && setUserToBlock(null)}>
           <AlertDialogContent>
