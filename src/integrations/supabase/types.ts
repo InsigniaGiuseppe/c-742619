@@ -431,7 +431,15 @@ export type Database = {
           wallet_address?: string
           wallet_label?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "external_wallets_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       gang_members: {
         Row: {
@@ -626,7 +634,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "kyc_documents_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       matches: {
         Row: {
@@ -852,8 +868,10 @@ export type Database = {
           address: string | null
           avatar_url: string | null
           bank_details_iban: string | null
+          city: string | null
           country: string | null
           created_at: string | null
+          date_of_birth: string | null
           demo_balance_usd: number
           email: string | null
           energy: number | null
@@ -871,6 +889,7 @@ export type Database = {
           money_in_bank: number | null
           money_on_hand: number | null
           phone: string | null
+          postal_code: string | null
           power_level: number | null
           short_bio: string | null
           two_factor_enabled: boolean
@@ -885,8 +904,10 @@ export type Database = {
           address?: string | null
           avatar_url?: string | null
           bank_details_iban?: string | null
+          city?: string | null
           country?: string | null
           created_at?: string | null
+          date_of_birth?: string | null
           demo_balance_usd?: number
           email?: string | null
           energy?: number | null
@@ -904,6 +925,7 @@ export type Database = {
           money_in_bank?: number | null
           money_on_hand?: number | null
           phone?: string | null
+          postal_code?: string | null
           power_level?: number | null
           short_bio?: string | null
           two_factor_enabled?: boolean
@@ -918,8 +940,10 @@ export type Database = {
           address?: string | null
           avatar_url?: string | null
           bank_details_iban?: string | null
+          city?: string | null
           country?: string | null
           created_at?: string | null
+          date_of_birth?: string | null
           demo_balance_usd?: number
           email?: string | null
           energy?: number | null
@@ -937,6 +961,7 @@ export type Database = {
           money_in_bank?: number | null
           money_on_hand?: number | null
           phone?: string | null
+          postal_code?: string | null
           power_level?: number | null
           short_bio?: string | null
           two_factor_enabled?: boolean
@@ -1263,7 +1288,7 @@ export type Database = {
             foreignKeyName: "user_portfolios_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "trading_users"
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1320,7 +1345,15 @@ export type Database = {
           os_browser?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_settings: {
         Row: {
@@ -1350,7 +1383,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_settings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_watchlist: {
         Row: {
@@ -1383,7 +1424,7 @@ export type Database = {
             foreignKeyName: "user_watchlist_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "trading_users"
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]

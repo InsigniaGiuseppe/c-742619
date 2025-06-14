@@ -1,121 +1,114 @@
-
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { User, Session } from '@supabase/supabase-js';
 
 export const useAuth = () => {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+	const [isAdmin, setIsAdmin] = useState(false);
 
-  useEffect(() => {
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        console.log(`[useAuth] onAuthStateChange event: ${event}`, { session });
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
-      }
-    );
-
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('[useAuth] Initial getSession result:', { session });
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
+  const fetchUser = useCallback(async () => {
+    setLoading(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    setUser(user);
+    setLoading(false);
   }, []);
 
-  const signUp = async (email: string, password: string, userData?: any) => {
-    const redirectUrl = `${window.location.origin}/`;
-    
-    console.log('SignUp attempt with redirectUrl:', redirectUrl);
-    
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: redirectUrl,
-        data: userData
-      }
+  useEffect(() => {
+    fetchUser();
+
+    supabase.auth.onAuthStateChange(() => {
+      fetchUser();
     });
-    
-    console.log('SignUp response:', { success: !!data.user, error: error?.message });
-    return { data, error };
-  };
+  }, [fetchUser]);
+
+	useEffect(() => {
+    const checkAdminStatus = async () => {
+      if (!user) {
+        setIsAdmin(false);
+        return;
+      }
+
+      try {
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('is_admin')
+          .eq('id', user.id)
+          .single();
+
+        if (error) {
+          console.error('Error fetching profile:', error);
+          setIsAdmin(false);
+        } else if (profile) {
+          setIsAdmin(profile.is_admin || false);
+        }
+      } catch (err) {
+        console.error('Error in checkAdminStatus:', err);
+        setIsAdmin(false);
+      }
+    };
+
+    checkAdminStatus();
+  }, [user]);
 
   const signIn = async (email: string, password: string) => {
-    console.log('=== SIGNIN ATTEMPT ===');
-    console.log('Email:', email);
-    
     try {
+      setLoading(true);
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
-      
-      if (error) {
-        console.error('=== SIGNIN ERROR ===');
-        console.error('Error message:', error.message);
-        console.error('Error status:', error.status);
-        
-        // Provide user-friendly error messages
-        let userMessage = error.message;
-        if (error.message.includes('Invalid login credentials')) {
-          userMessage = 'Invalid email or password. Please check your credentials and try again.';
-        } else if (error.message.includes('Email not confirmed')) {
-          userMessage = 'Please check your email and click the confirmation link before signing in.';
-        } else if (error.message.includes('Too many requests')) {
-          userMessage = 'Too many sign-in attempts. Please wait a moment before trying again.';
-        }
-        
-        return { data: null, error: { ...error, message: userMessage } };
-      }
-      
-      if (data?.user) {
-        console.log('=== SIGNIN SUCCESS ===');
-        console.log('User ID:', data.user.id);
-        console.log('User email:', data.user.email);
-      }
-      
-      return { data, error };
-    } catch (catchError) {
-      console.error('=== SIGNIN CATCH ERROR ===');
-      console.error('Unexpected error:', catchError);
-      
-      return { 
-        data: null, 
-        error: { 
-          message: 'An unexpected error occurred. Please try again.',
-          status: 500
-        } as any 
-      };
+      if (error) throw error;
+      return { data, error: null };
+    } catch (error: any) {
+      console.error('Signin error:', error);
+      return { data: null, error };
+    } finally {
+      setLoading(false);
     }
   };
 
   const signOut = async () => {
-    console.log('Signing out...');
-    const { error } = await supabase.auth.signOut();
-    
-    if (error) {
-      console.error('SignOut error:', error.message);
-    } else {
-      console.log('SignOut successful');
+    try {
+      setLoading(true);
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+    } catch (error: any) {
+      console.error('Signout error:', error);
+    } finally {
+      setLoading(false);
     }
-    
-    return { error };
+  };
+
+  const signUp = async (email: string, password: string, metadata?: any) => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: metadata || {}
+        }
+      });
+
+      if (error) throw error;
+
+      return { data, error: null };
+    } catch (error: any) {
+      console.error('Signup error:', error);
+      return { data: null, error };
+    } finally {
+      setLoading(false);
+    }
   };
 
   return {
     user,
-    session,
     loading,
     signUp,
     signIn,
     signOut,
+    isAdmin
   };
 };
+
+export default useAuth;
