@@ -18,6 +18,8 @@ import ReferralsPage from "./pages/ReferralsPage";
 import MessagesPage from "./pages/MessagesPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminUsers from "./pages/AdminUsers";
+import CryptoDetailPage from "./pages/CryptoDetailPage";
+import WalletVerificationPage from "./pages/WalletVerificationPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
 
@@ -50,6 +52,16 @@ const App = () => (
             <Route path="/trading" element={
               <ProtectedRoute>
                 <TradingPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/crypto/:symbol" element={
+              <ProtectedRoute>
+                <CryptoDetailPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/wallet-verification" element={
+              <ProtectedRoute>
+                <WalletVerificationPage />
               </ProtectedRoute>
             } />
             <Route path="/lending" element={

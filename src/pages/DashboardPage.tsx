@@ -1,87 +1,115 @@
 
 import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { TrendingUp, TrendingDown, DollarSign, Wallet } from 'lucide-react';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { useNavigate } from 'react-router-dom';
-import { Wrench } from 'lucide-react';
+import PortfolioChart from '@/components/PortfolioChart';
+import RecentTransactions from '@/components/RecentTransactions';
+import { usePortfolio } from '@/hooks/usePortfolio';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 
 const DashboardPage = () => {
-  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { totalValue, totalProfitLoss, totalProfitLossPercentage, loading } = usePortfolio();
+  const [demoBalance, setDemoBalance] = React.useState(0);
+
+  React.useEffect(() => {
+    if (user) {
+      fetchDemoBalance();
+    }
+  }, [user]);
+
+  const fetchDemoBalance = async () => {
+    if (!user) return;
+
+    const { data } = await supabase
+      .from('profiles')
+      .select('demo_balance_usd')
+      .eq('id', user.id)
+      .single();
+
+    if (data) {
+      setDemoBalance(data.demo_balance_usd || 0);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-black text-foreground flex flex-col">
       <Navigation />
-      <main className="flex-grow container mx-auto px-4 py-20 pt-32">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-4">Dashboard</h1>
-          <p className="text-muted-foreground">Welcome to your PROMPTO TRADING dashboard!</p>
-        </div>
+      <main className="flex-grow container mx-auto px-4 py-20 pt-24">
+        <h1 className="text-4xl font-bold mb-8">Dashboard</h1>
         
-        {/* Development Helper */}
-        <Card className="glass glass-hover border-yellow-600/30 mb-8">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-yellow-400">
-              <Wrench className="w-5 h-5" />
-              Development Helper
-            </CardTitle>
-            <CardDescription>Quick access to development modes</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex gap-4">
-              <Button 
-                onClick={() => navigate('/dev-dashboard')}
-                variant="outline"
-                className="glass border-blue-500/30 text-blue-400"
-              >
-                Dev User Mode
-              </Button>
-              <Button 
-                onClick={() => navigate('/dev-admin')}
-                variant="outline"
-                className="glass border-orange-500/30 text-orange-400"
-              >
-                Dev Admin Mode
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Main dashboard content will go here */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <Card className="glass glass-hover">
-            <CardHeader>
-              <CardTitle>Portfolio</CardTitle>
-              <CardDescription>Your trading portfolio overview</CardDescription>
+        {/* Overview Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <Card className="bg-gray-900 border-gray-700">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Demo Balance</CardTitle>
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold">$0.00</p>
-              <p className="text-muted-foreground">Total Value</p>
+              <div className="text-2xl font-bold">${demoBalance.toFixed(2)}</div>
+              <p className="text-xs text-muted-foreground">
+                Available for trading
+              </p>
             </CardContent>
           </Card>
-
-          <Card className="glass glass-hover">
-            <CardHeader>
-              <CardTitle>Active Trades</CardTitle>
-              <CardDescription>Current open positions</CardDescription>
+          
+          <Card className="bg-gray-900 border-gray-700">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Portfolio Value</CardTitle>
+              <Wallet className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold">0</p>
-              <p className="text-muted-foreground">Open Positions</p>
+              <div className="text-2xl font-bold">
+                ${loading ? '...' : totalValue.toFixed(2)}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Total crypto holdings
+              </p>
             </CardContent>
           </Card>
-
-          <Card className="glass glass-hover">
-            <CardHeader>
-              <CardTitle>P&L Today</CardTitle>
-              <CardDescription>Today's profit and loss</CardDescription>
+          
+          <Card className="bg-gray-900 border-gray-700">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total P&L</CardTitle>
+              {totalProfitLoss >= 0 ? (
+                <TrendingUp className="h-4 w-4 text-green-500" />
+              ) : (
+                <TrendingDown className="h-4 w-4 text-red-500" />
+              )}
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold text-green-400">+$0.00</p>
-              <p className="text-muted-foreground">Daily Change</p>
+              <div className={`text-2xl font-bold ${totalProfitLoss >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                {totalProfitLoss >= 0 ? '+' : ''}${loading ? '...' : totalProfitLoss.toFixed(2)}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {totalProfitLossPercentage >= 0 ? '+' : ''}{loading ? '...' : totalProfitLossPercentage.toFixed(2)}%
+              </p>
             </CardContent>
           </Card>
+          
+          <Card className="bg-gray-900 border-gray-700">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Value</CardTitle>
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                ${(demoBalance + totalValue).toFixed(2)}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Balance + Holdings
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Charts and Transactions */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <PortfolioChart />
+          <RecentTransactions />
         </div>
       </main>
       <Footer />
