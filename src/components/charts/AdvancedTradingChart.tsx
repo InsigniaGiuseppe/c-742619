@@ -6,7 +6,8 @@ import { Cryptocurrency } from '@/hooks/useCryptocurrencies';
 import TradingChartDisplay from './TradingChartDisplay';
 import TradingChartControls from './TradingChartControls';
 import CryptoStatsDisplay from './CryptoStatsDisplay';
-import { ChartType } from './ChartSeriesManager';
+
+export type ChartType = 'candlestick' | 'line' | 'area';
 
 interface AdvancedTradingChartProps {
   crypto: Cryptocurrency;

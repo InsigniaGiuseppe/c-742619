@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Cryptocurrency } from '@/hooks/useCryptocurrencies';
-import { ChartType } from './ChartSeriesManager';
+import { ChartType } from './AdvancedTradingChart';
 import RechartsTradingChart from './RechartsTradingChart';
 
 interface TradingChartDisplayProps {

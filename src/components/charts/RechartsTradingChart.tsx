@@ -13,7 +13,7 @@ import {
 } from 'recharts';
 import { Cryptocurrency } from '@/hooks/useCryptocurrencies';
 import { generateSampleData, generateVolumeData } from './chartDataUtils';
-import { ChartType } from './ChartSeriesManager';
+import { ChartType } from './AdvancedTradingChart';
 
 interface RechartsTradingChartProps {
   crypto: Cryptocurrency;
