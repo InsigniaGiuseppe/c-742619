@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useTransactionHistory } from '@/hooks/useTransactionHistory';
 import { TrendingUp, TrendingDown } from 'lucide-react';
+import { formatCurrency } from '@/lib/formatters';
 
 const RecentTransactions = () => {
   const { transactions, loading } = useTransactionHistory();
@@ -64,7 +65,7 @@ const RecentTransactions = () => {
                 </div>
                 <div className="text-right">
                   <p className="font-medium">
-                    ${transaction.usd_value?.toFixed(2)}
+                    {formatCurrency(transaction.usd_value || 0)}
                   </p>
                   <Badge variant={transaction.status === 'completed' ? 'default' : 'secondary'}>
                     {transaction.status}

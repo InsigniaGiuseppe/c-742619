@@ -1,7 +1,9 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { usePortfolio } from '@/hooks/usePortfolio';
+import { formatCurrency } from '@/lib/formatters';
 
 const COLORS = ['#8B5CF6', '#06B6D4', '#10B981', '#F59E0B', '#EF4444', '#EC4899'];
 
@@ -52,7 +54,7 @@ const PortfolioChart = () => {
         <div className="bg-gray-800 p-3 rounded border border-gray-600">
           <p className="font-medium">{data.name}</p>
           <p className="text-sm text-gray-300">
-            Value: ${data.value.toFixed(2)}
+            Value: {formatCurrency(data.value)}
           </p>
           <p className="text-sm text-gray-300">
             {data.percentage.toFixed(1)}%
@@ -100,7 +102,7 @@ const PortfolioChart = () => {
                 />
                 <span>{item.name}</span>
               </div>
-              <span>${item.value.toFixed(2)}</span>
+              <span>{formatCurrency(item.value)}</span>
             </div>
           ))}
         </div>

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navigation from '@/components/Navigation';
@@ -23,7 +24,7 @@ const TradingPage = () => {
   );
 
   const handleTrade = (crypto: Cryptocurrency) => {
-    navigate(`/trading/${crypto.symbol.toLowerCase()}`);
+    navigate(`/crypto/${crypto.symbol.toLowerCase()}`);
   };
 
   return (

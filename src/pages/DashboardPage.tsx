@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TrendingUp, TrendingDown, DollarSign, Wallet } from 'lucide-react';
@@ -8,6 +9,7 @@ import RecentTransactions from '@/components/RecentTransactions';
 import { usePortfolio } from '@/hooks/usePortfolio';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import { formatCurrency, formatPercentage } from '@/lib/formatters';
 import { motion } from 'framer-motion';
 
 const DashboardPage = () => {
@@ -30,10 +32,8 @@ const DashboardPage = () => {
       .eq('id', user.id)
       .single();
 
-    if (data && (data as any).demo_balance_usd !== undefined) {
-      setDemoBalance((data as any).demo_balance_usd || 0);
-    } else {
-      setDemoBalance(10000); // Default demo balance
+    if (data) {
+      setDemoBalance(data.demo_balance_usd || 10000);
     }
   };
 
@@ -58,7 +58,7 @@ const DashboardPage = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                ${loading ? '...' : totalValue.toFixed(2)}
+                {loading ? '...' : formatCurrency(totalValue)}
               </div>
               <p className="text-xs text-muted-foreground">
                 Total crypto holdings
@@ -77,10 +77,10 @@ const DashboardPage = () => {
             </CardHeader>
             <CardContent>
               <div className={`text-2xl font-bold ${totalProfitLoss >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                {totalProfitLoss >= 0 ? '+' : ''}${loading ? '...' : totalProfitLoss.toFixed(2)}
+                {loading ? '...' : formatCurrency(totalProfitLoss)}
               </div>
               <p className="text-xs text-muted-foreground">
-                {totalProfitLossPercentage >= 0 ? '+' : ''}{loading ? '...' : totalProfitLossPercentage.toFixed(2)}%
+                {loading ? '...' : formatPercentage(totalProfitLossPercentage)}
               </p>
             </CardContent>
           </Card>
@@ -91,7 +91,7 @@ const DashboardPage = () => {
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">${demoBalance.toFixed(2)}</div>
+              <div className="text-2xl font-bold">{formatCurrency(demoBalance)}</div>
               <p className="text-xs text-muted-foreground">
                 Available for trading
               </p>
@@ -105,7 +105,7 @@ const DashboardPage = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                ${(demoBalance + totalValue).toFixed(2)}
+                {formatCurrency(demoBalance + totalValue)}
               </div>
               <p className="text-xs text-muted-foreground">
                 Balance + Holdings

@@ -16,6 +16,7 @@ import { motion } from 'framer-motion';
 import CryptoDetailSkeletonPage from './CryptoDetailSkeletonPage';
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { formatCurrency, formatPrice, formatPercentage } from '@/lib/formatters';
 import CryptoLogo from '@/components/CryptoLogo';
 
 const chartConfig = {
@@ -83,8 +84,7 @@ const CryptoDetailPage = () => {
       .single();
 
     if (profile) {
-      // Use fallback balance since demo_balance_usd column may not exist yet
-      setUserBalance(10000); // Default demo balance
+      setUserBalance(profile.demo_balance_usd || 10000);
     }
 
     // Fetch user's holdings for this crypto
@@ -221,12 +221,15 @@ const CryptoDetailPage = () => {
           });
       }
 
-      // For now, just log the balance update since the column may not exist
+      // Update user balance
       const newBalance = tradeType === 'buy' 
         ? userBalance - eurValue - (eurValue * 0.001)
         : userBalance + eurValue - (eurValue * 0.001);
       
-      console.log('Would update user balance to:', newBalance);
+      await supabase
+        .from('profiles')
+        .update({ demo_balance_usd: newBalance })
+        .eq('id', user.id);
 
       toast.success(`Successfully ${tradeType === 'buy' ? 'bought' : 'sold'} ${coinAmount} ${crypto.symbol}`);
       
@@ -290,7 +293,7 @@ const CryptoDetailPage = () => {
           </div>
           
           <div className="flex items-center gap-4">
-            <span className="text-4xl font-bold">${crypto.current_price.toLocaleString()}</span>
+            <span className="text-4xl font-bold">{formatPrice(crypto.current_price)}</span>
             <Badge 
               variant={crypto.price_change_percentage_24h && crypto.price_change_percentage_24h >= 0 ? "default" : "destructive"}
               className="flex items-center gap-1 text-base"
@@ -299,7 +302,7 @@ const CryptoDetailPage = () => {
                 <TrendingUp className="h-4 w-4" /> : 
                 <TrendingDown className="h-4 w-4" />
               }
-              {crypto.price_change_percentage_24h?.toFixed(2)}%
+              {formatPercentage(crypto.price_change_percentage_24h || 0)}
             </Badge>
           </div>
           
@@ -307,11 +310,11 @@ const CryptoDetailPage = () => {
             <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
               <div>
                 <span className="text-muted-foreground">Market Cap: </span>
-                <span>${crypto.market_cap.toLocaleString()}</span>
+                <span>{formatCurrency(crypto.market_cap, { compact: true })}</span>
               </div>
               <div>
                 <span className="text-muted-foreground">24h Volume: </span>
-                <span>${crypto.volume_24h?.toLocaleString()}</span>
+                <span>{formatCurrency(crypto.volume_24h || 0, { compact: true })}</span>
               </div>
               <div>
                 <span className="text-muted-foreground">Your Holdings: </span>
@@ -358,7 +361,7 @@ const CryptoDetailPage = () => {
                       axisLine={false}
                       tickMargin={8}
                       stroke="hsl(var(--muted-foreground))"
-                      tickFormatter={(value) => `$${value.toLocaleString()}`}
+                      tickFormatter={(value) => formatPrice(value)}
                     />
                     <ChartTooltip 
                       cursor={false}
@@ -383,7 +386,7 @@ const CryptoDetailPage = () => {
               <CardHeader>
                 <CardTitle>Trade {crypto.symbol}</CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  Demo Balance: ${userBalance.toFixed(2)}
+                  Demo Balance: {formatCurrency(userBalance)}
                 </p>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -455,15 +458,15 @@ const CryptoDetailPage = () => {
                     <div className="p-3 bg-white/5 rounded-lg text-sm space-y-2">
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Price</span>
-                        <span>${crypto.current_price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                        <span>{formatPrice(crypto.current_price)}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Fee (0.1%)</span>
-                        <span>${(parseFloat(amountEUR) * 0.001).toFixed(4)}</span>
+                        <span>{formatCurrency(parseFloat(amountEUR) * 0.001, { maximumFractionDigits: 4 })}</span>
                       </div>
                       <div className="flex justify-between font-bold text-base border-t border-white/10 pt-2 mt-2">
                         <span>Total</span>
-                        <span>${(parseFloat(amountEUR) * 1.001).toFixed(2)}</span>
+                        <span>{formatCurrency(parseFloat(amountEUR) * 1.001)}</span>
                       </div>
                     </div>
                   )}
