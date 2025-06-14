@@ -3,9 +3,9 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Cryptocurrency } from '@/hooks/useCryptocurrencies';
-import TradingChartDisplay from './TradingChartDisplay';
 import TradingChartControls from './TradingChartControls';
 import CryptoStatsDisplay from './CryptoStatsDisplay';
+import LiveTradingChart from './LiveTradingChart';
 
 export type ChartType = 'candlestick' | 'line' | 'area';
 
@@ -47,7 +47,7 @@ const AdvancedTradingChart: React.FC<AdvancedTradingChartProps> = ({ crypto }) =
         </div>
       </CardHeader>
       <CardContent>
-        <TradingChartDisplay 
+        <LiveTradingChart 
           crypto={crypto} 
           chartType={chartType} 
           timeframe={timeframe} 

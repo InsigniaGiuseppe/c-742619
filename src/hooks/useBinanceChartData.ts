@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 
-type Timeframe = '1h' | '1d' | '7d' | '30d' | '1y' | 'all';
+type Timeframe = '1h' | '4h' | '1d' | '1w' | '7d' | '30d' | '1y' | 'all';
 
 export interface ChartDataPoint {
   time: number;
@@ -17,9 +17,15 @@ const getBinanceParams = (timeframe: Timeframe): { interval: string; limit?: num
     case '1h':
       // Binance `1m` interval, limit 60 for 1 hour.
       return { interval: '1m', limit: 60 };
+    case '4h':
+      // Binance `5m` interval, 48 points for 4 hours.
+      return { interval: '5m', limit: 48 };
     case '1d':
       // Binance `15m` interval, 96 points for 24 hours.
       return { interval: '15m', limit: 96 };
+    case '1w':
+      // Binance `2h` interval, 84 points for 7 days.
+      return { interval: '2h', limit: 84 };
     case '7d':
       // Binance `2h` interval, 84 points for 7 days.
       return { interval: '2h', limit: 84 };
