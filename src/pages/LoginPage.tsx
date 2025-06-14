@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { User, Shield, Wrench } from 'lucide-react';
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({
@@ -92,6 +93,37 @@ const LoginPage = () => {
             />
             <h1 className="text-3xl font-bold">Welcome Back</h1>
             <p className="text-muted-foreground mt-2">Sign in to your PROMPTO TRADING account</p>
+          </div>
+
+          {/* Development Bypass Section */}
+          <div className="mb-6 p-4 border border-yellow-600/30 rounded-lg bg-yellow-600/10">
+            <div className="flex items-center gap-2 mb-3">
+              <Wrench className="w-4 h-4 text-yellow-400" />
+              <span className="text-sm font-medium text-yellow-400">Development Mode</span>
+            </div>
+            <p className="text-xs text-muted-foreground mb-3">
+              Bypass authentication for development purposes
+            </p>
+            <div className="flex gap-2">
+              <Button
+                onClick={() => navigate('/dev-dashboard')}
+                size="sm"
+                variant="outline"
+                className="flex-1 glass border-blue-500/30 text-blue-400"
+              >
+                <User className="w-3 h-3 mr-1" />
+                User Mode
+              </Button>
+              <Button
+                onClick={() => navigate('/dev-admin')}
+                size="sm"
+                variant="outline"
+                className="flex-1 glass border-orange-500/30 text-orange-400"
+              >
+                <Shield className="w-3 h-3 mr-1" />
+                Admin Mode
+              </Button>
+            </div>
           </div>
           
           <form onSubmit={handleSubmit} className="space-y-6">
