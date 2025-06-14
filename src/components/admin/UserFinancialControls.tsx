@@ -7,105 +7,235 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Minus, DollarSign, TrendingUp, Wallet } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import FormattedNumber from '@/components/FormattedNumber';
+import { Plus, Minus, Wallet, Coins } from 'lucide-react';
 import { useCryptocurrencies } from '@/hooks/useCryptocurrencies';
+import { usePortfolio } from '@/hooks/usePortfolio';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import FormattedNumber from '@/components/FormattedNumber';
 
 interface UserFinancialControlsProps {
-  user: any;
-  portfolio?: any[];
+  userId: string;
 }
 
-const UserFinancialControls: React.FC<UserFinancialControlsProps> = ({ user, portfolio = [] }) => {
-  const { toast } = useToast();
-  const { data: cryptocurrencies } = useCryptocurrencies();
-  const [balanceAction, setBalanceAction] = useState<'add' | 'remove'>('add');
-  const [balanceAmount, setBalanceAmount] = useState('');
-  const [selectedCrypto, setSelectedCrypto] = useState('');
-  const [cryptoAmount, setCryptoAmount] = useState('');
-  const [cryptoAction, setCryptoAction] = useState<'add' | 'remove'>('add');
+const UserFinancialControls: React.FC<UserFinancialControlsProps> = ({ userId }) => {
+  const { cryptocurrencies } = useCryptocurrencies();
+  const { portfolio, refetch: refetchPortfolio } = usePortfolio();
+  const [selectedCrypto, setSelectedCrypto] = useState<string>('');
+  const [cryptoAmount, setCryptoAmount] = useState<string>('');
+  const [balanceAmount, setBalanceAmount] = useState<string>('');
+  const [isProcessing, setIsProcessing] = useState(false);
 
-  const handleBalanceUpdate = () => {
-    if (!balanceAmount || isNaN(Number(balanceAmount))) {
-      toast({
-        title: 'Invalid Amount',
-        description: 'Please enter a valid number',
-        variant: 'destructive',
-      });
+  const handleAddCrypto = async () => {
+    if (!selectedCrypto || !cryptoAmount || parseFloat(cryptoAmount) <= 0) {
+      toast.error('Please select a cryptocurrency and enter a valid amount');
       return;
     }
 
-    // TODO: Implement actual balance update API call
-    toast({
-      title: 'Balance Updated',
-      description: `${balanceAction === 'add' ? 'Added' : 'Removed'} $${balanceAmount} ${balanceAction === 'add' ? 'to' : 'from'} user balance`,
-    });
-    setBalanceAmount('');
+    setIsProcessing(true);
+    try {
+      const { error } = await supabase
+        .from('user_portfolios')
+        .upsert({
+          user_id: userId,
+          cryptocurrency_id: selectedCrypto,
+          amount: parseFloat(cryptoAmount),
+          invested_amount: 0, // Admin adjustment
+        }, {
+          onConflict: 'user_id,cryptocurrency_id'
+        });
+
+      if (error) throw error;
+
+      toast.success('Cryptocurrency added successfully');
+      setSelectedCrypto('');
+      setCryptoAmount('');
+      refetchPortfolio();
+    } catch (error: any) {
+      toast.error(`Failed to add cryptocurrency: ${error.message}`);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
-  const handleCryptoUpdate = () => {
-    if (!selectedCrypto || !cryptoAmount || isNaN(Number(cryptoAmount))) {
-      toast({
-        title: 'Invalid Input',
-        description: 'Please select a cryptocurrency and enter a valid amount',
-        variant: 'destructive',
-      });
+  const handleRemoveCrypto = async (cryptoId: string) => {
+    setIsProcessing(true);
+    try {
+      const { error } = await supabase
+        .from('user_portfolios')
+        .delete()
+        .eq('user_id', userId)
+        .eq('cryptocurrency_id', cryptoId);
+
+      if (error) throw error;
+
+      toast.success('Cryptocurrency removed successfully');
+      refetchPortfolio();
+    } catch (error: any) {
+      toast.error(`Failed to remove cryptocurrency: ${error.message}`);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleAdjustBalance = async (action: 'add' | 'remove') => {
+    if (!balanceAmount || parseFloat(balanceAmount) <= 0) {
+      toast.error('Please enter a valid amount');
       return;
     }
 
-    // TODO: Implement actual crypto holding update API call
-    toast({
-      title: 'Holdings Updated',
-      description: `${cryptoAction === 'add' ? 'Added' : 'Removed'} ${cryptoAmount} ${selectedCrypto} ${cryptoAction === 'add' ? 'to' : 'from'} user portfolio`,
-    });
-    setCryptoAmount('');
-    setSelectedCrypto('');
-  };
+    setIsProcessing(true);
+    try {
+      // First get current balance
+      const { data: currentProfile, error: fetchError } = await supabase
+        .from('profiles')
+        .select('demo_balance')
+        .eq('id', userId)
+        .single();
 
-  const totalPortfolioValue = portfolio.reduce((sum, holding) => sum + holding.current_value, 0);
+      if (fetchError) throw fetchError;
+
+      const currentBalance = currentProfile.demo_balance || 0;
+      const adjustmentAmount = parseFloat(balanceAmount);
+      const newBalance = action === 'add' 
+        ? currentBalance + adjustmentAmount 
+        : Math.max(0, currentBalance - adjustmentAmount);
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({ demo_balance: newBalance })
+        .eq('id', userId);
+
+      if (error) throw error;
+
+      toast.success(`Balance ${action === 'add' ? 'increased' : 'decreased'} successfully`);
+      setBalanceAmount('');
+    } catch (error: any) {
+      toast.error(`Failed to adjust balance: ${error.message}`);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
-      {/* Portfolio Overview */}
+      {/* Current Portfolio */}
       <Card className="glass glass-hover">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Wallet className="w-5 h-5" />
-            Financial Overview
+            Current Portfolio
           </CardTitle>
         </CardHeader>
         <CardContent>
+          {portfolio.length === 0 ? (
+            <p className="text-muted-foreground text-center py-4">No cryptocurrency holdings</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Asset</TableHead>
+                  <TableHead className="text-right">Amount</TableHead>
+                  <TableHead className="text-right">Value</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {portfolio.map((holding) => (
+                  <TableRow key={holding.cryptocurrency_id}>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-xs font-bold">
+                          {holding.cryptocurrencies?.symbol.slice(0, 2).toUpperCase()}
+                        </div>
+                        <div>
+                          <div className="font-medium">{holding.cryptocurrencies?.name}</div>
+                          <div className="text-xs text-muted-foreground">{holding.cryptocurrencies?.symbol.toUpperCase()}</div>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <FormattedNumber 
+                        value={holding.amount} 
+                        type="currency"
+                        showTooltip={false}
+                        className="font-mono"
+                      />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <FormattedNumber 
+                        value={holding.current_value} 
+                        type="currency"
+                        showTooltip={false}
+                        className="font-mono"
+                      />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => handleRemoveCrypto(holding.cryptocurrency_id)}
+                        disabled={isProcessing}
+                      >
+                        <Minus className="w-3 h-3" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Add Cryptocurrency */}
+      <Card className="glass glass-hover">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Coins className="w-5 h-5" />
+            Add Cryptocurrency
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-4 border border-border rounded-lg">
-              <div className="text-sm text-muted-foreground">Demo Balance</div>
-              <div className="text-2xl font-bold">
-                <FormattedNumber 
-                  value={user?.demo_balance_usd || 0} 
-                  type="currency" 
-                  showTooltip={false} 
-                />
-              </div>
+            <div>
+              <Label htmlFor="crypto-select">Cryptocurrency</Label>
+              <Select value={selectedCrypto} onValueChange={setSelectedCrypto}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select cryptocurrency" />
+                </SelectTrigger>
+                <SelectContent>
+                  {cryptocurrencies.map((crypto) => (
+                    <SelectItem key={crypto.id} value={crypto.id}>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{crypto.symbol.toUpperCase()}</span>
+                        <span className="text-muted-foreground">{crypto.name}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-            <div className="p-4 border border-border rounded-lg">
-              <div className="text-sm text-muted-foreground">Portfolio Value</div>
-              <div className="text-2xl font-bold">
-                <FormattedNumber 
-                  value={totalPortfolioValue} 
-                  type="currency" 
-                  showTooltip={false} 
-                />
-              </div>
+            <div>
+              <Label htmlFor="crypto-amount">Amount</Label>
+              <Input
+                id="crypto-amount"
+                type="number"
+                placeholder="0.00"
+                value={cryptoAmount}
+                onChange={(e) => setCryptoAmount(e.target.value)}
+                className="bg-transparent"
+              />
             </div>
-            <div className="p-4 border border-border rounded-lg">
-              <div className="text-sm text-muted-foreground">Total Assets</div>
-              <div className="text-2xl font-bold">
-                <FormattedNumber 
-                  value={(user?.demo_balance_usd || 0) + totalPortfolioValue} 
-                  type="currency" 
-                  showTooltip={false} 
-                />
-              </div>
+            <div className="flex items-end">
+              <Button
+                onClick={handleAddCrypto}
+                disabled={isProcessing || !selectedCrypto || !cryptoAmount}
+                className="w-full"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Crypto
+              </Button>
             </div>
           </div>
         </CardContent>
@@ -115,154 +245,48 @@ const UserFinancialControls: React.FC<UserFinancialControlsProps> = ({ user, por
       <Card className="glass glass-hover">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <DollarSign className="w-5 h-5" />
+            <Wallet className="w-5 h-5" />
             Balance Management
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="flex gap-4">
-              <div className="flex-1">
-                <Label htmlFor="balance-action">Action</Label>
-                <Select value={balanceAction} onValueChange={(value: 'add' | 'remove') => setBalanceAction(value)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="add">Add Funds</SelectItem>
-                    <SelectItem value="remove">Remove Funds</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex-1">
-                <Label htmlFor="balance-amount">Amount (USD)</Label>
-                <Input
-                  id="balance-amount"
-                  type="number"
-                  placeholder="0.00"
-                  value={balanceAmount}
-                  onChange={(e) => setBalanceAmount(e.target.value)}
-                />
-              </div>
-              <div className="flex items-end">
-                <Button onClick={handleBalanceUpdate} className="button-gradient">
-                  {balanceAction === 'add' ? <Plus className="w-4 h-4 mr-2" /> : <Minus className="w-4 h-4 mr-2" />}
-                  Update Balance
-                </Button>
-              </div>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <Label htmlFor="balance-amount">Amount (USD)</Label>
+              <Input
+                id="balance-amount"
+                type="number"
+                placeholder="0.00"
+                value={balanceAmount}
+                onChange={(e) => setBalanceAmount(e.target.value)}
+                className="bg-transparent"
+              />
+            </div>
+            <div className="flex items-end">
+              <Button
+                onClick={() => handleAdjustBalance('add')}
+                disabled={isProcessing || !balanceAmount}
+                className="w-full"
+                variant="default"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add
+              </Button>
+            </div>
+            <div className="flex items-end">
+              <Button
+                onClick={() => handleAdjustBalance('remove')}
+                disabled={isProcessing || !balanceAmount}
+                className="w-full"
+                variant="destructive"
+              >
+                <Minus className="w-4 h-4 mr-2" />
+                Remove
+              </Button>
             </div>
           </div>
         </CardContent>
       </Card>
-
-      {/* Crypto Holdings Management */}
-      <Card className="glass glass-hover">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="w-5 h-5" />
-            Cryptocurrency Holdings Management
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div>
-                <Label htmlFor="crypto-action">Action</Label>
-                <Select value={cryptoAction} onValueChange={(value: 'add' | 'remove') => setCryptoAction(value)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="add">Add Holdings</SelectItem>
-                    <SelectItem value="remove">Remove Holdings</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="crypto-select">Cryptocurrency</Label>
-                <Select value={selectedCrypto} onValueChange={setSelectedCrypto}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select crypto" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {cryptocurrencies?.map((crypto) => (
-                      <SelectItem key={crypto.id} value={crypto.symbol}>
-                        {crypto.symbol} - {crypto.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="crypto-amount">Amount</Label>
-                <Input
-                  id="crypto-amount"
-                  type="number"
-                  placeholder="0.00"
-                  value={cryptoAmount}
-                  onChange={(e) => setCryptoAmount(e.target.value)}
-                />
-              </div>
-              <div className="flex items-end">
-                <Button onClick={handleCryptoUpdate} className="button-gradient w-full">
-                  {cryptoAction === 'add' ? <Plus className="w-4 h-4 mr-2" /> : <Minus className="w-4 h-4 mr-2" />}
-                  Update Holdings
-                </Button>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Current Holdings Table */}
-      {portfolio.length > 0 && (
-        <Card className="glass glass-hover">
-          <CardHeader>
-            <CardTitle>Current Holdings</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Asset</TableHead>
-                    <TableHead className="text-right">Quantity</TableHead>
-                    <TableHead className="text-right">Current Price</TableHead>
-                    <TableHead className="text-right">Market Value</TableHead>
-                    <TableHead className="text-right">P/L</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {portfolio.map((holding) => (
-                    <TableRow key={holding.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold">{holding.crypto.symbol}</span>
-                          <span className="text-sm text-muted-foreground">{holding.crypto.name}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <FormattedNumber value={holding.quantity} type="crypto" showTooltip={false} />
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <FormattedNumber value={holding.crypto.current_price} type="currency" showTooltip={false} />
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <FormattedNumber value={holding.current_value} type="currency" showTooltip={false} />
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Badge className={holding.profit_loss >= 0 ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}>
-                          {holding.profit_loss >= 0 ? '+' : ''}{holding.profit_loss_percentage.toFixed(2)}%
-                        </Badge>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 };
