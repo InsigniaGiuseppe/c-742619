@@ -12,6 +12,17 @@ import { useNavigate } from 'react-router-dom';
 import { useAdminUsers } from '@/hooks/useAdminUsers';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { useUpdateUserStatus } from '@/hooks/useUpdateUserStatus';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const AdminUsers = () => {
   const navigate = useNavigate();
@@ -27,6 +38,24 @@ const AdminUsers = () => {
   }, [searchTerm]);
 
   const { data: users, isLoading, isError, error } = useAdminUsers(debouncedSearchTerm);
+  
+  type User = NonNullable<typeof users>[number];
+  const [userToBlock, setUserToBlock] = useState<User | null>(null);
+  const { mutate: updateUserStatus, isPending: isUpdatingStatus } = useUpdateUserStatus();
+
+  const handleBlockUser = (user: User) => {
+    setUserToBlock(user);
+  };
+
+  const confirmBlockUser = () => {
+    if (userToBlock) {
+      updateUserStatus({ userId: userToBlock.id, status: 'blocked' }, {
+        onSuccess: () => {
+          setUserToBlock(null);
+        }
+      });
+    }
+  };
 
   const getStatusColor = (status: string | null) => {
     switch (status) {
@@ -117,7 +146,9 @@ const AdminUsers = () => {
             <Button
               size="sm"
               variant="outline"
-              className="glass text-yellow-400 border-yellow-500/30 hover:bg-yellow-500/10"
+              className="glass text-red-400 border-red-500/30 hover:bg-red-500/10 hover:text-red-400"
+              onClick={() => handleBlockUser(user)}
+              disabled={user.account_status === 'blocked' || isUpdatingStatus}
             >
               <UserX className="w-4 h-4" />
             </Button>
@@ -209,6 +240,28 @@ const AdminUsers = () => {
         </Card>
       </main>
       <Footer />
+      {userToBlock && (
+        <AlertDialog open={!!userToBlock} onOpenChange={(open) => !open && setUserToBlock(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action will set the account status to <span className="font-bold">blocked</span> for user <span className="font-bold">{userToBlock.full_name || userToBlock.email}</span>. They will not be able to log in.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setUserToBlock(null)} disabled={isUpdatingStatus}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={confirmBlockUser}
+                disabled={isUpdatingStatus}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {isUpdatingStatus ? 'Blocking...' : 'Confirm Block'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
     </div>
   );
 };
