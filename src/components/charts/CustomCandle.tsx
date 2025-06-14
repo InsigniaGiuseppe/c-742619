@@ -2,7 +2,13 @@
 import React from 'react';
 
 const CustomCandle = (props: any) => {
-  const { x, y, width, height, low, high, open, close } = props;
+  const { x, y, width, height, payload } = props;
+  
+  if (!payload || typeof payload.open === 'undefined') {
+    return null;
+  }
+
+  const { open, close, high, low } = payload;
   const isGain = close >= open;
   const fill = isGain ? 'hsl(var(--chart-2))' : 'hsl(var(--chart-1))';
   const stroke = isGain ? 'hsl(var(--chart-2))' : 'hsl(var(--chart-1))';
@@ -10,8 +16,9 @@ const CustomCandle = (props: any) => {
   const candleWidth = width * 0.7;
   const xOffset = x + (width - candleWidth) / 2;
   
-  const yBody = isGain ? y + height * (1 - (close - low) / (high - low)) : y + height * (1 - (open - low) / (high - low));
-  const bodyHeight = height * (Math.abs(open - close) / (high - low));
+  const domain = high - low;
+  const yBody = isGain ? y + height * (1 - (close - low) / domain) : y + height * (1 - (open - low) / domain);
+  const bodyHeight = height * (Math.abs(open - close) / domain);
 
   return (
     <g>

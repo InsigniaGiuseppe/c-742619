@@ -5,14 +5,15 @@ import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { useAdmin } from "@/hooks/useAdmin";
 
 const Navigation = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user, signOut } = useAuth();
+  const { isAdmin } = useAdmin();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -22,13 +23,6 @@ const Navigation = () => {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
-
-  useEffect(() => {
-    // Check if user is admin (placeholder logic - you can implement proper admin check)
-    if (user?.email === 'admin@prompto.trading') {
-      setIsAdmin(true);
-    }
-  }, [user]);
 
   const handleSignOut = async () => {
     const { error } = await signOut();
