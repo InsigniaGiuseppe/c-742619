@@ -102,8 +102,8 @@ export const usePortfolio = () => {
       return fetchPortfolio(user!.id);
     },
     enabled: !!user,
-    staleTime: 10000, // Consider data stale after 10 seconds for more frequent updates
-    refetchInterval: 30000, // Refetch every 30 seconds for live pricing
+    staleTime: 5000, // Consider data stale after 5 seconds for more frequent updates
+    refetchInterval: 25000, // Refetch every 25 seconds for live pricing
   });
 
   return {
