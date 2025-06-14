@@ -9,18 +9,23 @@ type UpdateUserStatusPayload = {
 };
 
 const updateUserStatus = async ({ userId, status }: UpdateUserStatusPayload) => {
-  const { data, error } = await supabase
-    .from('profiles')
-    .update({ account_status: status })
-    .eq('id', userId)
-    .select()
-    .single();
+  const { data: { user: adminUser } } = await supabase.auth.getUser();
+
+  if (!adminUser) {
+    throw new Error('You must be logged in as an admin to perform this action.');
+  }
+
+  const { error } = await supabase.rpc('update_user_status_and_log', {
+    target_user_id_in: userId,
+    admin_id_in: adminUser.id,
+    new_status: status,
+  });
 
   if (error) {
     throw new Error(error.message);
   }
 
-  return data;
+  return null; // The RPC function returns void
 };
 
 export const useUpdateUserStatus = () => {

@@ -1455,6 +1455,14 @@ export type Database = {
         Args: { user_id: string }
         Returns: boolean
       }
+      update_user_status_and_log: {
+        Args: {
+          target_user_id_in: string
+          admin_id_in: string
+          new_status: string
+        }
+        Returns: undefined
+      }
       validate_admin_session: {
         Args: { session_token: string }
         Returns: boolean
