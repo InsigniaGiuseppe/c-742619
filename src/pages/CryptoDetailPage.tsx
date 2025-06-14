@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,7 +17,7 @@ import { motion } from 'framer-motion';
 import CryptoDetailSkeletonPage from './CryptoDetailSkeletonPage';
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { formatPrice } from '@/lib/formatters';
+import { formatPrice, formatCurrency, formatPercentage } from '@/lib/formatters';
 import CryptoLogo from '@/components/CryptoLogo';
 import FormattedNumber from '@/components/FormattedNumber';
 
