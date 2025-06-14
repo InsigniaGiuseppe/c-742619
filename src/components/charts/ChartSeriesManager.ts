@@ -1,5 +1,5 @@
 
-import { IChartApi, ISeriesApi, CandlestickData, LineData, HistogramData } from 'lightweight-charts';
+import { IChartApi, ISeriesApi, CandlestickData, LineData, HistogramData, SeriesType } from 'lightweight-charts';
 import { ChartDataPoint } from './chartDataUtils';
 import { 
   candlestickSeriesOptions, 
@@ -26,14 +26,23 @@ export class ChartSeriesManager {
     }
 
     if (chartType === 'candlestick') {
-      this.currentSeries = this.chart.addSeries('Candlestick', candlestickSeriesOptions);
-      this.currentSeries.setData(data as CandlestickData[]);
+      this.currentSeries = this.chart.addCandlestickSeries(candlestickSeriesOptions);
+      const candlestickData = data.map(d => ({
+        time: d.time as any,
+        open: d.open,
+        high: d.high,
+        low: d.low,
+        close: d.close
+      })) as CandlestickData[];
+      this.currentSeries.setData(candlestickData);
     } else if (chartType === 'line') {
-      this.currentSeries = this.chart.addSeries('Line', lineSeriesOptions);
-      this.currentSeries.setData(data.map(d => ({ time: d.time, value: d.close }) as LineData));
+      this.currentSeries = this.chart.addLineSeries(lineSeriesOptions);
+      const lineData = data.map(d => ({ time: d.time as any, value: d.close })) as LineData[];
+      this.currentSeries.setData(lineData);
     } else if (chartType === 'area') {
-      this.currentSeries = this.chart.addSeries('Area', areaSeriesOptions);
-      this.currentSeries.setData(data.map(d => ({ time: d.time, value: d.close }) as LineData));
+      this.currentSeries = this.chart.addAreaSeries(areaSeriesOptions);
+      const areaData = data.map(d => ({ time: d.time as any, value: d.close })) as LineData[];
+      this.currentSeries.setData(areaData);
     }
 
     return this.currentSeries;
@@ -45,8 +54,13 @@ export class ChartSeriesManager {
       this.chart.removeSeries(this.volumeSeries);
     }
 
-    this.volumeSeries = this.chart.addSeries('Histogram', volumeSeriesOptions);
-    this.volumeSeries.setData(volumeData as HistogramData[]);
+    this.volumeSeries = this.chart.addHistogramSeries(volumeSeriesOptions);
+    const histogramData = volumeData.map(d => ({
+      time: d.time as any,
+      value: d.value,
+      color: d.color
+    })) as HistogramData[];
+    this.volumeSeries.setData(histogramData);
     
     this.volumeSeries.priceScale().applyOptions({
       scaleMargins: {

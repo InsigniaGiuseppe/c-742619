@@ -73,12 +73,15 @@ const AdvancedUserFilters: React.FC<AdvancedUserFiltersProps> = ({
           {/* Account Status */}
           <div>
             <Label>Account Status</Label>
-            <Select value={filters.accountStatus} onValueChange={(value) => updateFilter('accountStatus', value)}>
+            <Select 
+              value={filters.accountStatus || 'all'} 
+              onValueChange={(value) => updateFilter('accountStatus', value === 'all' ? '' : value)}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="All statuses" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Statuses</SelectItem>
+                <SelectItem value="all">All Statuses</SelectItem>
                 <SelectItem value="active">Active</SelectItem>
                 <SelectItem value="frozen">Frozen</SelectItem>
                 <SelectItem value="blocked">Blocked</SelectItem>
@@ -89,12 +92,15 @@ const AdvancedUserFilters: React.FC<AdvancedUserFiltersProps> = ({
           {/* KYC Status */}
           <div>
             <Label>KYC Status</Label>
-            <Select value={filters.kycStatus} onValueChange={(value) => updateFilter('kycStatus', value)}>
+            <Select 
+              value={filters.kycStatus || 'all'} 
+              onValueChange={(value) => updateFilter('kycStatus', value === 'all' ? '' : value)}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="All KYC statuses" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All KYC Statuses</SelectItem>
+                <SelectItem value="all">All KYC Statuses</SelectItem>
                 <SelectItem value="not_started">Not Started</SelectItem>
                 <SelectItem value="pending">Pending</SelectItem>
                 <SelectItem value="approved">Approved</SelectItem>
@@ -106,12 +112,15 @@ const AdvancedUserFilters: React.FC<AdvancedUserFiltersProps> = ({
           {/* Account Type */}
           <div>
             <Label>Account Type</Label>
-            <Select value={filters.accountType} onValueChange={(value) => updateFilter('accountType', value)}>
+            <Select 
+              value={filters.accountType || 'all'} 
+              onValueChange={(value) => updateFilter('accountType', value === 'all' ? '' : value)}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="All types" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Types</SelectItem>
+                <SelectItem value="all">All Types</SelectItem>
                 <SelectItem value="Standard">Standard</SelectItem>
                 <SelectItem value="Premium">Premium</SelectItem>
                 <SelectItem value="VIP">VIP</SelectItem>
