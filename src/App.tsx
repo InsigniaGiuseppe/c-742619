@@ -17,6 +17,8 @@ import ReferralsPage from "./pages/ReferralsPage";
 import MessagesPage from "./pages/MessagesPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminUsers from "./pages/AdminUsers";
+import DevDashboard from "./pages/DevDashboard";
+import DevAdmin from "./pages/DevAdmin";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
 
@@ -33,6 +35,11 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
+            
+            {/* Development Routes - Remove before production */}
+            <Route path="/dev-dashboard" element={<DevDashboard />} />
+            <Route path="/dev-admin" element={<DevAdmin />} />
+            
             <Route path="/dashboard" element={
               <ProtectedRoute>
                 <DashboardPage />
