@@ -49,25 +49,46 @@ export const useAuth = () => {
   };
 
   const signIn = async (email: string, password: string) => {
-    console.log('Attempting sign in with:', email);
+    console.log('=== SIGNIN ATTEMPT START ===');
+    console.log('Email:', email);
     console.log('Current origin:', window.location.origin);
+    console.log('Supabase client status:', !!supabase);
     
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    
-    console.log('SignIn response:', { data, error });
-    
-    if (error) {
-      console.error('SignIn error details:', {
-        message: error.message,
-        status: error.status,
-        name: error.name
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       });
+      
+      console.log('=== SIGNIN RESPONSE ===');
+      console.log('Data:', data);
+      console.log('Error:', error);
+      
+      if (error) {
+        console.error('=== SIGNIN ERROR DETAILS ===');
+        console.error('Error message:', error.message);
+        console.error('Error status:', error.status);
+        console.error('Error name:', error.name);
+        console.error('Full error object:', JSON.stringify(error, null, 2));
+      }
+      
+      if (data?.user) {
+        console.log('=== SIGNIN SUCCESS ===');
+        console.log('User ID:', data.user.id);
+        console.log('User email:', data.user.email);
+        console.log('User metadata:', data.user.user_metadata);
+        console.log('Session:', data.session);
+      }
+      
+      return { data, error };
+    } catch (catchError) {
+      console.error('=== SIGNIN CATCH ERROR ===');
+      console.error('Catch error:', catchError);
+      console.error('Catch error type:', typeof catchError);
+      console.error('Catch error stringified:', JSON.stringify(catchError, null, 2));
+      
+      return { data: null, error: catchError as any };
     }
-    
-    return { data, error };
   };
 
   const signOut = async () => {
