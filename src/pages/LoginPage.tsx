@@ -69,6 +69,13 @@ const LoginPage = () => {
     });
   };
 
+  const handleAdminLogin = () => {
+    setFormData({
+      email: 'admin@prompto.trading',
+      password: 'admin123'
+    });
+  };
+
   return (
     <div className="min-h-screen bg-black text-foreground flex flex-col">
       <Navigation />
@@ -79,6 +86,9 @@ const LoginPage = () => {
               src="/lovable-uploads/a2c0bb3a-a47b-40bf-ba26-d79f2f9e741b.png" 
               alt="PROMPTO TRADING" 
               className="w-16 h-16 mx-auto mb-4"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+              }}
             />
             <h1 className="text-3xl font-bold">Welcome Back</h1>
             <p className="text-muted-foreground mt-2">Sign in to your PROMPTO TRADING account</p>
@@ -112,15 +122,26 @@ const LoginPage = () => {
               />
             </div>
             <div className="flex items-center justify-between">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={handleTestLogin}
-                className="text-xs"
-              >
-                Use Test Credentials
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleTestLogin}
+                  className="text-xs"
+                >
+                  Test User
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleAdminLogin}
+                  className="text-xs text-orange-400"
+                >
+                  Admin Login
+                </Button>
+              </div>
               <Link to="#" className="text-sm text-primary hover:underline">
                 Forgot password?
               </Link>
@@ -136,7 +157,10 @@ const LoginPage = () => {
           
           <div className="mt-6 text-center">
             <p className="text-sm text-muted-foreground mb-2">
-              Test Credentials: test@prompto.trading / password123
+              Test User: test@prompto.trading / password123
+            </p>
+            <p className="text-sm text-muted-foreground mb-2">
+              Admin User: admin@prompto.trading / admin123
             </p>
             <p className="text-sm text-muted-foreground">
               Don't have an account?{' '}
