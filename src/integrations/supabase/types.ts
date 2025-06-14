@@ -1470,6 +1470,15 @@ export type Database = {
         Args: { user_id: string }
         Returns: boolean
       }
+      update_kyc_status_and_log: {
+        Args: {
+          target_kyc_id_in: string
+          admin_id_in: string
+          new_status_in: Database["public"]["Enums"]["kyc_status"]
+          admin_notes_in: string
+        }
+        Returns: undefined
+      }
       update_user_status_and_log: {
         Args: {
           target_user_id_in: string

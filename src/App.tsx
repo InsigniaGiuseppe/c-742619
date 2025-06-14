@@ -1,3 +1,4 @@
+
 import { Route, BrowserRouter as Router, Routes } from "react-router-dom";
 import Index from "./pages/Index";
 import { Toaster } from "@/components/ui/sonner";
@@ -12,6 +13,7 @@ import AdminUsers from "./pages/AdminUsers";
 import AdminUserDetailPage from "./pages/AdminUserDetailPage";
 import AdminAuditLog from "./pages/AdminAuditLog";
 import AdminWallets from "./pages/AdminWallets";
+import AdminKyc from "./pages/AdminKyc";
 import ProfilePage from "./pages/ProfilePage";
 import WalletPage from "./pages/WalletPage";
 import TopUpPage from "./pages/TopUpPage";
@@ -43,6 +45,7 @@ function App() {
         <Route path="/admin/users/:userId" element={<AdminRoute><AdminUserDetailPage /></AdminRoute>} />
         <Route path="/admin/audit-log" element={<AdminRoute><AdminAuditLog /></AdminRoute>} />
         <Route path="/admin/wallets" element={<AdminRoute><AdminWallets /></AdminRoute>} />
+        <Route path="/admin/kyc" element={<AdminRoute><AdminKyc /></AdminRoute>} />
       </Routes>
       <Toaster />
     </Router>
