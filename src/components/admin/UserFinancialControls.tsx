@@ -33,6 +33,8 @@ const UserFinancialControls: React.FC<UserFinancialControlsProps> = ({ userId })
       return;
     }
 
+    console.log('Adding crypto:', { selectedCrypto, cryptoAmount, userId });
+    
     setIsProcessing(true);
     try {
       // Get the current price of the selected cryptocurrency
@@ -42,11 +44,18 @@ const UserFinancialControls: React.FC<UserFinancialControlsProps> = ({ userId })
         .eq('id', selectedCrypto)
         .single();
 
-      if (cryptoError) throw cryptoError;
+      if (cryptoError) {
+        console.error('Error fetching crypto data:', cryptoError);
+        throw cryptoError;
+      }
+
+      console.log('Crypto data fetched:', cryptoData);
 
       const quantity = parseFloat(cryptoAmount);
       const currentPrice = cryptoData.current_price;
       const currentValue = quantity * currentPrice;
+
+      console.log('Calculated values:', { quantity, currentPrice, currentValue });
 
       const { error } = await supabase
         .from('user_portfolios')
@@ -63,13 +72,18 @@ const UserFinancialControls: React.FC<UserFinancialControlsProps> = ({ userId })
           onConflict: 'user_id,cryptocurrency_id'
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error upserting portfolio:', error);
+        throw error;
+      }
 
+      console.log('Cryptocurrency added successfully');
       toast.success('Cryptocurrency added successfully');
       setSelectedCrypto('');
       setCryptoAmount('');
       refetchPortfolio();
     } catch (error: any) {
+      console.error('Full error in handleAddCrypto:', error);
       toast.error(`Failed to add cryptocurrency: ${error.message}`);
     } finally {
       setIsProcessing(false);
@@ -77,6 +91,8 @@ const UserFinancialControls: React.FC<UserFinancialControlsProps> = ({ userId })
   };
 
   const handleRemoveCrypto = async (cryptoId: string) => {
+    console.log('Removing crypto:', { cryptoId, userId });
+    
     setIsProcessing(true);
     try {
       const { error } = await supabase
@@ -85,11 +101,16 @@ const UserFinancialControls: React.FC<UserFinancialControlsProps> = ({ userId })
         .eq('user_id', userId)
         .eq('cryptocurrency_id', cryptoId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error removing crypto:', error);
+        throw error;
+      }
 
+      console.log('Cryptocurrency removed successfully');
       toast.success('Cryptocurrency removed successfully');
       refetchPortfolio();
     } catch (error: any) {
+      console.error('Full error in handleRemoveCrypto:', error);
       toast.error(`Failed to remove cryptocurrency: ${error.message}`);
     } finally {
       setIsProcessing(false);
@@ -102,6 +123,8 @@ const UserFinancialControls: React.FC<UserFinancialControlsProps> = ({ userId })
       return;
     }
 
+    console.log('Adjusting balance:', { action, balanceAmount, userId });
+
     setIsProcessing(true);
     try {
       // First get current balance using the correct field name
@@ -111,7 +134,12 @@ const UserFinancialControls: React.FC<UserFinancialControlsProps> = ({ userId })
         .eq('id', userId)
         .single();
 
-      if (fetchError) throw fetchError;
+      if (fetchError) {
+        console.error('Error fetching current balance:', fetchError);
+        throw fetchError;
+      }
+
+      console.log('Current profile data:', currentProfile);
 
       const currentBalance = currentProfile.demo_balance_usd || 0;
       const adjustmentAmount = parseFloat(balanceAmount);
@@ -119,21 +147,30 @@ const UserFinancialControls: React.FC<UserFinancialControlsProps> = ({ userId })
         ? currentBalance + adjustmentAmount 
         : Math.max(0, currentBalance - adjustmentAmount);
 
+      console.log('Balance calculation:', { currentBalance, adjustmentAmount, newBalance });
+
       const { error } = await supabase
         .from('profiles')
         .update({ demo_balance_usd: newBalance })
         .eq('id', userId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error updating balance:', error);
+        throw error;
+      }
 
+      console.log('Balance adjusted successfully');
       toast.success(`Balance ${action === 'add' ? 'increased' : 'decreased'} successfully`);
       setBalanceAmount('');
     } catch (error: any) {
+      console.error('Full error in handleAdjustBalance:', error);
       toast.error(`Failed to adjust balance: ${error.message}`);
     } finally {
       setIsProcessing(false);
     }
   };
+
+  console.log('Current state:', { cryptocurrencies: cryptocurrencies.length, portfolio: portfolio.length, selectedCrypto, cryptoAmount });
 
   return (
     <div className="space-y-6">

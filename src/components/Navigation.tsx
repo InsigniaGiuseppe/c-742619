@@ -68,14 +68,9 @@ const Navigation = () => {
       <div className="mx-auto h-full px-6">
         <nav className="flex items-center justify-between h-full">
           <Link to="/" className="flex items-center gap-2">
-            <img 
-              src="/lovable-uploads/f2e4b091-6735-4cc9-bf78-84aa28f74b0b.png" 
-              alt="PROMPTO TRADING Logo" 
-              className="w-8 h-8 object-contain"
-              onError={(e) => {
-                e.currentTarget.style.display = 'none';
-              }}
-            />
+            <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+              <span className="text-white font-bold text-xs">PT</span>
+            </div>
             <span className="font-bold text-base tracking-wide font-sans">PROMPTO TRADING</span>
           </Link>
 
