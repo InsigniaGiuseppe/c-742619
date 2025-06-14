@@ -1035,7 +1035,7 @@ export type Database = {
           executed_at: string | null
           fees: number | null
           id: string
-          order_status: string | null
+          order_status: Database["public"]["Enums"]["order_status_type"] | null
           order_type: string
           price_per_unit: number
           total_value: number
@@ -1049,7 +1049,7 @@ export type Database = {
           executed_at?: string | null
           fees?: number | null
           id?: string
-          order_status?: string | null
+          order_status?: Database["public"]["Enums"]["order_status_type"] | null
           order_type: string
           price_per_unit: number
           total_value: number
@@ -1063,7 +1063,7 @@ export type Database = {
           executed_at?: string | null
           fees?: number | null
           id?: string
-          order_status?: string | null
+          order_status?: Database["public"]["Enums"]["order_status_type"] | null
           order_type?: string
           price_per_unit?: number
           total_value?: number
@@ -1479,6 +1479,15 @@ export type Database = {
         }
         Returns: undefined
       }
+      update_transaction_status_and_log: {
+        Args: {
+          target_order_id_in: string
+          admin_id_in: string
+          new_status_in: string
+          admin_notes_in: string
+        }
+        Returns: undefined
+      }
       update_user_status_and_log: {
         Args: {
           target_user_id_in: string
@@ -1511,6 +1520,7 @@ export type Database = {
         | "drivers_license"
         | "proof_of_address"
       kyc_status: "not_started" | "pending" | "verified" | "rejected"
+      order_status_type: "pending" | "completed" | "rejected" | "failed"
       vip_rank: "free" | "bronze" | "silver" | "gold"
       wallet_status: "pending" | "verified" | "rejected"
     }
@@ -1638,6 +1648,7 @@ export const Constants = {
         "proof_of_address",
       ],
       kyc_status: ["not_started", "pending", "verified", "rejected"],
+      order_status_type: ["pending", "completed", "rejected", "failed"],
       vip_rank: ["free", "bronze", "silver", "gold"],
       wallet_status: ["pending", "verified", "rejected"],
     },

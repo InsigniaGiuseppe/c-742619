@@ -14,6 +14,7 @@ import AdminUserDetailPage from "./pages/AdminUserDetailPage";
 import AdminAuditLog from "./pages/AdminAuditLog";
 import AdminWallets from "./pages/AdminWallets";
 import AdminKyc from "./pages/AdminKyc";
+import AdminTransactions from "./pages/AdminTransactions";
 import ProfilePage from "./pages/ProfilePage";
 import WalletPage from "./pages/WalletPage";
 import TopUpPage from "./pages/TopUpPage";
@@ -46,6 +47,7 @@ function App() {
         <Route path="/admin/audit-log" element={<AdminRoute><AdminAuditLog /></AdminRoute>} />
         <Route path="/admin/wallets" element={<AdminRoute><AdminWallets /></AdminRoute>} />
         <Route path="/admin/kyc" element={<AdminRoute><AdminKyc /></AdminRoute>} />
+        <Route path="/admin/transactions" element={<AdminRoute><AdminTransactions /></AdminRoute>} />
       </Routes>
       <Toaster />
     </Router>
