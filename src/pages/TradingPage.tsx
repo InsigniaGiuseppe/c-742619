@@ -1,11 +1,11 @@
-
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search } from 'lucide-react';
-import { useCryptocurrencies } from '@/hooks/useCryptocurrencies';
+import { useCryptocurrencies, Cryptocurrency } from '@/hooks/useCryptocurrencies';
 import CryptoCard from '@/components/CryptoCard';
 import { useToast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
@@ -14,6 +14,7 @@ import CryptoCardSkeleton from '@/components/CryptoCardSkeleton';
 const TradingPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const { cryptocurrencies, loading, error, refetch } = useCryptocurrencies();
+  const navigate = useNavigate();
   const { toast } = useToast();
 
   const filteredCryptos = cryptocurrencies.filter(crypto =>
@@ -21,11 +22,8 @@ const TradingPage = () => {
     crypto.symbol.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleTrade = (crypto: any) => {
-    toast({
-      title: "Trading Feature",
-      description: `Trading ${crypto.symbol} will be available soon!`,
-    });
+  const handleTrade = (crypto: Cryptocurrency) => {
+    navigate(`/trading/${crypto.symbol.toLowerCase()}`);
   };
 
   return (
