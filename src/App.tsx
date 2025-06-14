@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -20,6 +19,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import AdminUsers from "./pages/AdminUsers";
 import CryptoDetailPage from "./pages/CryptoDetailPage";
 import WalletVerificationPage from "./pages/WalletVerificationPage";
+import AdminUserDetailPage from "./pages/AdminUserDetailPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
 import { CryptocurrenciesProvider } from "./hooks/useCryptocurrencies";
@@ -101,6 +101,11 @@ const App = () => (
               <Route path="/admin/users" element={
                 <AdminRoute>
                   <AdminUsers />
+                </AdminRoute>
+              } />
+              <Route path="/admin/users/:id" element={
+                <AdminRoute>
+                  <AdminUserDetailPage />
                 </AdminRoute>
               } />
             </Routes>
