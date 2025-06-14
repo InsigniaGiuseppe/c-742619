@@ -1,0 +1,26 @@
+
+UPDATE public.cryptocurrencies SET logo_url = 'https://s2.coinmarketcap.com/static/img/coins/128x128/1.png' WHERE symbol = 'BTC';
+UPDATE public.cryptocurrencies SET logo_url = 'https://s2.coinmarketcap.com/static/img/coins/128x128/1027.png' WHERE symbol = 'ETH';
+UPDATE public.cryptocurrencies SET logo_url = 'https://s2.coinmarketcap.com/static/img/coins/128x128/825.png' WHERE symbol = 'USDT';
+UPDATE public.cryptocurrencies SET logo_url = 'https://s2.coinmarketcap.com/static/img/coins/128x128/1839.png' WHERE symbol = 'BNB';
+UPDATE public.cryptocurrencies SET logo_url = 'https://s2.coinmarketcap.com/static/img/coins/128x128/5426.png' WHERE symbol = 'SOL';
+UPDATE public.cryptocurrencies SET logo_url = 'https://s2.coinmarketcap.com/static/img/coins/128x128/3408.png' WHERE symbol = 'USDC';
+UPDATE public.cryptocurrencies SET logo_url = 'https://s2.coinmarketcap.com/static/img/coins/128x128/52.png' WHERE symbol = 'XRP';
+UPDATE public.cryptocurrencies SET logo_url = 'https://s2.coinmarketcap.com/static/img/coins/128x128/11419.png' WHERE symbol = 'TON';
+UPDATE public.cryptocurrencies SET logo_url = 'https://s2.coinmarketcap.com/static/img/coins/128x128/74.png' WHERE symbol = 'DOGE';
+UPDATE public.cryptocurrencies SET logo_url = 'https://s2.coinmarketcap.com/static/img/coins/128x128/2010.png' WHERE symbol = 'ADA';
+UPDATE public.cryptocurrencies SET logo_url = 'https://s2.coinmarketcap.com/static/img/coins/128x128/5805.png' WHERE symbol = 'AVAX';
+UPDATE public.cryptocurrencies SET logo_url = 'https://s2.coinmarketcap.com/static/img/coins/128x128/5994.png' WHERE symbol = 'SHIB';
+UPDATE public.cryptocurrencies SET logo_url = 'https://s2.coinmarketcap.com/static/img/coins/128x128/1958.png' WHERE symbol = 'TRX';
+UPDATE public.cryptocurrencies SET logo_url = 'https://s2.coinmarketcap.com/static/img/coins/128x128/6636.png' WHERE symbol = 'DOT';
+UPDATE public.cryptocurrencies SET logo_url = 'https://s2.coinmarketcap.com/static/img/coins/128x128/3717.png' WHERE symbol = 'WBTC';
+UPDATE public.cryptocurrencies SET logo_url = 'https://s2.coinmarketcap.com/static/img/coins/128x128/1975.png' WHERE symbol = 'LINK';
+UPDATE public.cryptocurrencies SET logo_url = 'https://s2.coinmarketcap.com/static/img/coins/128x128/3890.png' WHERE symbol = 'MATIC';
+UPDATE public.cryptocurrencies SET logo_url = 'https://s2.coinmarketcap.com/static/img/coins/128x128/2.png' WHERE symbol = 'LTC';
+UPDATE public.cryptocurrencies SET logo_url = 'https://s2.coinmarketcap.com/static/img/coins/128x128/1831.png' WHERE symbol = 'BCH';
+UPDATE public.cryptocurrencies SET logo_url = 'https://s2.coinmarketcap.com/static/img/coins/128x128/8916.png' WHERE symbol = 'ICP';
+UPDATE public.cryptocurrencies SET logo_url = 'https://s2.coinmarketcap.com/static/img/coins/128x128/7083.png' WHERE symbol = 'UNI';
+UPDATE public.cryptocurrencies SET logo_url = 'https://s2.coinmarketcap.com/static/img/coins/128x128/4943.png' WHERE symbol = 'DAI';
+UPDATE public.cryptocurrencies SET logo_url = 'https://s2.coinmarketcap.com/static/img/coins/128x128/1321.png' WHERE symbol = 'ETC';
+UPDATE public.cryptocurrencies SET logo_url = 'https://s2.coinmarketcap.com/static/img/coins/128x128/6535.png' WHERE symbol = 'RNDR';
+UPDATE public.cryptocurrencies SET logo_url = NULL WHERE symbol = 'KAS';

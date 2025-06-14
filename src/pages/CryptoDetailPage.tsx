@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,6 +19,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { formatPrice, formatCurrency, formatPercentage } from '@/lib/formatters';
 import CryptoLogo from '@/components/CryptoLogo';
 import FormattedNumber from '@/components/FormattedNumber';
+import CryptoPriceChart from '@/components/CryptoPriceChart';
 
 const chartConfig = {
   price: {
@@ -329,57 +329,7 @@ const CryptoDetailPage = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Chart Section */}
           <div className="lg:col-span-2">
-            <Card className="glass glass-hover">
-              <CardHeader>
-                <div className="flex justify-between items-center">
-                  <CardTitle>Price Chart</CardTitle>
-                  <div className="flex gap-2">
-                    {timeframes.map((tf) => (
-                      <Button
-                        key={tf.value}
-                        variant={selectedTimeframe === tf.value ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setSelectedTimeframe(tf.value)}
-                      >
-                        {tf.label}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <ChartContainer config={chartConfig} className="h-[400px] w-full">
-                  <LineChart data={chartData}>
-                    <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="hsla(var(--muted-foreground), 0.2)" />
-                    <XAxis 
-                      dataKey="time" 
-                      tickLine={false}
-                      axisLine={false}
-                      tickMargin={8}
-                      stroke="hsl(var(--muted-foreground))"
-                    />
-                    <YAxis 
-                      tickLine={false}
-                      axisLine={false}
-                      tickMargin={8}
-                      stroke="hsl(var(--muted-foreground))"
-                      tickFormatter={(value) => formatPrice(value)}
-                    />
-                    <ChartTooltip 
-                      cursor={false}
-                      content={<ChartTooltipContent indicator="line" />}
-                    />
-                    <Line 
-                      dataKey="price" 
-                      type="monotone"
-                      stroke="var(--color-price)"
-                      strokeWidth={2}
-                      dot={false}
-                    />
-                  </LineChart>
-                </ChartContainer>
-              </CardContent>
-            </Card>
+            <CryptoPriceChart crypto={crypto} />
           </div>
 
           {/* Trading Section */}
