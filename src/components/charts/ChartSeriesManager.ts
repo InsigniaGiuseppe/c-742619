@@ -8,7 +8,8 @@ import {
   CandlestickSeriesPartialOptions,
   LineSeriesPartialOptions,
   AreaSeriesPartialOptions,
-  HistogramSeriesPartialOptions
+  HistogramSeriesPartialOptions,
+  SeriesType
 } from 'lightweight-charts';
 import { ChartDataPoint } from './chartDataUtils';
 import { 
@@ -36,7 +37,7 @@ export class ChartSeriesManager {
     }
 
     if (chartType === 'candlestick') {
-      this.currentSeries = this.chart.addCandlestickSeries(candlestickSeriesOptions as CandlestickSeriesPartialOptions);
+      this.currentSeries = this.chart.addSeries(SeriesType.Candlestick, candlestickSeriesOptions as CandlestickSeriesPartialOptions);
       const candlestickData = data.map(d => ({
         time: d.time as any,
         open: d.open,
@@ -46,11 +47,11 @@ export class ChartSeriesManager {
       })) as CandlestickData[];
       this.currentSeries.setData(candlestickData);
     } else if (chartType === 'line') {
-      this.currentSeries = this.chart.addLineSeries(lineSeriesOptions as LineSeriesPartialOptions);
+      this.currentSeries = this.chart.addSeries(SeriesType.Line, lineSeriesOptions as LineSeriesPartialOptions);
       const lineData = data.map(d => ({ time: d.time as any, value: d.close })) as LineData[];
       this.currentSeries.setData(lineData);
     } else if (chartType === 'area') {
-      this.currentSeries = this.chart.addAreaSeries(areaSeriesOptions as AreaSeriesPartialOptions);
+      this.currentSeries = this.chart.addSeries(SeriesType.Area, areaSeriesOptions as AreaSeriesPartialOptions);
       const areaData = data.map(d => ({ time: d.time as any, value: d.close })) as LineData[];
       this.currentSeries.setData(areaData);
     }
@@ -64,7 +65,7 @@ export class ChartSeriesManager {
       this.chart.removeSeries(this.volumeSeries);
     }
 
-    this.volumeSeries = this.chart.addHistogramSeries(volumeSeriesOptions as HistogramSeriesPartialOptions);
+    this.volumeSeries = this.chart.addSeries(SeriesType.Histogram, volumeSeriesOptions as HistogramSeriesPartialOptions);
     const histogramData = volumeData.map(d => ({
       time: d.time as any,
       value: d.value,
