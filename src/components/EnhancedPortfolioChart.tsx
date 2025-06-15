@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { Badge } from '@/components/ui/badge';
 import { TrendingUp, TrendingDown, Activity } from 'lucide-react';
 import FormattedNumber from './FormattedNumber';
@@ -24,7 +23,7 @@ const EnhancedPortfolioChart = () => {
     return (
       <Card className="glass glass-hover">
         <CardHeader>
-          <CardTitle>Portfolio Distribution by Value</CardTitle>
+          <CardTitle>Portfolio Distribution by USD Value</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-center h-64">
@@ -39,7 +38,7 @@ const EnhancedPortfolioChart = () => {
     return (
       <Card className="glass glass-hover">
         <CardHeader>
-          <CardTitle>Portfolio Distribution by Value</CardTitle>
+          <CardTitle>Portfolio Distribution by USD Value</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col items-center justify-center h-64 text-gray-400 space-y-2">
@@ -61,24 +60,6 @@ const EnhancedPortfolioChart = () => {
   }));
 
   const isProfit = totalProfitLoss >= 0;
-
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      return (
-        <div className="bg-gray-800 p-3 rounded-lg border border-gray-600 shadow-lg">
-          <p className="font-medium text-white">{data.name}</p>
-          <p className="text-sm text-gray-300">
-            USD Value: <FormattedNumber value={data.value} type="currency" showTooltip={false} />
-          </p>
-          <p className="text-sm text-gray-300">
-            {data.percentage.toFixed(1)}% of total value
-          </p>
-        </div>
-      );
-    }
-    return null;
-  };
 
   return (
     <Card className="glass glass-hover">
@@ -118,46 +99,46 @@ const EnhancedPortfolioChart = () => {
         </div>
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={300}>
-          <PieChart>
-            <Pie
-              data={chartData}
-              cx="50%"
-              cy="50%"
-              outerRadius={100}
-              fill="#8884d8"
-              dataKey="value"
-              label={({ percentage }) => `${percentage.toFixed(1)}%`}
-              labelLine={false}
-            >
-              {chartData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={entry.color} />
-              ))}
-            </Pie>
-            <Tooltip content={<CustomTooltip />} />
-            <Legend />
-          </PieChart>
-        </ResponsiveContainer>
-        
-        <div className="mt-6 space-y-3">
-          <div className="text-xs text-muted-foreground mb-2">
-            * Distribution shown by USD value, not coin quantity
+        <div className="space-y-4">
+          <div className="text-xs text-muted-foreground mb-4">
+            Distribution shown by USD value, not coin quantity
           </div>
+          
           {chartData.map((item, index) => (
-            <div key={item.name} className="flex items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
-              <div className="flex items-center gap-3">
-                <CryptoLogo 
-                  logo_url={item.logo_url}
-                  name={item.fullName}
-                  symbol={item.name}
-                  size="sm"
-                />
-                <span className="font-medium">{item.name}</span>
-                <span className="text-xs text-muted-foreground">
-                  {item.percentage.toFixed(1)}% of value
-                </span>
+            <div key={item.name} className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <CryptoLogo 
+                    logo_url={item.logo_url}
+                    name={item.fullName}
+                    symbol={item.name}
+                    size="sm"
+                  />
+                  <div className="flex flex-col">
+                    <span className="font-medium text-sm">{item.name}</span>
+                    <span className="text-xs text-muted-foreground">{item.fullName}</span>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="font-semibold text-sm">
+                    <FormattedNumber value={item.value} type="currency" showTooltip={false} />
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {item.percentage.toFixed(1)}%
+                  </div>
+                </div>
               </div>
-              <FormattedNumber value={item.value} type="currency" showTooltip={false} className="font-semibold" />
+              
+              <div className="relative w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                <div 
+                  className="h-full rounded-full transition-all duration-300 ease-out"
+                  style={{
+                    width: `${item.percentage}%`,
+                    backgroundColor: item.color,
+                    boxShadow: `0 0 8px ${item.color}40`
+                  }}
+                />
+              </div>
             </div>
           ))}
         </div>
