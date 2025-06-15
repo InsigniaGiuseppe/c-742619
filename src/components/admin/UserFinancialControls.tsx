@@ -40,7 +40,7 @@ const UserFinancialControls: React.FC<UserFinancialControlsProps> = ({ userId })
       // Get the current price of the selected cryptocurrency
       const { data: cryptoData, error: cryptoError } = await supabase
         .from('cryptocurrencies')
-        .select('current_price')
+        .select('current_price, symbol, name')
         .eq('id', selectedCrypto)
         .single();
 
@@ -57,7 +57,8 @@ const UserFinancialControls: React.FC<UserFinancialControlsProps> = ({ userId })
 
       console.log('Calculated values:', { quantity, currentPrice, currentValue });
 
-      const { error } = await supabase
+      // Update or insert into portfolio
+      const { error: portfolioError } = await supabase
         .from('user_portfolios')
         .upsert({
           user_id: userId,
@@ -72,9 +73,28 @@ const UserFinancialControls: React.FC<UserFinancialControlsProps> = ({ userId })
           onConflict: 'user_id,cryptocurrency_id'
         });
 
-      if (error) {
-        console.error('Error upserting portfolio:', error);
-        throw error;
+      if (portfolioError) {
+        console.error('Error upserting portfolio:', portfolioError);
+        throw portfolioError;
+      }
+
+      // Create transaction history entry
+      const { error: transactionError } = await supabase
+        .from('transaction_history')
+        .insert({
+          user_id: userId,
+          cryptocurrency_id: selectedCrypto,
+          transaction_type: 'admin_add',
+          amount: quantity,
+          usd_value: currentValue,
+          status: 'completed',
+          description: `Admin added ${quantity} ${cryptoData.symbol} to portfolio`
+        });
+
+      if (transactionError) {
+        console.error('Error creating transaction history:', transactionError);
+        // Don't throw error here - portfolio update succeeded
+        console.warn('Portfolio updated but transaction history failed');
       }
 
       console.log('Cryptocurrency added successfully');
@@ -95,15 +115,52 @@ const UserFinancialControls: React.FC<UserFinancialControlsProps> = ({ userId })
     
     setIsProcessing(true);
     try {
-      const { error } = await supabase
+      // Get portfolio details before deletion for transaction history
+      const { data: portfolioData, error: fetchError } = await supabase
+        .from('user_portfolios')
+        .select(`
+          quantity,
+          current_value,
+          crypto:cryptocurrencies(symbol, name, current_price)
+        `)
+        .eq('user_id', userId)
+        .eq('cryptocurrency_id', cryptoId)
+        .single();
+
+      if (fetchError) {
+        console.error('Error fetching portfolio data:', fetchError);
+        throw fetchError;
+      }
+
+      // Delete from portfolio
+      const { error: deleteError } = await supabase
         .from('user_portfolios')
         .delete()
         .eq('user_id', userId)
         .eq('cryptocurrency_id', cryptoId);
 
-      if (error) {
-        console.error('Error removing crypto:', error);
-        throw error;
+      if (deleteError) {
+        console.error('Error removing crypto:', deleteError);
+        throw deleteError;
+      }
+
+      // Create transaction history entry
+      const { error: transactionError } = await supabase
+        .from('transaction_history')
+        .insert({
+          user_id: userId,
+          cryptocurrency_id: cryptoId,
+          transaction_type: 'admin_remove',
+          amount: portfolioData.quantity,
+          usd_value: portfolioData.current_value,
+          status: 'completed',
+          description: `Admin removed ${portfolioData.quantity} ${portfolioData.crypto?.symbol || 'CRYPTO'} from portfolio`
+        });
+
+      if (transactionError) {
+        console.error('Error creating transaction history:', transactionError);
+        // Don't throw error here - portfolio deletion succeeded
+        console.warn('Portfolio updated but transaction history failed');
       }
 
       console.log('Cryptocurrency removed successfully');
@@ -157,6 +214,23 @@ const UserFinancialControls: React.FC<UserFinancialControlsProps> = ({ userId })
       if (error) {
         console.error('Error updating balance:', error);
         throw error;
+      }
+
+      // Create transaction history entry for balance adjustment
+      const { error: transactionError } = await supabase
+        .from('transaction_history')
+        .insert({
+          user_id: userId,
+          transaction_type: action === 'add' ? 'admin_balance_add' : 'admin_balance_remove',
+          usd_value: adjustmentAmount,
+          status: 'completed',
+          description: `Admin ${action === 'add' ? 'added' : 'removed'} $${adjustmentAmount} ${action === 'add' ? 'to' : 'from'} account balance`
+        });
+
+      if (transactionError) {
+        console.error('Error creating balance transaction history:', transactionError);
+        // Don't throw error here - balance update succeeded
+        console.warn('Balance updated but transaction history failed');
       }
 
       console.log('Balance adjusted successfully');

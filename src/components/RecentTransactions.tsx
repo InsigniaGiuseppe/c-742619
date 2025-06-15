@@ -3,7 +3,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useTransactionHistory } from '@/hooks/useTransactionHistory';
-import { TrendingUp, TrendingDown } from 'lucide-react';
+import { TrendingUp, TrendingDown, Settings, DollarSign } from 'lucide-react';
 import FormattedNumber from './FormattedNumber';
 
 const RecentTransactions = () => {
@@ -31,16 +31,35 @@ const RecentTransactions = () => {
   const recentTransactions = transactions.slice(0, 10);
 
   const getTransactionIcon = (transactionType: string) => {
+    // Handle admin transaction types
+    if (transactionType.includes('admin_add') || transactionType.includes('admin_balance_add')) {
+      return Settings;
+    }
+    if (transactionType.includes('admin_remove') || transactionType.includes('admin_balance_remove')) {
+      return Settings;
+    }
+    
+    // Handle regular transaction types
     const isBuy = transactionType === 'trade_buy' || transactionType === 'purchase' || transactionType === 'buy' || transactionType.includes('buy');
     return isBuy ? TrendingUp : TrendingDown;
   };
 
   const getTransactionColor = (transactionType: string) => {
+    // Admin transactions get blue color
+    if (transactionType.includes('admin')) {
+      return 'text-blue-500';
+    }
+    
     const isBuy = transactionType === 'trade_buy' || transactionType === 'purchase' || transactionType === 'buy' || transactionType.includes('buy');
     return isBuy ? 'text-green-500' : 'text-red-500';
   };
 
   const getTransactionBgColor = (transactionType: string) => {
+    // Admin transactions get blue background
+    if (transactionType.includes('admin')) {
+      return 'bg-blue-500/20';
+    }
+    
     const isBuy = transactionType === 'trade_buy' || transactionType === 'purchase' || transactionType === 'buy' || transactionType.includes('buy');
     return isBuy ? 'bg-green-500/20' : 'bg-red-500/20';
   };
@@ -57,8 +76,16 @@ const RecentTransactions = () => {
       case 'sell':
       case 'sell_crypto':
         return 'SELL';
+      case 'admin_add':
+        return 'ADMIN ADD';
+      case 'admin_remove':
+        return 'ADMIN REMOVE';
+      case 'admin_balance_add':
+        return 'ADMIN DEPOSIT';
+      case 'admin_balance_remove':
+        return 'ADMIN WITHDRAWAL';
       default:
-        return transactionType.toUpperCase();
+        return transactionType.toUpperCase().replace('_', ' ');
     }
   };
 
@@ -106,7 +133,7 @@ const RecentTransactions = () => {
                             minute: '2-digit'
                           })}
                         </span>
-                        {transaction.amount && (
+                        {transaction.amount && transaction.crypto && (
                           <span className="text-gray-500">
                             • {transaction.amount.toFixed(6)} {transaction.crypto?.symbol}
                           </span>
