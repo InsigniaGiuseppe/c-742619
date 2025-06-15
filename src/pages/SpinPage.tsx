@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { usePortfolio } from '@/hooks/usePortfolio';
@@ -31,7 +32,8 @@ const SpinPage: React.FC = () => {
           *,
           cryptocurrencies(symbol, name, current_price, logo_url)
         `)
-        .eq('is_active', true);
+        .eq('is_active', true)
+        .order('reward_tier', { ascending: true });
 
       if (error) {
         console.error('[SpinPage] Error fetching configurations:', error);
@@ -86,7 +88,7 @@ const SpinPage: React.FC = () => {
   }, [cooldownTime]);
 
   const getMultiplierColor = (multiplier: number) => {
-    if (multiplier >= 5) return 'text-yellow-400'; // Legendary
+    if (multiplier >= 8) return 'text-yellow-400'; // Legendary
     if (multiplier >= 3) return 'text-purple-400'; // Epic
     if (multiplier >= 1.5) return 'text-blue-400'; // Rare
     return 'text-gray-400'; // Common
@@ -107,7 +109,9 @@ const SpinPage: React.FC = () => {
 
   const generateRouletteItems = () => {
     console.log('[SpinPage] Generating roulette items with configurations:', configurations?.length);
-    return configurations.map((config, index) => ({
+    
+    // Create items for all tiers including legendary
+    const allTierItems = configurations.map((config, index) => ({
       id: config.id,
       crypto: {
         name: config.cryptocurrencies?.name || 'Unknown',
@@ -117,6 +121,20 @@ const SpinPage: React.FC = () => {
       amount: betAmountBtc * config.min_multiplier,
       tier: config.reward_tier
     }));
+
+    // Add loss item
+    allTierItems.push({
+      id: 'loss',
+      crypto: {
+        name: 'Loss',
+        symbol: 'LOSS',
+        logo_url: undefined
+      },
+      amount: 0,
+      tier: 'loss'
+    });
+
+    return allTierItems;
   };
 
   const handleSpin = async () => {
@@ -254,11 +272,13 @@ const SpinPage: React.FC = () => {
                 logo_url: undefined
               },
               amount: lastSpinResult.rewardAmount,
-              tier: lastSpinResult.isWin ? (
-                lastSpinResult.multiplier >= 5 ? 'legendary' :
-                lastSpinResult.multiplier >= 3 ? 'epic' : 
-                lastSpinResult.multiplier >= 1.5 ? 'rare' : 'common'
-              ) : 'common'
+              tier: lastSpinResult.tier || (
+                lastSpinResult.isWin ? (
+                  lastSpinResult.multiplier >= 8 ? 'legendary' :
+                  lastSpinResult.multiplier >= 3 ? 'epic' : 
+                  lastSpinResult.multiplier >= 1.5 ? 'rare' : 'common'
+                ) : 'loss'
+              )
             } : undefined}
             onSpinComplete={() => {
               if (lastSpinResult) {
@@ -301,7 +321,7 @@ const SpinPage: React.FC = () => {
           )}
 
           <div className="text-center text-xs text-muted-foreground">
-            0.01% fee applies to all spins • ~49% chance to lose your bet
+            0.01% fee applies to all spins • 30% chance to lose your bet
           </div>
         </CardContent>
       </Card>
@@ -320,7 +340,7 @@ const SpinPage: React.FC = () => {
                     {config.reward_tier.toUpperCase()}
                   </Badge>
                   <span className="text-sm text-muted-foreground">
-                    {(config.probability * 100).toFixed(2)}%
+                    {(config.probability * 100).toFixed(3)}%
                   </span>
                 </div>
                 <div className="flex items-center gap-2 mb-2">
@@ -352,11 +372,11 @@ const SpinPage: React.FC = () => {
                 LOSE
               </Badge>
               <span className="text-sm text-red-400">
-                ~49%
+                30%
               </span>
             </div>
             <div className="text-sm text-red-400">
-              0x multiplier - You lose your BTC bet
+              0x multiplier - You lose your BTC bet (goes to platform reserves)
             </div>
           </div>
         </CardContent>

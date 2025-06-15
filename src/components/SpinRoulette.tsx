@@ -34,7 +34,7 @@ const SpinRoulette: React.FC<SpinRouletteProps> = ({
     if (isSpinning && winningItem) {
       // Generate roulette items with winning item positioned correctly
       const totalItems = 100;
-      const winningIndex = Math.floor(totalItems * 0.88); // Position winner near the end
+      const winningIndex = Math.floor(totalItems * 0.85); // Position winner near the end
       const generatedItems: SpinItem[] = [];
 
       for (let i = 0; i < totalItems; i++) {
@@ -68,23 +68,10 @@ const SpinRoulette: React.FC<SpinRouletteProps> = ({
         return 'drop-shadow-[0_0_30px_rgba(147,51,234,1)]';
       case 'legendary': 
         return 'drop-shadow-[0_0_35px_rgba(255,215,0,1)]';
+      case 'loss':
+        return 'drop-shadow-[0_0_20px_rgba(239,68,68,0.8)]';
       default: 
         return 'drop-shadow-[0_0_20px_rgba(156,163,175,0.8)]';
-    }
-  };
-
-  const getTierRingColor = (tier: string) => {
-    switch (tier) {
-      case 'common': 
-        return 'ring-gray-400/60';
-      case 'rare': 
-        return 'ring-blue-400/80';
-      case 'epic': 
-        return 'ring-purple-400/90';
-      case 'legendary': 
-        return 'ring-yellow-400/90';
-      default: 
-        return 'ring-gray-400/60';
     }
   };
 
@@ -98,6 +85,8 @@ const SpinRoulette: React.FC<SpinRouletteProps> = ({
         return 'bg-purple-400/30';
       case 'legendary': 
         return 'bg-yellow-400/35';
+      case 'loss':
+        return 'bg-red-400/25';
       default: 
         return 'bg-gray-400/20';
     }
@@ -108,7 +97,7 @@ const SpinRoulette: React.FC<SpinRouletteProps> = ({
   const totalDistance = (cardWidth + gap) * 85; // Distance to travel to reach winner
 
   return (
-    <div className="relative w-full h-40 overflow-hidden bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 rounded-xl border border-white/10">
+    <div className="relative w-full h-40 overflow-hidden bg-black rounded-xl border border-white/10">
       {/* Enhanced selection indicator */}
       <div className="absolute top-0 left-1/2 transform -translate-x-1/2 z-30">
         <div className="w-1 h-40 bg-gradient-to-b from-red-400 via-red-500 to-red-600 shadow-[0_0_15px_rgba(239,68,68,0.8)]"></div>
@@ -123,13 +112,13 @@ const SpinRoulette: React.FC<SpinRouletteProps> = ({
             <motion.div
               key={animationKey}
               className="flex items-center gap-4 pl-8"
-              initial={{ x: '100%' }}
+              initial={{ x: '50vw' }}
               animate={{ 
                 x: `-${totalDistance}px`
               }}
               transition={{
                 duration: 4,
-                ease: [0.25, 0.46, 0.45, 0.94], // Custom ease-out for realistic deceleration
+                ease: [0.25, 0.1, 0.25, 1], // Custom ease with acceleration then deceleration
                 type: "tween"
               }}
               onAnimationComplete={() => {
@@ -140,7 +129,6 @@ const SpinRoulette: React.FC<SpinRouletteProps> = ({
             >
               {currentItems.map((item, index) => {
                 const glowClass = getTierGlow(item.tier);
-                const ringClass = getTierRingColor(item.tier);
                 const bgGlowClass = getTierBgGlow(item.tier);
                 const isWinner = item.id.startsWith('winner-');
                 
@@ -166,14 +154,20 @@ const SpinRoulette: React.FC<SpinRouletteProps> = ({
                     }}
                   >
                     {/* Crypto logo with tier-based glow */}
-                    <div className={`relative rounded-full p-2 mb-2 ${glowClass}`}>
-                      <CryptoLogo
-                        symbol={item.crypto?.symbol || 'UNK'}
-                        logo_url={item.crypto?.logo_url}
-                        name={item.crypto?.name || 'Unknown'}
-                        size="lg"
-                        className="drop-shadow-lg"
-                      />
+                    <div className={`relative rounded-full p-2 mb-2 ${bgGlowClass} ${glowClass}`}>
+                      {item.crypto.symbol === 'LOSS' ? (
+                        <div className="w-12 h-12 rounded-full bg-red-500 flex items-center justify-center text-white font-bold text-sm">
+                          ✗
+                        </div>
+                      ) : (
+                        <CryptoLogo
+                          symbol={item.crypto?.symbol || 'UNK'}
+                          logo_url={item.crypto?.logo_url}
+                          name={item.crypto?.name || 'Unknown'}
+                          size="lg"
+                          className="drop-shadow-lg"
+                        />
+                      )}
                       
                       {/* Enhanced tier-based particle effects */}
                       {item.tier === 'legendary' && (
@@ -221,6 +215,21 @@ const SpinRoulette: React.FC<SpinRouletteProps> = ({
                         />
                       )}
 
+                      {item.tier === 'loss' && (
+                        <motion.div
+                          className="absolute inset-0 rounded-full bg-red-400/30 pointer-events-none"
+                          animate={{
+                            opacity: [0.3, 0.7, 0.3],
+                            scale: [1, 1.2, 1]
+                          }}
+                          transition={{
+                            duration: 1,
+                            repeat: Infinity,
+                            ease: "easeInOut"
+                          }}
+                        />
+                      )}
+
                       {/* Winner highlight effect */}
                       {isWinner && (
                         <motion.div
@@ -241,10 +250,10 @@ const SpinRoulette: React.FC<SpinRouletteProps> = ({
                     {/* Amount and symbol below the logo */}
                     <div className="text-center">
                       <div className="text-xs font-bold text-white drop-shadow-md">
-                        {item.amount.toFixed(4)}
+                        {item.crypto.symbol === 'LOSS' ? '0.00' : item.amount.toFixed(4)}
                       </div>
                       <div className="text-xs text-gray-200 font-medium">
-                        {(item.crypto?.symbol || 'UNK').toUpperCase()}
+                        {item.crypto.symbol === 'LOSS' ? 'LOSS' : (item.crypto?.symbol || 'UNK').toUpperCase()}
                       </div>
                     </div>
                   </motion.div>
@@ -254,13 +263,13 @@ const SpinRoulette: React.FC<SpinRouletteProps> = ({
           )}
         </AnimatePresence>
 
-        {/* Static display when not spinning */}
+        {/* Static display when not spinning - show all tier rarities */}
         {!isSpinning && (
           <div className="flex items-center justify-center w-full h-full">
             <div className="flex justify-center gap-6">
               {items.slice(0, 5).map((item, index) => {
                 const glowClass = getTierGlow(item.tier);
-                const ringClass = getTierRingColor(item.tier);
+                const bgGlowClass = getTierBgGlow(item.tier);
                 return (
                   <motion.div 
                     key={item.id} 
@@ -275,7 +284,7 @@ const SpinRoulette: React.FC<SpinRouletteProps> = ({
                       delay: index * 0.2
                     }}
                   >
-                    <div className={`rounded-full p-2 mb-2 ${glowClass}`}>
+                    <div className={`rounded-full p-2 mb-2 ${bgGlowClass} ${glowClass}`}>
                       <CryptoLogo
                         symbol={item.crypto?.symbol || 'UNK'}
                         logo_url={item.crypto?.logo_url}
@@ -295,8 +304,8 @@ const SpinRoulette: React.FC<SpinRouletteProps> = ({
       </div>
 
       {/* Enhanced gradient overlays */}
-      <div className="absolute left-0 top-0 w-20 h-full bg-gradient-to-r from-gray-900 via-gray-900/50 to-transparent pointer-events-none z-20"></div>
-      <div className="absolute right-0 top-0 w-20 h-full bg-gradient-to-l from-gray-900 via-gray-900/50 to-transparent pointer-events-none z-20"></div>
+      <div className="absolute left-0 top-0 w-20 h-full bg-gradient-to-r from-black via-black/80 to-transparent pointer-events-none z-20"></div>
+      <div className="absolute right-0 top-0 w-20 h-full bg-gradient-to-l from-black via-black/80 to-transparent pointer-events-none z-20"></div>
     </div>
   );
 };

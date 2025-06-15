@@ -12,6 +12,7 @@ interface SpinResult {
   rewardAmount: number;
   rewardValue: number;
   isWin: boolean;
+  tier?: string;
 }
 
 export const useSpinGame = () => {
@@ -60,24 +61,24 @@ export const useSpinGame = () => {
         throw new Error('No active spin configurations found');
       }
 
-      // Calculate total win probability (should be around 51% total)
+      // Calculate total win probability (should be 70% total)
       const totalWinProbability = spinConfigs.reduce((sum, config) => sum + Number(config.probability), 0);
-      const loseProbability = 1 - totalWinProbability; // Remaining probability for losing
+      const loseProbability = 0.30; // Fixed 30% lose chance
       
       console.log('[useSpinGame] Total win probability:', totalWinProbability, 'Lose probability:', loseProbability);
 
       // Generate random number to determine outcome
       const random = Math.random();
       
-      // Check if player loses (no reward)
+      const btcPrice = btcPortfolio.crypto.current_price;
+      const betValueUsd = betAmount * btcPrice;
+      const feeAmount = betAmount * 0.0001; // 0.01% fee
+      const totalDeduction = betAmount + feeAmount;
+
+      // Check if player loses (30% chance)
       if (random > totalWinProbability) {
         console.log('[useSpinGame] Player lost, no reward');
         
-        const btcPrice = btcPortfolio.crypto.current_price;
-        const betValueUsd = betAmount * btcPrice;
-        const feeAmount = betAmount * 0.0001; // 0.01% fee
-        const totalDeduction = betAmount + feeAmount;
-
         // Create losing transaction
         const { error: lossError } = await supabase
           .from('transaction_history')
@@ -108,12 +109,28 @@ export const useSpinGame = () => {
           throw new Error('Failed to update BTC balance');
         }
 
+        // Update reserve balance with losses and fees
+        const { error: reserveError } = await supabase
+          .from('platform_reserves')
+          .update({ 
+            balance: supabase.sql`balance + ${totalDeduction}`,
+            total_losses_collected: supabase.sql`total_losses_collected + ${betAmount}`,
+            total_fees_collected: supabase.sql`total_fees_collected + ${feeAmount}`,
+            updated_at: new Date().toISOString()
+          })
+          .eq('cryptocurrency_id', btcPortfolio.cryptocurrency_id);
+
+        if (reserveError) {
+          console.error('[useSpinGame] Error updating reserve balance:', reserveError);
+        }
+
         const lossResult: SpinResult = {
           multiplier: 0,
           rewardCrypto: 'LOSS',
           rewardAmount: 0,
           rewardValue: 0,
-          isWin: false
+          isWin: false,
+          tier: 'loss'
         };
 
         setCurrentSpin(lossResult);
@@ -136,10 +153,6 @@ export const useSpinGame = () => {
       const multiplier = Number(selectedConfig.min_multiplier) + 
         Math.random() * (Number(selectedConfig.max_multiplier) - Number(selectedConfig.min_multiplier));
 
-      const btcPrice = btcPortfolio.crypto.current_price;
-      const betValueUsd = betAmount * btcPrice;
-      const feeAmount = betAmount * 0.0001; // 0.01% fee
-      const totalDeduction = betAmount + feeAmount;
       const rewardValueUsd = betValueUsd * multiplier;
       const rewardAmount = rewardValueUsd / Number(selectedConfig.cryptocurrencies.current_price);
 
@@ -148,7 +161,8 @@ export const useSpinGame = () => {
         rewardCrypto: selectedConfig.cryptocurrencies.symbol,
         rewardAmount,
         rewardValue: rewardValueUsd,
-        isWin: true
+        isWin: true,
+        tier: selectedConfig.reward_tier
       };
 
       console.log('[useSpinGame] Spin result calculated:', spinResult);
@@ -199,6 +213,20 @@ export const useSpinGame = () => {
       if (btcUpdateError) {
         console.error('[useSpinGame] Error updating BTC portfolio:', btcUpdateError);
         throw new Error('Failed to update BTC balance');
+      }
+
+      // Update reserve balance with fee
+      const { error: reserveError } = await supabase
+        .from('platform_reserves')
+        .update({ 
+          balance: supabase.sql`balance + ${feeAmount}`,
+          total_fees_collected: supabase.sql`total_fees_collected + ${feeAmount}`,
+          updated_at: new Date().toISOString()
+        })
+        .eq('cryptocurrency_id', btcPortfolio.cryptocurrency_id);
+
+      if (reserveError) {
+        console.error('[useSpinGame] Error updating reserve balance:', reserveError);
       }
 
       // Update or create reward crypto portfolio

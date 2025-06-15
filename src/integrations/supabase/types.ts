@@ -809,6 +809,44 @@ export type Database = {
           },
         ]
       }
+      platform_reserves: {
+        Row: {
+          balance: number
+          created_at: string
+          cryptocurrency_id: string
+          id: string
+          total_fees_collected: number
+          total_losses_collected: number
+          updated_at: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          cryptocurrency_id: string
+          id?: string
+          total_fees_collected?: number
+          total_losses_collected?: number
+          updated_at?: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          cryptocurrency_id?: string
+          id?: string
+          total_fees_collected?: number
+          total_losses_collected?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_reserves_cryptocurrency_id_fkey"
+            columns: ["cryptocurrency_id"]
+            isOneToOne: false
+            referencedRelation: "cryptocurrencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       platform_settings: {
         Row: {
           created_at: string
