@@ -5,6 +5,7 @@ import Footer from '@/components/Footer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/hooks/useAuth';
 import { usePortfolio } from '@/hooks/usePortfolio';
+import { useUserBalance } from '@/hooks/useUserBalance';
 import FormattedNumber from '@/components/FormattedNumber';
 import { motion } from 'framer-motion';
 import RecentTransactions from '@/components/RecentTransactions';
@@ -14,8 +15,18 @@ import { TrendingUp, TrendingDown, Wallet, DollarSign } from 'lucide-react';
 const DashboardPage = () => {
   const { user } = useAuth();
   const { portfolio, totalValue, totalProfitLoss, totalProfitLossPercentage, loading } = usePortfolio();
+  const { balance, loading: balanceLoading } = useUserBalance();
 
   const statsCards = [
+    {
+      title: 'Available Balance',
+      value: balance,
+      type: 'currency' as const,
+      icon: DollarSign,
+      trend: 'neutral' as const,
+      trendValue: 0,
+      loading: balanceLoading,
+    },
     {
       title: 'Portfolio Value',
       value: totalValue,
@@ -23,6 +34,7 @@ const DashboardPage = () => {
       icon: Wallet,
       trend: totalProfitLoss >= 0 ? 'up' : 'down',
       trendValue: totalProfitLossPercentage,
+      loading: loading,
     },
     {
       title: 'Total Profit/Loss',
@@ -31,6 +43,7 @@ const DashboardPage = () => {
       icon: totalProfitLoss >= 0 ? TrendingUp : TrendingDown,
       trend: totalProfitLoss >= 0 ? 'up' : 'down',
       trendValue: totalProfitLossPercentage,
+      loading: loading,
     },
     {
       title: 'Holdings',
@@ -39,6 +52,7 @@ const DashboardPage = () => {
       icon: DollarSign,
       trend: 'neutral' as const,
       trendValue: 0,
+      loading: loading,
     },
   ];
 
@@ -79,7 +93,7 @@ const DashboardPage = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">
-                      {loading ? (
+                      {stat.loading ? (
                         <div className="h-8 w-24 bg-gray-700 animate-pulse rounded"></div>
                       ) : stat.type === 'holdings' ? (
                         <span className="text-2xl font-bold">{stat.value}</span>
@@ -92,7 +106,7 @@ const DashboardPage = () => {
                         />
                       )}
                     </div>
-                    {stat.trend !== 'neutral' && (
+                    {stat.trend !== 'neutral' && !stat.loading && (
                       <p className={`text-xs flex items-center gap-1 mt-1 ${
                         stat.trend === 'up' ? 'text-green-500' : 'text-red-500'
                       }`}>
