@@ -3,8 +3,9 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useTransactionHistory } from '@/hooks/useTransactionHistory';
-import { TrendingUp, TrendingDown, Settings, DollarSign } from 'lucide-react';
+import { Settings } from 'lucide-react';
 import FormattedNumber from './FormattedNumber';
+import CryptoLogo from './CryptoLogo';
 
 const RecentTransactions = () => {
   const { transactions, loading } = useTransactionHistory();
@@ -29,30 +30,6 @@ const RecentTransactions = () => {
   }
 
   const recentTransactions = transactions.slice(0, 10);
-
-  const getTransactionIcon = (transactionType: string) => {
-    // Handle admin transaction types
-    if (transactionType.includes('admin_add') || transactionType.includes('admin_balance_add')) {
-      return Settings;
-    }
-    if (transactionType.includes('admin_remove') || transactionType.includes('admin_balance_remove')) {
-      return Settings;
-    }
-    
-    // Handle regular transaction types
-    const isBuy = transactionType === 'trade_buy' || transactionType === 'purchase' || transactionType === 'buy' || transactionType.includes('buy');
-    return isBuy ? TrendingUp : TrendingDown;
-  };
-
-  const getTransactionColor = (transactionType: string) => {
-    // Admin transactions get blue color
-    if (transactionType.includes('admin')) {
-      return 'text-blue-500';
-    }
-    
-    const isBuy = transactionType === 'trade_buy' || transactionType === 'purchase' || transactionType === 'buy' || transactionType.includes('buy');
-    return isBuy ? 'text-green-500' : 'text-red-500';
-  };
 
   const getTransactionBgColor = (transactionType: string) => {
     // Admin transactions get blue background
@@ -106,10 +83,11 @@ const RecentTransactions = () => {
         ) : (
           <div className="space-y-3">
             {recentTransactions.map((transaction, index) => {
-              const Icon = getTransactionIcon(transaction.transaction_type);
-              const transactionColor = getTransactionColor(transaction.transaction_type);
               const transactionBgColor = getTransactionBgColor(transaction.transaction_type);
               const formattedType = formatTransactionType(transaction.transaction_type);
+              
+              // For admin transactions, show Settings icon; for crypto transactions, show coin logo
+              const isAdminTransaction = transaction.transaction_type.includes('admin');
               
               return (
                 <div 
@@ -117,8 +95,21 @@ const RecentTransactions = () => {
                   className="flex items-center justify-between p-4 bg-white/5 rounded-lg hover:bg-white/10 transition-all duration-200 border border-white/10"
                 >
                   <div className="flex items-center gap-4">
-                    <div className={`p-2 rounded-full ${transactionBgColor}`}>
-                      <Icon className={`h-4 w-4 ${transactionColor}`} />
+                    <div className={`p-2 rounded-full ${transactionBgColor} flex items-center justify-center`}>
+                      {isAdminTransaction ? (
+                        <Settings className="h-4 w-4 text-blue-500" />
+                      ) : transaction.crypto ? (
+                        <CryptoLogo 
+                          logo_url={transaction.crypto.logo_url}
+                          name={transaction.crypto.name}
+                          symbol={transaction.crypto.symbol}
+                          size="sm"
+                        />
+                      ) : (
+                        <div className="w-6 h-6 rounded-full bg-gray-600 flex items-center justify-center text-xs font-bold">
+                          ?
+                        </div>
+                      )}
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="font-medium truncate">
