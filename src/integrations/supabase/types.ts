@@ -1241,6 +1241,117 @@ export type Database = {
         }
         Relationships: []
       }
+      spin_configurations: {
+        Row: {
+          created_at: string
+          cryptocurrency_id: string
+          id: string
+          is_active: boolean
+          max_multiplier: number
+          min_multiplier: number
+          probability: number
+          reward_tier: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          cryptocurrency_id: string
+          id?: string
+          is_active?: boolean
+          max_multiplier?: number
+          min_multiplier?: number
+          probability: number
+          reward_tier: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          cryptocurrency_id?: string
+          id?: string
+          is_active?: boolean
+          max_multiplier?: number
+          min_multiplier?: number
+          probability?: number
+          reward_tier?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spin_configurations_cryptocurrency_id_fkey"
+            columns: ["cryptocurrency_id"]
+            isOneToOne: false
+            referencedRelation: "cryptocurrencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      spin_games: {
+        Row: {
+          bet_amount_btc: number
+          bet_amount_usd: number
+          created_at: string
+          id: string
+          multiplier: number
+          reward_amount: number
+          reward_cryptocurrency_id: string
+          reward_usd_value: number
+          spin_result_data: Json | null
+          transaction_credit_id: string | null
+          transaction_debit_id: string | null
+          user_id: string
+        }
+        Insert: {
+          bet_amount_btc: number
+          bet_amount_usd: number
+          created_at?: string
+          id?: string
+          multiplier: number
+          reward_amount: number
+          reward_cryptocurrency_id: string
+          reward_usd_value: number
+          spin_result_data?: Json | null
+          transaction_credit_id?: string | null
+          transaction_debit_id?: string | null
+          user_id: string
+        }
+        Update: {
+          bet_amount_btc?: number
+          bet_amount_usd?: number
+          created_at?: string
+          id?: string
+          multiplier?: number
+          reward_amount?: number
+          reward_cryptocurrency_id?: string
+          reward_usd_value?: number
+          spin_result_data?: Json | null
+          transaction_credit_id?: string | null
+          transaction_debit_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spin_games_reward_cryptocurrency_id_fkey"
+            columns: ["reward_cryptocurrency_id"]
+            isOneToOne: false
+            referencedRelation: "cryptocurrencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "spin_games_transaction_credit_id_fkey"
+            columns: ["transaction_credit_id"]
+            isOneToOne: false
+            referencedRelation: "transaction_history"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "spin_games_transaction_debit_id_fkey"
+            columns: ["transaction_debit_id"]
+            isOneToOne: false
+            referencedRelation: "transaction_history"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sync_status: {
         Row: {
           api_calls_used: number | null
