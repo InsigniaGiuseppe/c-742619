@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { TrendingUp, TrendingDown } from 'lucide-react';
@@ -13,6 +14,7 @@ interface CryptoCardProps {
 }
 
 const CryptoCard: React.FC<CryptoCardProps> = ({ crypto, onTrade }) => {
+  const navigate = useNavigate();
   const isPriceUp = (crypto.price_change_percentage_24h || 0) >= 0;
   const [priceGlow, setPriceGlow] = useState('');
   const prevPriceRef = useRef(crypto.current_price);
@@ -34,8 +36,15 @@ const CryptoCard: React.FC<CryptoCardProps> = ({ crypto, onTrade }) => {
     }
   }, [crypto.current_price]);
 
+  const handleCardClick = () => {
+    navigate(`/crypto/${crypto.symbol.toLowerCase()}`);
+  };
+
   return (
-    <Card className={`glass glass-hover transition-all duration-200 hover:scale-[1.02] ${priceGlow}`}>
+    <Card 
+      className={`glass glass-hover transition-all duration-200 hover:scale-[1.02] cursor-pointer ${priceGlow}`}
+      onClick={handleCardClick}
+    >
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -83,7 +92,10 @@ const CryptoCard: React.FC<CryptoCardProps> = ({ crypto, onTrade }) => {
         </div>
         
         <Button 
-          onClick={() => onTrade(crypto)}
+          onClick={(e) => {
+            e.stopPropagation(); // Prevent card navigation when clicking trade button
+            onTrade(crypto);
+          }}
           className="w-full bg-primary hover:bg-primary/90 transition-colors"
           size="sm"
         >

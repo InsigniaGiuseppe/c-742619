@@ -61,7 +61,7 @@ function App() {
                       <TradingPage />
                     </ProtectedRoute>
                   } />
-                  <Route path="/trading/:cryptoId" element={
+                  <Route path="/crypto/:symbol" element={
                     <ProtectedRoute>
                       <CryptoDetailPage />
                     </ProtectedRoute>
