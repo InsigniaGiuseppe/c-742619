@@ -23,7 +23,7 @@ const DashboardWidget: React.FC<DashboardWidgetProps> = ({
 }) => {
   return (
     <Card className={`glass glass-hover h-full flex flex-col ${className}`}>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 cursor-move drag-handle">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 cursor-move drag-handle shrink-0">
         <div className="flex items-center gap-2">
           <GripVertical className="h-4 w-4 text-muted-foreground" />
           <CardTitle className="text-sm font-medium">{title}</CardTitle>
@@ -42,8 +42,10 @@ const DashboardWidget: React.FC<DashboardWidgetProps> = ({
           )}
         </div>
       </CardHeader>
-      <CardContent className="flex-1 overflow-auto">
-        {children}
+      <CardContent className="flex-1 overflow-visible p-4 card-content">
+        <div className="h-full w-full overflow-visible">
+          {children}
+        </div>
       </CardContent>
     </Card>
   );
