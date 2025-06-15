@@ -270,15 +270,27 @@ export const useSpinGame = () => {
         const rewardAmt = rewardAmount;
         const rewardValUsd = rewardValueUsd;
 
-        // Defensive check for required values
-        if (!userId || !cryptocurrency_id || avg_price === undefined || avg_price === null || rewardAmt === undefined || rewardValUsd === undefined) {
-          console.error("[useSpinGame] Missing values for user_portfolios insert", {
-            userId, cryptocurrency_id, avg_price, rewardAmt, rewardValUsd, selectedConfig,
+        // Defensive value checks
+        if (
+          !userId || typeof userId !== 'string' ||
+          !cryptocurrency_id || typeof cryptocurrency_id !== 'string' ||
+          typeof avg_price !== 'number' || !isFinite(avg_price) ||
+          typeof rewardAmt !== 'number' || !isFinite(rewardAmt) ||
+          typeof rewardValUsd !== 'number' || !isFinite(rewardValUsd)
+        ) {
+          console.error("[useSpinGame] CRITICAL: Missing or bad values for user_portfolios insert", {
+            userId,
+            cryptocurrency_id,
+            avg_priceType: typeof avg_price, avg_price,
+            rewardAmtType: typeof rewardAmt, rewardAmt,
+            rewardValUsdType: typeof rewardValUsd, rewardValUsd,
+            selectedConfig: JSON.stringify(selectedConfig, null, 2)
           });
-          throw new Error('Critical: Missing required fields for reward insert');
+          toast.error("Spin bug: missing or invalid reward values. Contact support.");
+          throw new Error('Critical: Missing or invalid fields for reward insert');
         }
 
-        console.log("[useSpinGame] Attempting to insert user_portfolios row", {
+        console.log("[useSpinGame] PRE-INSERT user_portfolios", {
           user_id: userId,
           cryptocurrency_id,
           quantity: rewardAmt,
@@ -286,10 +298,11 @@ export const useSpinGame = () => {
           total_invested: rewardValUsd,
           current_value: rewardValUsd,
           profit_loss: 0,
-          profit_loss_percentage: 0
+          profit_loss_percentage: 0,
+          selectedConfig: selectedConfig,
         });
 
-        const { error: createError } = await supabase
+        const { error: createError, data: createData } = await supabase
           .from('user_portfolios')
           .insert({
             user_id: userId,
@@ -303,7 +316,8 @@ export const useSpinGame = () => {
           });
 
         if (createError) {
-          console.error('[useSpinGame] Error creating reward portfolio:', createError, {
+          console.error('[useSpinGame] INSERT FAILED:', {
+            createError,
             user_id: userId,
             cryptocurrency_id,
             quantity: rewardAmt,
@@ -314,7 +328,11 @@ export const useSpinGame = () => {
             profit_loss_percentage: 0,
             selectedConfig: JSON.stringify(selectedConfig, null, 2)
           });
+          toast.error(`Spin failed (DB): ${createError.message || 'Insert error. Contact support.'}`);
           throw new Error('Failed to create reward balance');
+        }
+        if (createData) {
+          console.log("[useSpinGame] INSERT SUCCESS, data:", createData);
         }
       }
 
