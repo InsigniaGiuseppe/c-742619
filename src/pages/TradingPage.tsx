@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navigation from '@/components/Navigation';
@@ -17,11 +16,13 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import CryptoTable from '@/components/CryptoTable';
 import CryptoTableRowSkeleton from '@/components/CryptoTableRowSkeleton';
 import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import TradeSheet from '@/components/TradeSheet';
 
 const TradingPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [sortConfig, setSortConfig] = useState<{ key: keyof Cryptocurrency; direction: 'ascending' | 'descending' } | null>({ key: 'market_cap_rank', direction: 'ascending' });
+  const [selectedCryptoForTrade, setSelectedCryptoForTrade] = useState<Cryptocurrency | null>(null);
   const { cryptocurrencies, loading, error, refetch, isRealtimeConnected } = useCryptocurrencies();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -62,7 +63,7 @@ const TradingPage = () => {
   };
 
   const handleTrade = (crypto: Cryptocurrency) => {
-    navigate(`/crypto/${crypto.symbol.toLowerCase()}`);
+    setSelectedCryptoForTrade(crypto);
   };
 
   const ConnectionStatusIndicator = () => (
@@ -200,6 +201,15 @@ const TradingPage = () => {
         )}
       </motion.main>
       <Footer />
+      <TradeSheet
+        crypto={selectedCryptoForTrade}
+        open={!!selectedCryptoForTrade}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSelectedCryptoForTrade(null);
+          }
+        }}
+      />
     </div>
   );
 };
