@@ -9,13 +9,12 @@ import {
   YAxis, 
   CartesianGrid, 
   Tooltip, 
-  ResponsiveContainer,
-  Cell
+  ResponsiveContainer
 } from 'recharts';
 import { Cryptocurrency } from '@/hooks/useCryptocurrencies';
 import { useBinanceChartData, ChartDataPoint } from '@/hooks/useBinanceChartData';
 import { ChartType } from './AdvancedTradingChart';
-import CandlestickShape from './CandlestickShape';
+import RechartsCandlestick from './RechartsCandlestick';
 
 interface LiveTradingChartProps {
   crypto: Cryptocurrency;
@@ -104,36 +103,38 @@ const LiveTradingChart: React.FC<LiveTradingChartProps> = ({
     );
   }
 
-  // Prepare chart data with calculated domains
+  // Prepare chart data with stable volume calculation
   const chartData = liveData.map((item, index) => {
-    // Generate stable volume based on price and index
-    const priceRange = Math.max(item.high - item.low, 0.01);
-    const baseVolume = priceRange * crypto.current_price * 1000;
-    const stableVol = baseVolume * (0.8 + (index % 5) * 0.1); // Vary by 10-30% of base
+    // Generate more stable volume based on price volatility and index
+    const priceRange = Math.max(item.high - item.low, item.close * 0.001); // Min 0.1% range
+    const baseVolume = item.close * 50000; // Base volume relative to price
+    const volatilityMultiplier = (priceRange / item.close) * 10; // Higher volatility = higher volume
+    const indexVariation = 0.7 + (index % 7) * 0.1; // Vary by 10% based on position
+    const volume = baseVolume * volatilityMultiplier * indexVariation;
     
     return {
-      time: new Date(item.time).toLocaleDateString(),
+      time: new Date(item.time).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
       timeMs: item.time,
       open: item.open,
       high: item.high,
       low: item.low,
       close: item.close,
-      volume: stableVol,
+      volume: volume,
       price: item.close,
       isGreen: item.close >= item.open
     };
   });
 
-  // Calculate proper domains for Y-axes
+  // Calculate proper Y-axis domains
   const allPrices = chartData.flatMap(d => [d.open, d.high, d.low, d.close]);
   const minPrice = Math.min(...allPrices);
   const maxPrice = Math.max(...allPrices);
   const priceRange = maxPrice - minPrice;
-  const pricePadding = priceRange * 0.05; // 5% padding
+  const pricePadding = Math.max(priceRange * 0.05, maxPrice * 0.01); // 5% padding or 1% of max price
   
   const allVolumes = chartData.map(d => d.volume);
   const maxVolume = Math.max(...allVolumes);
-  const minVolume = Math.min(...allVolumes);
+  const minVolume = 0; // Volume always starts from 0
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -182,8 +183,8 @@ const LiveTradingChart: React.FC<LiveTradingChartProps> = ({
             orientation="left"
             stroke="#9CA3AF"
             fontSize={12}
-            domain={[0, maxVolume * 1.1]}
-            tickFormatter={(value) => (value / 1000).toFixed(0) + 'K'}
+            domain={[minVolume, maxVolume * 1.2]}
+            tickFormatter={(value) => `${(value / 1000).toFixed(0)}K`}
           />
           <Tooltip content={<CustomTooltip />} />
           
@@ -222,8 +223,8 @@ const LiveTradingChart: React.FC<LiveTradingChartProps> = ({
           {chartType === 'candlestick' && (
             <Bar 
               yAxisId="price"
-              dataKey="close"
-              shape={(props: any) => <CandlestickShape {...props} />}
+              dataKey="high"
+              shape={(props: any) => <RechartsCandlestick {...props} />}
             />
           )}
         </ComposedChart>
