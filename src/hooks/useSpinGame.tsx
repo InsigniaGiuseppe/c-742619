@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { usePortfolio } from '@/hooks/usePortfolio';
@@ -264,21 +263,57 @@ export const useSpinGame = () => {
           throw new Error('Failed to update reward balance');
         }
       } else {
+        // Add enhanced error logging + preflight checks
+        const userId = session.user.id;
+        const cryptocurrency_id = selectedConfig.cryptocurrency_id;
+        const avg_price = Number(selectedConfig.cryptocurrencies.current_price);
+        const rewardAmt = rewardAmount;
+        const rewardValUsd = rewardValueUsd;
+
+        // Defensive check for required values
+        if (!userId || !cryptocurrency_id || avg_price === undefined || avg_price === null || rewardAmt === undefined || rewardValUsd === undefined) {
+          console.error("[useSpinGame] Missing values for user_portfolios insert", {
+            userId, cryptocurrency_id, avg_price, rewardAmt, rewardValUsd, selectedConfig,
+          });
+          throw new Error('Critical: Missing required fields for reward insert');
+        }
+
+        console.log("[useSpinGame] Attempting to insert user_portfolios row", {
+          user_id: userId,
+          cryptocurrency_id,
+          quantity: rewardAmt,
+          average_buy_price: avg_price,
+          total_invested: rewardValUsd,
+          current_value: rewardValUsd,
+          profit_loss: 0,
+          profit_loss_percentage: 0
+        });
+
         const { error: createError } = await supabase
           .from('user_portfolios')
           .insert({
-            user_id: session.user.id,
-            cryptocurrency_id: selectedConfig.cryptocurrency_id,
-            quantity: rewardAmount,
-            average_buy_price: Number(selectedConfig.cryptocurrencies.current_price),
-            total_invested: rewardValueUsd,
-            current_value: rewardValueUsd,
+            user_id: userId,
+            cryptocurrency_id,
+            quantity: rewardAmt,
+            average_buy_price: avg_price,
+            total_invested: rewardValUsd,
+            current_value: rewardValUsd,
             profit_loss: 0,
             profit_loss_percentage: 0
           });
 
         if (createError) {
-          console.error('[useSpinGame] Error creating reward portfolio:', createError);
+          console.error('[useSpinGame] Error creating reward portfolio:', createError, {
+            user_id: userId,
+            cryptocurrency_id,
+            quantity: rewardAmt,
+            average_buy_price: avg_price,
+            total_invested: rewardValUsd,
+            current_value: rewardValUsd,
+            profit_loss: 0,
+            profit_loss_percentage: 0,
+            selectedConfig: JSON.stringify(selectedConfig, null, 2)
+          });
           throw new Error('Failed to create reward balance');
         }
       }
