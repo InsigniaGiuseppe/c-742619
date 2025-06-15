@@ -35,7 +35,6 @@ import AdminKyc from './pages/AdminKyc';
 import AdminWallets from './pages/AdminWallets';
 import AdminAuditLog from './pages/AdminAuditLog';
 
-
 // Dev test pages
 // import DevPlaygroundPage from './pages/dev/DevPlaygroundPage';
 // import DevCronTestPage from './pages/dev/DevCronTestPage';
@@ -76,7 +75,6 @@ function App() {
                   <Route path="/admin/kyc" element={<AdminRoute><AdminKyc /></AdminRoute>} />
                   <Route path="/admin/wallets" element={<AdminRoute><AdminWallets /></AdminRoute>} />
                   <Route path="/admin/audit-log" element={<AdminRoute><AdminAuditLog /></AdminRoute>} />
-
 
                   {/* Dev Test Routes - Temporarily commented out */}
                   {/* <Route path="/dev/playground" element={<DevRoute><DevPlaygroundPage /></DevRoute>} /> */}

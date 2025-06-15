@@ -1035,6 +1035,185 @@ export type Database = {
           },
         ]
       }
+      recruitment_ai_conversations: {
+        Row: {
+          conversation_type: string
+          created_at: string
+          id: string
+          messages: Json
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          conversation_type?: string
+          created_at?: string
+          id?: string
+          messages?: Json
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          conversation_type?: string
+          created_at?: string
+          id?: string
+          messages?: Json
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      recruitment_applications: {
+        Row: {
+          ai_evaluation: Json | null
+          applied_at: string
+          candidate_id: string
+          id: string
+          job_description: string | null
+          role_id: string
+          score: number | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          ai_evaluation?: Json | null
+          applied_at?: string
+          candidate_id: string
+          id?: string
+          job_description?: string | null
+          role_id: string
+          score?: number | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          ai_evaluation?: Json | null
+          applied_at?: string
+          candidate_id?: string
+          id?: string
+          job_description?: string | null
+          role_id?: string
+          score?: number | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recruitment_applications_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "recruitment_candidates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recruitment_applications_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "recruitment_roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recruitment_candidates: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          email: string
+          id: string
+          name: string
+          phone: string | null
+          resume_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          name: string
+          phone?: string | null
+          resume_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          name?: string
+          phone?: string | null
+          resume_url?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      recruitment_notes: {
+        Row: {
+          application_id: string
+          author_id: string | null
+          author_name: string
+          content: string
+          created_at: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          application_id: string
+          author_id?: string | null
+          author_name: string
+          content: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          application_id?: string
+          author_id?: string | null
+          author_name?: string
+          content?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recruitment_notes_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "recruitment_applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recruitment_roles: {
+        Row: {
+          ai_prompt: string
+          created_at: string
+          department: string
+          description: string | null
+          id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          ai_prompt: string
+          created_at?: string
+          department: string
+          description?: string | null
+          id?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          ai_prompt?: string
+          created_at?: string
+          department?: string
+          description?: string | null
+          id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       security_events_log: {
         Row: {
           created_at: string
