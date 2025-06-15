@@ -6,9 +6,10 @@ interface CryptoLogoProps {
   name: string;
   symbol: string;
   size?: 'sm' | 'md' | 'lg';
+  className?: string;
 }
 
-const CryptoLogo: React.FC<CryptoLogoProps> = ({ logo_url, name, symbol, size = 'md' }) => {
+const CryptoLogo: React.FC<CryptoLogoProps> = ({ logo_url, name, symbol, size = 'md', className }) => {
   const [hasError, setHasError] = useState(false);
 
   const handleError = () => {
@@ -24,7 +25,7 @@ const CryptoLogo: React.FC<CryptoLogoProps> = ({ logo_url, name, symbol, size = 
   };
 
   return (
-    <div className={`rounded-full flex items-center justify-center bg-white/10 font-bold shrink-0 ${sizeClasses[size]}`}>
+    <div className={`rounded-full flex items-center justify-center bg-white/10 font-bold shrink-0 ${sizeClasses[size]} ${className || ''}`}>
       {showFallback ? (
         symbol.substring(0, 2).toUpperCase()
       ) : (

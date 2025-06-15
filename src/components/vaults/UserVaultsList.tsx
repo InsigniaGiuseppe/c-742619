@@ -59,8 +59,9 @@ const UserVaultsList: React.FC = () => {
                   <TableCell>
                     <div className="flex items-center gap-2 font-medium">
                       <CryptoLogo 
-                        logoUrl={vault.vault_configurations.cryptocurrencies.logo_url} 
-                        alt={vault.vault_configurations.cryptocurrencies.name}
+                        logo_url={vault.vault_configurations.cryptocurrencies.logo_url} 
+                        name={vault.vault_configurations.cryptocurrencies.name}
+                        symbol={vault.vault_configurations.cryptocurrencies.symbol}
                         className="w-6 h-6"
                       />
                       <span>{vault.vault_configurations.cryptocurrencies.symbol}</span>

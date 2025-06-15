@@ -24,9 +24,9 @@ export const VaultCard: React.FC<VaultCardProps> = ({ vault }) => {
       <Card className="bg-background/50 flex flex-col">
         <CardHeader className="flex-row items-center gap-4">
           <CryptoLogo
-            logoUrl={vault.cryptocurrencies.logo_url}
-            alt={vault.cryptocurrencies.name}
-            className="w-10 h-10"
+            logo_url={vault.cryptocurrencies.logo_url}
+            name={vault.cryptocurrencies.name}
+            symbol={vault.cryptocurrencies.symbol}
           />
           <div>
             <CardTitle>{vault.cryptocurrencies.name} Vault</CardTitle>

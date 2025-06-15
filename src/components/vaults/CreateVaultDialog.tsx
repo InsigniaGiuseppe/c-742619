@@ -16,7 +16,7 @@ type PortfolioEntry = {
     id: string;
     quantity: number;
     cryptocurrency_id: string;
-    cryptocurrencies: {
+    crypto: {
         current_price: number;
     };
 };
@@ -73,7 +73,7 @@ export const CreateVaultDialog: React.FC<CreateVaultDialogProps> = ({ isOpen, on
           cryptocurrency_id: vaultConfig.cryptocurrencies.id,
           transaction_type: 'vault_deposit',
           amount: vaultAmount,
-          usd_value: vaultAmount * assetInPortfolio.cryptocurrencies.current_price,
+          usd_value: vaultAmount * assetInPortfolio.crypto.current_price,
           description: `Vaulted ${vaultAmount} ${vaultConfig.cryptocurrencies.symbol} for ${vaultConfig.duration_days} days.`
       });
 
