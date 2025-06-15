@@ -14,7 +14,7 @@ interface Crypto {
   id: string;
   name: string;
   symbol: string;
-  logo_url: string;
+  logo_url?: string;
   current_price: number;
 }
 
@@ -74,7 +74,7 @@ const IndividualVaultCard: React.FC<IndividualVaultCardProps> = ({
       <CardHeader className="pb-4">
         <CardTitle className="flex items-center gap-3">
           <CryptoLogo
-            logo_url={crypto.logo_url}
+            logo_url={crypto.logo_url || ''}
             name={crypto.name}
             symbol={crypto.symbol}
             className="w-8 h-8"
@@ -124,7 +124,7 @@ const IndividualVaultCard: React.FC<IndividualVaultCardProps> = ({
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <CryptoLogo
-                  logo_url={crypto.logo_url}
+                  logo_url={crypto.logo_url || ''}
                   name={crypto.name}
                   symbol={crypto.symbol}
                   className="w-6 h-6"

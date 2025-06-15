@@ -7,13 +7,16 @@ import { toast } from 'sonner';
 export interface LendingPosition {
   id: string;
   cryptocurrency_id: string;
-  amount: number;
-  interest_rate: number;
-  duration_days: number;
-  start_date: string;
-  end_date: string;
+  amount_lent: number;
+  original_amount_lent: number;
+  annual_interest_rate: number;
+  total_interest_earned: number;
+  lending_started_at: string;
+  lending_cancelled_at: string | null;
   status: 'active' | 'completed' | 'cancelled';
-  accrued_interest: number;
+  created_at: string;
+  updated_at: string;
+  user_id: string;
   crypto: {
     name: string;
     symbol: string;
@@ -104,7 +107,7 @@ export const useLending = () => {
       }
 
       // Calculate new quantity (restore the lent amount)
-      const newQuantity = (currentPortfolio?.quantity || 0) + lendingPosition.amount;
+      const newQuantity = (currentPortfolio?.quantity || 0) + lendingPosition.amount_lent;
 
       // Update or insert portfolio record
       const { error: portfolioUpdateError } = await supabase
@@ -128,9 +131,9 @@ export const useLending = () => {
           user_id: user!.id,
           cryptocurrency_id: lendingPosition.cryptocurrency_id,
           transaction_type: 'lending_cancelled',
-          amount: lendingPosition.amount,
+          amount: lendingPosition.amount_lent,
           status: 'completed',
-          description: `Cancelled lending position of ${lendingPosition.amount} tokens`,
+          description: `Cancelled lending position of ${lendingPosition.amount_lent} tokens`,
           created_at: new Date().toISOString()
         });
 
@@ -155,7 +158,11 @@ export const useLending = () => {
   });
 
   return {
-    ...query,
+    lendingPositions: query.data || [],
+    loading: query.isLoading,
+    error: query.error,
+    isLoading: query.isLoading,
+    isError: query.isError,
     cancelLending: cancelLendingMutation.mutate,
     isCancelling: cancelLendingMutation.isPending,
     refetch: query.refetch,
