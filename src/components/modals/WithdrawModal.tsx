@@ -13,6 +13,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import FormattedNumber from '@/components/FormattedNumber';
 import { toast } from 'sonner';
+import { useExchangeRate } from '@/hooks/useExchangeRate';
+import { convertEurToUsd } from '@/lib/currencyConverter';
 
 interface WithdrawModalProps {
   isOpen: boolean;
@@ -29,6 +31,7 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({ isOpen, onClose, onSucces
   const { balance, totalAssets, refetch: refetchBalance } = useUserBalance();
   const { liquidValue, lendingValue } = usePortfolio();
   const { lendingPositions } = useLending();
+  const { exchangeRate } = useExchangeRate();
   
   const hasActiveLending = lendingPositions.length > 0;
   const hasLiquidAssets = liquidValue > 0;
@@ -65,9 +68,10 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({ isOpen, onClose, onSucces
     try {
       console.log('[WithdrawModal] Processing withdrawal:', {
         userId: user.id,
-        amount: withdrawAmount,
+        amountEur: withdrawAmount,
         currentBalance: balance,
-        maxWithdrawable
+        maxWithdrawable,
+        exchangeRate
       });
 
       // Get current balance to ensure we have the latest data
@@ -82,8 +86,15 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({ isOpen, onClose, onSucces
       }
 
       const currentBalanceUsd = currentProfile.demo_balance_usd || 0;
-      const withdrawAmountUsd = withdrawAmount * 1.1; // Approximate USD conversion
+      // Convert EUR withdrawal to USD for storage (no fees)
+      const withdrawAmountUsd = convertEurToUsd(withdrawAmount, exchangeRate);
       const newBalanceUsd = currentBalanceUsd - withdrawAmountUsd;
+
+      console.log('[WithdrawModal] Balance calculation:', {
+        currentBalanceUsd,
+        withdrawAmountUsd,
+        newBalanceUsd
+      });
 
       if (newBalanceUsd < 0) {
         throw new Error('Insufficient funds for withdrawal');
@@ -99,14 +110,15 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({ isOpen, onClose, onSucces
         throw new Error('Failed to update balance');
       }
 
-      // Record the withdrawal transaction
+      // Record the withdrawal transaction with correct transaction type
       const { error: transactionError } = await supabase
         .from('transaction_history')
         .insert({
           user_id: user.id,
-          transaction_type: 'withdrawal_eur',
+          transaction_type: 'withdrawal', // Use standard transaction type
           amount: withdrawAmount,
           usd_value: withdrawAmountUsd,
+          fee_amount: 0, // No fees for EUR withdrawals
           status: 'completed',
           description: `EUR withdrawal: €${withdrawAmount.toFixed(2)}`
         });
@@ -188,6 +200,14 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({ isOpen, onClose, onSucces
               </AlertDescription>
             </Alert>
           )}
+
+          {/* No Fees Notice */}
+          <Alert>
+            <Euro className="h-4 w-4" />
+            <AlertDescription>
+              EUR withdrawals are processed with no fees.
+            </AlertDescription>
+          </Alert>
 
           {/* Withdrawal Form */}
           <div className="space-y-2">

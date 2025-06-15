@@ -10,10 +10,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { ArrowDown, CreditCard, Building2 } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { ArrowDown, CreditCard, Building2, Euro } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useExchangeRate } from '@/hooks/useExchangeRate';
+import { convertEurToUsd } from '@/lib/currencyConverter';
 
 interface DepositModalProps {
   open: boolean;
@@ -22,6 +25,7 @@ interface DepositModalProps {
 
 const DepositModal: React.FC<DepositModalProps> = ({ open, onOpenChange }) => {
   const { user } = useAuth();
+  const { exchangeRate } = useExchangeRate();
   const [amount, setAmount] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -38,7 +42,13 @@ const DepositModal: React.FC<DepositModalProps> = ({ open, onOpenChange }) => {
 
     setLoading(true);
     try {
-      const depositAmount = parseFloat(amount);
+      const depositAmountEur = parseFloat(amount);
+      
+      console.log('[DepositModal] Processing deposit:', {
+        amountEur: depositAmountEur,
+        exchangeRate,
+        userId: user.id
+      });
       
       // Get current balance
       const { data: currentProfile, error: fetchError } = await supabase
@@ -51,35 +61,38 @@ const DepositModal: React.FC<DepositModalProps> = ({ open, onOpenChange }) => {
         throw fetchError;
       }
 
-      const currentBalance = currentProfile.demo_balance_usd || 0;
-      const newBalance = currentBalance + depositAmount;
+      const currentBalanceUsd = currentProfile.demo_balance_usd || 0;
+      // Convert EUR deposit to USD for storage (no fees)
+      const depositAmountUsd = convertEurToUsd(depositAmountEur, exchangeRate);
+      const newBalanceUsd = currentBalanceUsd + depositAmountUsd;
 
-      console.log('[DepositModal] Deposit transaction:', {
-        currentBalance,
-        depositAmount,
-        newBalance,
-        userId: user.id
+      console.log('[DepositModal] Balance calculation:', {
+        currentBalanceUsd,
+        depositAmountUsd,
+        newBalanceUsd
       });
 
       // Update user balance
       const { error: updateError } = await supabase
         .from('profiles')
-        .update({ demo_balance_usd: newBalance })
+        .update({ demo_balance_usd: newBalanceUsd })
         .eq('id', user.id);
 
       if (updateError) {
         throw updateError;
       }
 
-      // Create transaction history entry
+      // Create transaction history entry with correct transaction type
       const { error: transactionError } = await supabase
         .from('transaction_history')
         .insert({
           user_id: user.id,
-          transaction_type: 'deposit_ideal',
-          usd_value: depositAmount,
+          transaction_type: 'deposit', // Use standard transaction type
+          amount: depositAmountEur,
+          usd_value: depositAmountUsd,
+          fee_amount: 0, // No fees for EUR deposits
           status: 'completed',
-          description: `iDEAL deposit of €${amount}`
+          description: `iDEAL deposit of €${depositAmountEur.toFixed(2)}`
         });
 
       if (transactionError) {
@@ -90,7 +103,7 @@ const DepositModal: React.FC<DepositModalProps> = ({ open, onOpenChange }) => {
       // Simulate processing time
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      toast.success(`Deposit of €${amount} completed successfully`);
+      toast.success(`Deposit of €${depositAmountEur.toFixed(2)} completed successfully`);
       setAmount('');
       onOpenChange(false);
       
@@ -156,6 +169,14 @@ const DepositModal: React.FC<DepositModalProps> = ({ open, onOpenChange }) => {
               </div>
             </div>
           </div>
+
+          {/* No Fees Notice */}
+          <Alert>
+            <Euro className="h-4 w-4" />
+            <AlertDescription>
+              EUR deposits are processed with no fees.
+            </AlertDescription>
+          </Alert>
 
           {/* Amount Input */}
           <div className="space-y-2">
