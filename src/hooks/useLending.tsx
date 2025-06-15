@@ -111,39 +111,39 @@ const cancelLendingPosition = async (
   const totalToReturn = lendingPosition.amount_lent + lendingPosition.total_interest_earned;
   const currentPrice = lendingPosition.crypto?.current_price || 0;
 
-  // Use atomic UPSERT with proper conflict resolution
-  const { error: portfolioError } = await supabase.rpc('upsert_portfolio_quantity', {
-    p_user_id: userId,
-    p_cryptocurrency_id: lendingPosition.cryptocurrency_id,
-    p_quantity_to_add: totalToReturn,
-    p_current_price: currentPrice
+  // Use atomic UPSERT with proper conflict resolution using raw SQL
+  const { error: portfolioError } = await supabase.rpc('sql', {
+    query: `
+      INSERT INTO user_portfolios (
+        user_id, 
+        cryptocurrency_id, 
+        quantity, 
+        average_buy_price, 
+        total_invested, 
+        current_value, 
+        profit_loss, 
+        profit_loss_percentage, 
+        updated_at
+      ) VALUES (
+        $1, $2, $3, 0, 0, $4, 0, 0, NOW()
+      )
+      ON CONFLICT (user_id, cryptocurrency_id) 
+      DO UPDATE SET 
+        quantity = user_portfolios.quantity + $3,
+        current_value = (user_portfolios.quantity + $3) * $5,
+        updated_at = NOW()
+    `,
+    params: [
+      userId,
+      lendingPosition.cryptocurrency_id,
+      totalToReturn,
+      totalToReturn * currentPrice,
+      currentPrice
+    ]
   });
 
-  // If the RPC function doesn't exist, fall back to raw SQL
-  if (portfolioError?.code === '42883') {
-    const { error: rawSqlError } = await supabase
-      .from('user_portfolios')
-      .upsert({
-        user_id: userId,
-        cryptocurrency_id: lendingPosition.cryptocurrency_id,
-        quantity: totalToReturn,
-        average_buy_price: 0,
-        total_invested: 0,
-        current_value: totalToReturn * currentPrice,
-        profit_loss: 0,
-        profit_loss_percentage: 0,
-        updated_at: new Date().toISOString()
-      }, {
-        onConflict: 'user_id,cryptocurrency_id',
-        ignoreDuplicates: false
-      });
-
-    if (rawSqlError) {
-      console.error('Error with portfolio upsert:', rawSqlError);
-      throw new Error(`Failed to update portfolio: ${rawSqlError.message}`);
-    }
-  } else if (portfolioError) {
-    console.error('Error with portfolio RPC:', portfolioError);
+  if (portfolioError) {
+    console.error('Error with portfolio upsert:', portfolioError);
     throw new Error(`Failed to update portfolio: ${portfolioError.message}`);
   }
 
