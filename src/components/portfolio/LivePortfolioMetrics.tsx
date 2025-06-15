@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TrendingUp, TrendingDown, Activity, Target, DollarSign } from 'lucide-react';
@@ -50,52 +49,49 @@ const LivePortfolioMetrics = () => {
   ];
 
   return (
-    <div className="space-y-6">
-      {/* Key Metrics Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {metrics.map((metric) => {
-          const Icon = metric.icon;
-          return (
-            <Card key={metric.title} className="glass glass-hover">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  {metric.title}
-                </CardTitle>
-                <Icon className={`h-4 w-4 ${
-                  metric.trend === 'positive' ? 'text-green-500' : 
-                  metric.trend === 'negative' ? 'text-red-500' : 
-                  'text-muted-foreground'
-                }`} />
-              </CardHeader>
-              <CardContent>
-                <div className={`text-2xl font-bold ${
-                  metric.trend === 'positive' ? 'text-green-500' : 
-                  metric.trend === 'negative' ? 'text-red-500' : 
-                  'text-white'
-                }`}>
-                  {metric.type === 'percentage' ? (
-                    `${metric.value.toFixed(0)}%`
-                  ) : (
-                    <FormattedNumber
-                      value={Math.abs(metric.value)}
-                      type={metric.type}
-                      showTooltip={false}
-                    />
-                  )}
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {metric.description}
-                </p>
-                {metric.subtext && (
-                  <p className="text-xs text-muted-foreground opacity-70">
-                    {metric.subtext}
-                  </p>
+    <div className="flex flex-wrap justify-around items-stretch gap-4 h-full">
+      {metrics.map((metric) => {
+        const Icon = metric.icon;
+        return (
+          <Card key={metric.title} className="glass glass-hover flex-grow basis-48 max-w-xs flex flex-col">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                {metric.title}
+              </CardTitle>
+              <Icon className={`h-4 w-4 ${
+                metric.trend === 'positive' ? 'text-green-500' : 
+                metric.trend === 'negative' ? 'text-red-500' : 
+                'text-muted-foreground'
+              }`} />
+            </CardHeader>
+            <CardContent className="flex-1 flex flex-col justify-center">
+              <div className={`text-2xl font-bold ${
+                metric.trend === 'positive' ? 'text-green-500' : 
+                metric.trend === 'negative' ? 'text-red-500' : 
+                'text-white'
+              }`}>
+                {metric.type === 'percentage' ? (
+                  `${metric.value.toFixed(0)}%`
+                ) : (
+                  <FormattedNumber
+                    value={Math.abs(metric.value)}
+                    type={metric.type}
+                    showTooltip={false}
+                  />
                 )}
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {metric.description}
+              </p>
+              {metric.subtext && (
+                <p className="text-xs text-muted-foreground opacity-70">
+                  {metric.subtext}
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        );
+      })}
     </div>
   );
 };

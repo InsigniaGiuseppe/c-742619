@@ -299,18 +299,7 @@ const DashboardLayoutManager: React.FC = () => {
           
           .react-resizable-handle {
             background: none !important;
-          }
-          
-          .react-resizable-handle::after {
-            content: '';
-            position: absolute;
-            right: 3px;
-            bottom: 3px;
-            width: 8px;
-            height: 8px;
-            border-right: 2px solid rgba(255, 255, 255, 0.6);
-            border-bottom: 2px solid rgba(255, 255, 255, 0.6);
-            border-radius: 0 0 4px 0;
+            z-index: 10;
           }
           
           .react-grid-item.react-draggable-dragging {
@@ -356,6 +345,22 @@ const DashboardLayoutManager: React.FC = () => {
             }
             .react-resizable-handle:hover {
               opacity: 1 !important;
+            }
+            .react-resizable-handle::after {
+              content: '';
+              position: absolute;
+              right: 4px;
+              bottom: 4px;
+              width: 12px;
+              height: 12px;
+              border-right: 3px solid #3b82f6;
+              border-bottom: 3px solid #3b82f6;
+              border-radius: 0 0 6px 0;
+              opacity: 0.8;
+              transition: opacity 0.2s;
+            }
+            .react-resizable-handle:hover::after {
+                opacity: 1;
             }
           `}
           
@@ -486,3 +491,4 @@ const DashboardLayoutManager: React.FC = () => {
 };
 
 export default DashboardLayoutManager;
+
