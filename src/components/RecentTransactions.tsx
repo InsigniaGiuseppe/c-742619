@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -41,6 +40,7 @@ const RecentTransactions = () => {
   const formatTransactionType = (transactionType: string) => {
     if (transactionType.includes('lending')) {
       if (transactionType === 'lending_start') return 'LEND';
+      if (transactionType === 'lending_cancelled') return 'LEND CANCELLED';
       if (transactionType === 'lending_repayment') return 'LEND REPAID';
       if (transactionType === 'lending_interest') return 'LEND INTEREST';
     }

@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -202,7 +201,7 @@ export const useLending = () => {
       
       const { data: crypto } = await supabase
         .from('cryptocurrencies')
-        .select('symbol')
+        .select('symbol, current_price')
         .eq('id', cryptoId)
         .single();
       
@@ -260,6 +259,7 @@ export const useLending = () => {
           cryptocurrency_id: cryptoId,
           transaction_type: 'lending_start',
           amount: amount,
+          usd_value: amount * (crypto?.current_price || 0),
           status: 'completed',
           description: `Started lending ${amount} ${crypto?.symbol}`,
         });
@@ -293,7 +293,7 @@ export const useLending = () => {
         .eq('user_id', user!.id)
         .select(`
           *,
-          crypto:cryptocurrencies(symbol)
+          crypto:cryptocurrencies(symbol, current_price)
         `)
         .single();
 
@@ -307,6 +307,7 @@ export const useLending = () => {
           cryptocurrency_id: data.cryptocurrency_id,
           transaction_type: 'lending_cancelled',
           amount: data.amount_lent,
+          usd_value: data.amount_lent * (data.crypto?.current_price || 0),
           status: 'completed',
           description: `Cancelled lending and returned ${data.amount_lent} ${data.crypto?.symbol}`,
         });
@@ -345,4 +346,3 @@ export const useLending = () => {
     },
   };
 };
-
