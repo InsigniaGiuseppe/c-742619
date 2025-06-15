@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -13,7 +14,6 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useToast } from '@/components/ui/use-toast';
-import { Dice6 } from 'lucide-react';
 
 const navLinks = [
   { href: '/dashboard', label: 'Dashboard' },
@@ -36,7 +36,7 @@ const Navigation: React.FC = () => {
   };
 
   return (
-    <nav className="bg-gray-900/95 backdrop-blur-sm border-b border-gray-800 sticky top-0 z-50">
+    <nav className="glass border-b border-white/10 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
@@ -65,8 +65,7 @@ const Navigation: React.FC = () => {
                 <Link to="/vaults" className="text-gray-300 hover:text-white transition-colors">
                   Vaults
                 </Link>
-                <Link to="/spin" className="text-gray-300 hover:text-white transition-colors flex items-center gap-1">
-                  <Dice6 className="w-4 h-4" />
+                <Link to="/spin" className="text-gray-300 hover:text-white transition-colors">
                   Spin & Win
                 </Link>
                 {isAdmin && (

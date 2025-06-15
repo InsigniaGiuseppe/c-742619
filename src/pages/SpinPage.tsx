@@ -250,13 +250,13 @@ const SpinPage: React.FC = () => {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {configurations.map((config) => (
-              <div key={config.id} className="p-4 rounded-lg border border-gray-700 bg-gray-800/50">
+              <div key={config.id} className="p-4 rounded-lg glass glass-hover">
                 <div className="flex items-center justify-between mb-2">
                   <Badge 
                     className={
-                      config.reward_tier === 'epic' ? 'bg-purple-500/20 text-purple-400' :
-                      config.reward_tier === 'rare' ? 'bg-blue-500/20 text-blue-400' :
-                      'bg-gray-500/20 text-gray-400'
+                      config.reward_tier === 'epic' ? 'bg-purple-500/20 text-purple-400 border-purple-500/30' :
+                      config.reward_tier === 'rare' ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' :
+                      'bg-gray-500/20 text-gray-400 border-gray-500/30'
                     }
                   >
                     {config.reward_tier.toUpperCase()}

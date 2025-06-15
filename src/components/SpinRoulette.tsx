@@ -57,15 +57,15 @@ const SpinRoulette: React.FC<SpinRouletteProps> = ({
 
   const getTierColor = (tier: string) => {
     switch (tier) {
-      case 'common': return 'border-gray-400 bg-gray-100';
-      case 'rare': return 'border-blue-400 bg-blue-100';
-      case 'epic': return 'border-purple-400 bg-purple-100';
-      default: return 'border-gray-400 bg-gray-100';
+      case 'common': return 'border-gray-600 bg-gray-800/50';
+      case 'rare': return 'border-blue-600 bg-blue-800/30';
+      case 'epic': return 'border-purple-600 bg-purple-800/30';
+      default: return 'border-gray-600 bg-gray-800/50';
     }
   };
 
   return (
-    <div className="relative w-full h-32 overflow-hidden bg-gray-900 rounded-lg border-2 border-gray-700">
+    <div className="relative w-full h-32 overflow-hidden bg-background/80 rounded-lg border border-white/10">
       {/* Selection indicator */}
       <div className="absolute top-0 left-1/2 transform -translate-x-1/2 z-20">
         <div className="w-1 h-32 bg-red-500 shadow-lg"></div>
@@ -104,10 +104,10 @@ const SpinRoulette: React.FC<SpinRouletteProps> = ({
                     size="sm"
                     className="mb-1"
                   />
-                  <div className="text-xs font-bold text-center">
+                  <div className="text-xs font-bold text-center text-white">
                     {item.amount.toFixed(6)}
                   </div>
-                  <div className="text-xs text-gray-600">
+                  <div className="text-xs text-gray-300">
                     {item.crypto.symbol}
                   </div>
                 </div>
@@ -119,7 +119,7 @@ const SpinRoulette: React.FC<SpinRouletteProps> = ({
         {/* Static display when not spinning */}
         {!isSpinning && (
           <div className="flex items-center justify-center w-full h-full">
-            <div className="text-center text-gray-400">
+            <div className="text-center text-muted-foreground">
               <div className="text-lg font-semibold mb-2">Ready to Spin!</div>
               <div className="text-sm">Place your bet and spin to win crypto rewards</div>
             </div>
