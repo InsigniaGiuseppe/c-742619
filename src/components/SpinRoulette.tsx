@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import CryptoLogo from '@/components/CryptoLogo';
 
 interface SpinItem {
@@ -20,6 +20,70 @@ interface SpinRouletteProps {
   onSpinComplete?: () => void;
 }
 
+// Simple card width config
+const CARD_WIDTH = 120;
+const CARD_MARGIN = 8;
+const TOTAL_CARD_WIDTH = CARD_WIDTH + CARD_MARGIN;
+const VISIBLE_CARDS = 7; // always odd for nice center alignment
+const GHOST_CARDS = 14;  // number of random cards before and after for smooth entry/exit
+
+const getTierGlow = (tier: string) => {
+  switch (tier) {
+    case 'common': 
+      return 'shadow-[0_0_8px_rgba(156,163,175,0.4)]';
+    case 'rare': 
+      return 'shadow-[0_0_12px_rgba(34,197,94,0.8)]';
+    case 'epic': 
+      return 'shadow-[0_0_16px_rgba(168,85,247,0.9)]';
+    case 'legendary': 
+      return 'shadow-[0_0_20px_rgba(255,215,0,1)]';
+    case 'loss':
+      return 'shadow-[0_0_10px_rgba(239,68,68,0.7)]';
+    default: 
+      return '';
+  }
+};
+
+const getTierBgColor = (tier: string) => {
+  switch (tier) {
+    case 'common': 
+      return 'bg-gray-700/50 border border-gray-500/30';
+    case 'rare': 
+      return 'bg-green-700/50 border border-green-500/50';
+    case 'epic': 
+      return 'bg-purple-700/50 border border-purple-500/50';
+    case 'legendary': 
+      return 'bg-yellow-700/50 border border-yellow-500/50';
+    case 'loss':
+      return 'bg-red-700/50 border border-red-500/50';
+    default: 
+      return 'bg-gray-700/50 border border-gray-500/30';
+  }
+};
+
+const buildCardsTrack = (
+  isSpinning: boolean,
+  all: SpinItem[],
+  winning: SpinItem | undefined
+): { cards: SpinItem[]; winnerIndex: number } => {
+  if (!isSpinning || !winning) return { cards: [], winnerIndex: 0 };
+
+  const surround = [];
+  for (let i = 0; i < GHOST_CARDS; i++) {
+    surround.push({ 
+      ...all[Math.floor(Math.random() * all.length)], 
+      id: `ghost-${i}-${Math.random()}`
+    });
+  }
+  const cards = [
+    ...surround,
+    { ...winning, id: 'winner' },
+    ...surround
+  ];
+  // Winner is at GHOST_CARDS index (centered after sliding)
+  return { cards, winnerIndex: GHOST_CARDS };
+};
+
 const SpinRoulette: React.FC<SpinRouletteProps> = ({
   items,
   isSpinning,
@@ -27,137 +91,63 @@ const SpinRoulette: React.FC<SpinRouletteProps> = ({
   onSpinComplete
 }) => {
   const [cards, setCards] = useState<SpinItem[]>([]);
+  const [animStyle, setAnimStyle] = useState<React.CSSProperties>({});
   const [isAnimating, setIsAnimating] = useState(false);
-  const sliderTrackRef = useRef<HTMLDivElement>(null);
+  const sliderRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Animation/display constants
-  const CARD_WIDTH = 120;
-  const CARD_MARGIN = 8;
-  const TOTAL_CARD_WIDTH = CARD_WIDTH + CARD_MARGIN;
-  const TOTAL_CARDS = 61; // Make odd to allow for perfect middle
-  const WINNING_INDEX = Math.floor(TOTAL_CARDS / 2);
-
-  // NEW: Store calculated positions for animation
-  const [animationOffsets, setAnimationOffsets] = useState<{ startOffset: number; endOffset: number }>({
-    startOffset: 0,
-    endOffset: 0,
-  });
-
+  // Always build track before animating
   useEffect(() => {
     if (isSpinning && winningItem && items.length > 0) {
-      if (sliderTrackRef.current) {
-        sliderTrackRef.current.style.transition = "none";
-        sliderTrackRef.current.style.transform = "translateX(0px)";
-      }
+      const { cards: fullTrack, winnerIndex } = buildCardsTrack(true, items, winningItem);
+      setCards(fullTrack);
 
-      const generatedCards: SpinItem[] = [];
-      for (let i = 0; i < TOTAL_CARDS; i++) {
-        if (i === WINNING_INDEX) {
-          generatedCards.push({ ...winningItem, id: `winner-${i}` });
-        } else {
-          const randomItem = items[Math.floor(Math.random() * items.length)];
-          generatedCards.push({
-            ...randomItem,
-            id: `card-${i}`,
-            amount: randomItem.amount * (0.3 + Math.random() * 2)
-          });
-        }
-      }
-      setCards(generatedCards);
-
-      // NEW: Calculate start & end offsets for animation
+      // After rendering cards, trigger animation in next frame
       setTimeout(() => {
-        const container = containerRef.current;
-        if (!container) return;
-        const containerWidth = container.offsetWidth;
-        const cardOffset = CARD_WIDTH / 2;
-        const winningCardAnchor = WINNING_INDEX * TOTAL_CARD_WIDTH + cardOffset;
-        const center = containerWidth / 2;
-        const endOffset = Math.round(winningCardAnchor - center);
+        if (!sliderRef.current || !containerRef.current) return;
+        // compute starting offset (winner far right), then slide to center
+        const containerWidth = containerRef.current.offsetWidth;
+        const trackLength = fullTrack.length;
+        const winnerPos = winnerIndex * TOTAL_CARD_WIDTH + CARD_WIDTH/2;
+        // Start off screen right: center is at right edge, so winner is far right
+        const startOffset = winnerPos - (containerWidth - CARD_WIDTH)/2 + GHOST_CARDS * TOTAL_CARD_WIDTH;
+        // End at winner in center
+        const endOffset = winnerPos - containerWidth/2;
 
-        // Start offset: extra "pre-slide" so that cards start well off-screen
-        // Let's show ~15 cards sliding in before winner arrives
-        const preSlideCards = 15;
-        const startOffset = endOffset - preSlideCards * TOTAL_CARD_WIDTH;
+        setAnimStyle({
+          transition: 'none',
+          transform: `translateX(-${startOffset}px)`,
+        });
 
-        setAnimationOffsets({ startOffset, endOffset });
+        setTimeout(() => {
+          setAnimStyle({
+            transition: 'transform 2.5s cubic-bezier(0.25,0.1,0.25,1)',
+            transform: `translateX(-${endOffset}px)`,
+            willChange: 'transform'
+          });
+          setIsAnimating(true);
 
-        // Call animation
-        startSpinAnimation(startOffset, endOffset);
-      }, 150); // Give DOM time to render cards
+          // Animation complete
+          setTimeout(() => {
+            setIsAnimating(false);
+            onSpinComplete?.();
+          }, 2550);
+        }, 70);
+      }, 25);
+    } else {
+      setCards([]);
+      setIsAnimating(false);
+      setAnimStyle({});
     }
     // eslint-disable-next-line
   }, [isSpinning, winningItem, items]);
 
-  function startSpinAnimation(startOffset: number, endOffset: number) {
-    if (!sliderTrackRef.current) return;
-    setIsAnimating(true);
-
-    // 1. Set initial offset with no transition
-    sliderTrackRef.current.style.transition = "none";
-    sliderTrackRef.current.style.transform = `translateX(-${startOffset}px)`;
-
-    // 2. Animate to final offset with a transition
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        sliderTrackRef.current!.style.transition = "transform 3.5s cubic-bezier(0.25,0.1,0.25,1)";
-        sliderTrackRef.current!.style.transform = `translateX(-${endOffset}px)`;
-      });
-    });
-
-    // Logging for dev
-    console.log('[SpinRoulette] Animation: startOffset', startOffset, 'endOffset', endOffset);
-
-    // 3. After animation, finish
-    setTimeout(() => {
-      setIsAnimating(false);
-      setTimeout(() => {
-        onSpinComplete?.();
-      }, 500);
-    }, 3500);
-  }
-
-  const getTierGlow = (tier: string) => {
-    switch (tier) {
-      case 'common': 
-        return 'shadow-[0_0_8px_rgba(156,163,175,0.4)]';
-      case 'rare': 
-        return 'shadow-[0_0_12px_rgba(34,197,94,0.8)]';
-      case 'epic': 
-        return 'shadow-[0_0_16px_rgba(168,85,247,0.9)]';
-      case 'legendary': 
-        return 'shadow-[0_0_20px_rgba(255,215,0,1)]';
-      case 'loss':
-        return 'shadow-[0_0_10px_rgba(239,68,68,0.7)]';
-      default: 
-        return '';
-    }
-  };
-
-  const getTierBgColor = (tier: string) => {
-    switch (tier) {
-      case 'common': 
-        return 'bg-gray-700/50 border border-gray-500/30';
-      case 'rare': 
-        return 'bg-green-700/50 border border-green-500/50';
-      case 'epic': 
-        return 'bg-purple-700/50 border border-purple-500/50';
-      case 'legendary': 
-        return 'bg-yellow-700/50 border border-yellow-500/50';
-      case 'loss':
-        return 'bg-red-700/50 border border-red-500/50';
-      default: 
-        return 'bg-gray-700/50 border border-gray-500/30';
-    }
-  };
-
+  // Always render the slider track
   return (
     <div className="relative w-full">
       <div
         ref={containerRef}
         className="relative w-full h-36 overflow-hidden bg-gradient-to-r from-gray-900 via-black to-gray-900 rounded-xl border-2 border-green-400/50"
-        style={{ position: "relative" }}
       >
         {/* Center marker */}
         <div
@@ -167,24 +157,19 @@ const SpinRoulette: React.FC<SpinRouletteProps> = ({
             boxShadow: "0 0 10px rgba(34, 197, 94, 0.8)",
           }}
         >
-          {/* Arrows */}
           <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-8 border-l-transparent border-r-transparent border-b-green-400"></div>
           <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-8 border-l-transparent border-r-transparent border-t-green-400"></div>
         </div>
-        {/* Slider track */}
-        <div className="flex items-center h-full">
-          {isSpinning && cards.length > 0 ? (
+
+        <div className="flex items-center h-full relative">
+          {(isSpinning && cards.length > 0) ? (
             <div
-              ref={sliderTrackRef}
+              ref={sliderRef}
               className="flex items-center h-full"
-              style={{
-                transition: "none",
-                transform: `translateX(-${animationOffsets.startOffset}px)`,
-                willChange: "transform",
-              }}
+              style={animStyle}
             >
-              {cards.map((card, index) => {
-                const isWinner = index === WINNING_INDEX;
+              {cards.map((card, idx) => {
+                const isWinner = winningItem && card.id === 'winner';
                 const glowClass = getTierGlow(card.tier);
                 const bgClass = getTierBgColor(card.tier);
 
@@ -194,8 +179,7 @@ const SpinRoulette: React.FC<SpinRouletteProps> = ({
                     className="flex-shrink-0 flex flex-col items-center justify-center p-2"
                     style={{
                       width: CARD_WIDTH,
-                      marginRight: CARD_MARGIN / 2,
-                      marginLeft: CARD_MARGIN / 2,
+                      margin: `0 ${CARD_MARGIN/2}px`,
                     }}
                   >
                     <div className={`relative rounded-lg p-3 ${bgClass} ${glowClass} transition-all duration-300`}>
@@ -227,10 +211,10 @@ const SpinRoulette: React.FC<SpinRouletteProps> = ({
               })}
             </div>
           ) : (
-            // Static preview
+            // Preview mode
             <div className="flex items-center justify-center w-full h-full">
               <div className="flex justify-center gap-6">
-                {items.slice(0, 5).map((item, index) => {
+                {items.slice(0, 5).map((item, i) => {
                   const glowClass = getTierGlow(item.tier);
                   const bgClass = getTierBgColor(item.tier);
                   return (
@@ -258,6 +242,7 @@ const SpinRoulette: React.FC<SpinRouletteProps> = ({
             </div>
           )}
         </div>
+
         {/* Gradients */}
         <div className="absolute left-0 top-0 w-20 h-full bg-gradient-to-r from-black via-black/80 to-transparent pointer-events-none z-20"></div>
         <div className="absolute right-0 top-0 w-20 h-full bg-gradient-to-l from-black via-black/80 to-transparent pointer-events-none z-20"></div>
