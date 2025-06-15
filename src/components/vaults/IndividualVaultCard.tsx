@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -32,6 +33,17 @@ const IndividualVaultCard: React.FC<IndividualVaultCardProps> = ({
   const [amount, setAmount] = useState('');
   const [duration, setDuration] = useState('30');
   const [isVaulting, setIsVaulting] = useState(false);
+
+  // Enhanced logo URLs for major cryptocurrencies
+  const getEnhancedLogoUrl = (symbol: string) => {
+    const logoMap: Record<string, string> = {
+      'BTC': 'https://cryptologos.cc/logos/bitcoin-btc-logo.png',
+      'ETH': 'https://cryptologos.cc/logos/ethereum-eth-logo.png',
+      'SOL': 'https://cryptologos.cc/logos/solana-sol-logo.png',
+      'USDT': 'https://cryptologos.cc/logos/tether-usdt-logo.png',
+    };
+    return logoMap[symbol.toUpperCase()] || crypto.logo_url;
+  };
 
   const handleVault = async () => {
     const vaultAmount = parseFloat(amount);
@@ -75,10 +87,10 @@ const IndividualVaultCard: React.FC<IndividualVaultCardProps> = ({
       <CardHeader className="pb-4">
         <CardTitle className="flex items-center gap-3">
           <CryptoLogo
-            logo_url={crypto.logo_url || ''}
+            logo_url={getEnhancedLogoUrl(crypto.symbol)}
             name={crypto.name}
             symbol={crypto.symbol}
-            className="w-8 h-8"
+            size="lg"
           />
           <div>
             <div className="font-semibold">{crypto.name}</div>
@@ -125,10 +137,10 @@ const IndividualVaultCard: React.FC<IndividualVaultCardProps> = ({
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <CryptoLogo
-                  logo_url={crypto.logo_url || ''}
+                  logo_url={getEnhancedLogoUrl(crypto.symbol)}
                   name={crypto.name}
                   symbol={crypto.symbol}
-                  className="w-6 h-6"
+                  size="md"
                 />
                 Vault {crypto.symbol}
               </DialogTitle>

@@ -1,201 +1,198 @@
 
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Users, DollarSign, Clock, Shield, FileText, Wallet, TrendingUp, AlertTriangle, ArrowRight, ClipboardCheck, BarChart, Activity } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { TextGenerateEffect } from '@/components/ui/text-generate-effect';
-import { useEnhancedAdminStats } from '@/hooks/useEnhancedAdminStats';
-import FormattedNumber from '@/components/FormattedNumber';
-import AdminCharts from '@/components/admin/AdminCharts';
+import { 
+  Users, 
+  CreditCard, 
+  FileText, 
+  Wallet, 
+  TrendingUp,
+  DollarSign,
+  UserCheck,
+  AlertTriangle,
+  Vault,
+  BarChart3
+} from 'lucide-react';
+import { useAdminStats } from '@/hooks/useAdminStats';
+import { formatCurrency } from '@/lib/formatters';
 
 const AdminDashboard = () => {
-  const navigate = useNavigate();
-  const { data: stats, isLoading, error } = useEnhancedAdminStats();
+  const { data: stats, isLoading, error } = useAdminStats();
 
   const adminSections = [
     {
       title: 'User Management',
-      description: 'Manage user accounts and permissions',
+      description: 'Manage users, accounts, and permissions',
       icon: Users,
-      path: '/admin/users',
-      color: 'border-blue-500/30 hover:bg-blue-500/10'
+      href: '/admin/users',
+      stats: stats ? `${stats.totalUsers} total users` : 'Loading...',
+      color: 'bg-blue-500'
     },
     {
-      title: 'KYC Submissions',
-      description: 'Review and verify user KYC documents',
-      icon: ClipboardCheck,
-      path: '/admin/kyc',
-      color: 'border-cyan-500/30 hover:bg-cyan-500/10'
+      title: 'Transaction Management',
+      description: 'Monitor and manage all platform transactions',
+      icon: CreditCard,
+      href: '/admin/transactions',
+      stats: stats ? `${stats.completedTransactions} completed` : 'Loading...',
+      color: 'bg-green-500'
     },
     {
-      title: 'Transaction Monitoring',
-      description: 'Monitor and approve transactions',
-      icon: TrendingUp,
-      path: '/admin/transactions',
-      color: 'border-green-500/30 hover:bg-green-500/10'
-    },
-    {
-      title: 'Wallet Verifications',
-      description: 'Approve external wallet addresses',
-      icon: Wallet,
-      path: '/admin/wallets',
-      color: 'border-purple-500/30 hover:bg-purple-500/10'
-    },
-    {
-      title: 'Logs & History',
-      description: 'View audit logs and admin actions',
+      title: 'KYC Documents',
+      description: 'Review and approve KYC submissions',
       icon: FileText,
-      path: '/admin/audit-log',
-      color: 'border-orange-500/30 hover:bg-orange-500/10'
+      href: '/admin/kyc',
+      stats: stats ? `${stats.pendingKyc} pending` : 'Loading...',
+      color: 'bg-orange-500'
+    },
+    {
+      title: 'External Wallets',
+      description: 'Verify and manage external wallet submissions',
+      icon: Wallet,
+      href: '/admin/wallets',
+      stats: 'Wallet verifications',
+      color: 'bg-purple-500'
+    },
+    {
+      title: 'The Reserve',
+      description: 'Monitor platform liquidity and reserves',
+      icon: Vault,
+      href: '/admin/reserves',
+      stats: 'Internal vault system',
+      color: 'bg-indigo-500'
+    },
+    {
+      title: 'Analytics',
+      description: 'Platform analytics and reporting',
+      icon: BarChart3,
+      href: '/admin/analytics',
+      stats: 'Coming soon',
+      color: 'bg-pink-500'
     }
   ];
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-      },
+  const quickStats = [
+    {
+      title: 'Total Volume',
+      value: stats ? formatCurrency(stats.totalVolume, { currency: 'EUR', compact: true }) : 'Loading...',
+      icon: TrendingUp,
+      change: '+12.5%'
     },
-  };
-
-  const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: {
-      y: 0,
-      opacity: 1,
-      transition: {
-        duration: 0.5,
-      },
+    {
+      title: 'Total AUM',
+      value: stats ? formatCurrency(stats.totalAUM, { currency: 'EUR', compact: true }) : 'Loading...',
+      icon: DollarSign,
+      change: '+8.2%'
     },
-  };
-
-  const getStatCards = () => {
-    if (isLoading || !stats) {
-      return [
-        { title: 'Total Users', value: 0, icon: Users, color: 'text-blue-400', isLoading: true },
-        { title: 'Assets Under Management', value: 0, icon: DollarSign, color: 'text-green-400', isLoading: true, type: 'currency' as const },
-        { title: 'Trades Per Day', value: 0, icon: Activity, color: 'text-orange-400', isLoading: true },
-        { title: 'Pending KYCs', value: 0, icon: Clock, color: 'text-yellow-400', isLoading: true },
-        { title: 'Pending Transactions', value: 0, icon: AlertTriangle, color: 'text-red-400', isLoading: true },
-        { title: 'Total Trading Profit', value: 0, icon: TrendingUp, color: 'text-purple-400', isLoading: true, type: 'currency' as const }
-      ];
+    {
+      title: 'Active Users',
+      value: stats ? `${stats.activeUsers}` : 'Loading...',
+      icon: UserCheck,
+      change: '+5.1%'
+    },
+    {
+      title: 'Pending KYC',
+      value: stats ? `${stats.pendingKyc}` : 'Loading...',
+      icon: AlertTriangle,
+      change: stats && stats.pendingKyc > 0 ? 'Needs attention' : 'All clear'
     }
+  ];
 
-    return [
-      { title: 'Total Users', value: stats.totalUsers, icon: Users, color: 'text-blue-400' },
-      { title: 'Assets Under Management', value: stats.assetsUnderManagement, icon: DollarSign, color: 'text-green-400', type: 'currency' as const },
-      { title: 'Trades Per Day', value: stats.tradesPerDay, icon: Activity, color: 'text-orange-400' },
-      { title: 'Pending KYCs', value: stats.pendingKycs, icon: Clock, color: 'text-yellow-400' },
-      { title: 'Pending Transactions', value: stats.pendingTransactions, icon: AlertTriangle, color: 'text-red-400' },
-      { title: 'Total Trading Profit', value: stats.totalTradingProfit, icon: TrendingUp, color: 'text-purple-400', type: 'currency' as const }
-    ];
-  };
+  if (error) {
+    return (
+      <div className="container mx-auto py-8 px-4">
+        <Card className="glass">
+          <CardContent className="p-6">
+            <p className="text-red-400">Error loading admin dashboard: {error.message}</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-8">
-      {/* Hero Section */}
-      <motion.section
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="pt-8 pb-12 flex flex-col items-center text-center"
-      >
-        <div className="inline-block mb-4 px-4 py-1.5 rounded-full glass border-orange-500/30">
-          <span className="text-sm font-medium flex items-center gap-2 text-orange-400">
-            <Shield className="w-4 h-4" /> Platform Administration
-          </span>
+    <div className="container mx-auto py-8 px-4 space-y-8">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+          <p className="text-muted-foreground">Platform management and monitoring</p>
         </div>
-        <h1 className="text-5xl md:text-6xl font-normal mb-4 tracking-tight">
-          <TextGenerateEffect words="Admin Dashboard" />
-        </h1>
-        <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-          Oversee platform operations, manage users, and monitor critical system activities from one central hub.
-        </p>
-      </motion.section>
+        <Badge variant="outline" className="bg-green-500/20 text-green-400 border-green-500/30">
+          System Operational
+        </Badge>
+      </div>
 
-      {/* Content Sections */}
-      <motion.div
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-        className="space-y-12"
-      >
-        {/* Stats Cards - Better formatted with improved grid */}
-        <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-          {error && (
-            <div className="col-span-full text-center p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
-              <p className="text-red-400">Error loading statistics: {error.message}</p>
-            </div>
-          )}
-          {getStatCards().map((stat, index) => (
-            <Card key={index} className="glass glass-hover">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-                <CardTitle className="text-sm font-medium leading-tight">{stat.title}</CardTitle>
-                <stat.icon className={`h-5 w-5 ${stat.color} flex-shrink-0`} />
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className={`text-2xl font-bold ${stat.color}`}>
-                  {stat.isLoading ? (
-                    <div className="h-8 w-20 bg-gray-700 animate-pulse rounded"></div>
-                  ) : stat.type === 'currency' ? (
-                    <FormattedNumber
-                      value={stat.value}
-                      type="currency"
-                      showTooltip={false}
-                      className="text-2xl font-bold"
-                    />
-                  ) : (
-                    stat.value.toLocaleString()
-                  )}
+      {/* Quick Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {quickStats.map((stat, index) => (
+          <Card key={index} className="glass">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">{stat.title}</p>
+                  <p className="text-2xl font-bold">{stat.value}</p>
+                  <p className="text-xs text-green-400">{stat.change}</p>
                 </div>
-              </CardContent>
-            </Card>
-          ))}
-        </motion.div>
+                <stat.icon className="h-8 w-8 text-muted-foreground" />
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
 
-        {/* Charts Section */}
-        {stats && (
-          <motion.div variants={itemVariants}>
-            <h2 className="text-2xl font-bold text-center mb-6">Analytics Overview</h2>
-            <AdminCharts 
-              dailyTradingVolume={stats.dailyTradingVolume}
-              userGrowth={stats.userGrowth}
-              aumGrowth={stats.aumGrowth}
-              totalTradesData={stats.dailyTradingVolume.map(item => ({ date: item.date, trades: item.trades }))}
-            />
-          </motion.div>
-        )}
+      {/* Admin Sections */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {adminSections.map((section, index) => (
+          <Card key={index} className="glass hover:bg-white/5 transition-colors">
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-lg ${section.color}`}>
+                  <section.icon className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg">{section.title}</CardTitle>
+                  <CardDescription className="text-sm">{section.description}</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground">{section.stats}</p>
+              <Button asChild className="w-full">
+                <Link to={section.href}>
+                  Manage {section.title}
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
 
-        {/* Admin Sections */}
-        <motion.div variants={itemVariants}>
-          <h2 className="text-2xl font-bold text-center mb-6">Management Areas</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {adminSections.map((section, index) => (
-              <Card key={index} className={`glass glass-hover cursor-pointer transition-all duration-300 ${section.color}`}>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-3">
-                    <section.icon className="w-6 h-6" />
-                    {section.title}
-                  </CardTitle>
-                  <CardDescription>{section.description}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button 
-                    onClick={() => navigate(section.path)}
-                    className="w-full button-gradient"
-                  >
-                    Open Section <ArrowRight className="w-4 h-4 ml-2" />
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
+      {/* System Status */}
+      <Card className="glass">
+        <CardHeader>
+          <CardTitle>System Status</CardTitle>
+          <CardDescription>Real-time platform health monitoring</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              <span className="text-sm">Trading Engine: Operational</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              <span className="text-sm">Database: Healthy</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              <span className="text-sm">API Services: Online</span>
+            </div>
           </div>
-        </motion.div>
-      </motion.div>
+        </CardContent>
+      </Card>
     </div>
   );
 };

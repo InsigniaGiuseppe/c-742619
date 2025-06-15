@@ -26,6 +26,7 @@ import AdminUserDetailPage from '@/pages/AdminUserDetailPage';
 import AdminTransactions from '@/pages/AdminTransactions';
 import AdminKyc from '@/pages/AdminKyc';
 import AdminWallets from '@/pages/AdminWallets';
+import AdminReservePage from '@/pages/AdminReservePage';
 
 import { AuthProvider } from '@/hooks/useAuth';
 import { CryptocurrenciesProvider } from '@/hooks/useCryptocurrencies';
@@ -135,6 +136,11 @@ function App() {
                   <Route path="/admin/wallets" element={
                     <ProtectedRoute>
                       <AdminWallets />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/admin/reserves" element={
+                    <ProtectedRoute>
+                      <AdminReservePage />
                     </ProtectedRoute>
                   } />
                 </Routes>

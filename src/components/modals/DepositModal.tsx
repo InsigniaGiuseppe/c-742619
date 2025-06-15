@@ -54,6 +54,13 @@ const DepositModal: React.FC<DepositModalProps> = ({ open, onOpenChange }) => {
       const currentBalance = currentProfile.demo_balance_usd || 0;
       const newBalance = currentBalance + depositAmount;
 
+      console.log('[DepositModal] Deposit transaction:', {
+        currentBalance,
+        depositAmount,
+        newBalance,
+        userId: user.id
+      });
+
       // Update user balance
       const { error: updateError } = await supabase
         .from('profiles')
@@ -86,6 +93,9 @@ const DepositModal: React.FC<DepositModalProps> = ({ open, onOpenChange }) => {
       toast.success(`Deposit of €${amount} completed successfully`);
       setAmount('');
       onOpenChange(false);
+      
+      // Force refresh of user balance
+      window.location.reload();
     } catch (error: any) {
       console.error('Deposit error:', error);
       toast.error(`Deposit failed: ${error.message}`);
@@ -111,8 +121,11 @@ const DepositModal: React.FC<DepositModalProps> = ({ open, onOpenChange }) => {
             <div className="grid gap-2">
               <div className="flex items-center justify-between p-3 border rounded-lg bg-green-50/10 border-green-500/30">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center">
-                    <span className="text-white text-xs font-bold">iD</span>
+                  <div className="w-12 h-8 bg-white rounded flex items-center justify-center px-2">
+                    <svg viewBox="0 0 100 40" className="w-full h-full">
+                      <rect width="100" height="40" fill="#ff69b4" rx="4"/>
+                      <text x="50" y="24" textAnchor="middle" fill="white" fontSize="12" fontWeight="bold">iDEAL</text>
+                    </svg>
                   </div>
                   <span className="font-medium">iDEAL</span>
                 </div>
