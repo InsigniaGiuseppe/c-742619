@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Cryptocurrency } from '@/hooks/useCryptocurrencies';
 import CryptoLogo from './CryptoLogo';
 import FormattedNumber from './FormattedNumber';
+import TradeForm from './TradeForm';
 
 interface TradeSheetProps {
   crypto: Cryptocurrency | null;
@@ -56,10 +57,7 @@ const TradeSheet: React.FC<TradeSheetProps> = ({ crypto, open, onOpenChange }) =
         </div>
 
         <div className="mt-8">
-            <h3 className="text-lg font-semibold mb-4">Trade Form</h3>
-            <div className="glass p-6 rounded-lg text-center">
-                <p className="text-muted-foreground">Trading functionality is coming soon!</p>
-            </div>
+            <TradeForm crypto={crypto} />
         </div>
 
         <SheetFooter className="mt-8">
