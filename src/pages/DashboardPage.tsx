@@ -1,4 +1,3 @@
-
 import React from 'react';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
@@ -11,6 +10,11 @@ import { motion } from 'framer-motion';
 import RecentTransactions from '@/components/RecentTransactions';
 import PortfolioOverview from '@/components/PortfolioOverview';
 import { TrendingUp, TrendingDown, Wallet, Euro } from 'lucide-react';
+import {
+  ResizablePanelGroup,
+  ResizablePanel,
+  ResizableHandle,
+} from "@/components/ui/resizable";
 
 const DashboardPage = () => {
   const { user } = useAuth();
@@ -76,64 +80,76 @@ const DashboardPage = () => {
           </p>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-8">
-          <div className="lg:col-span-2">
-            <PortfolioOverview />
-          </div>
-          
-          <div className="grid grid-cols-2 lg:grid-cols-1 gap-4 md:gap-6">
-            {statsCards.map((stat, index) => {
-              const Icon = stat.icon;
-              const isCompactCard = stat.compact;
-              
-              return (
-                <Card key={stat.title} className="glass glass-hover">
-                  <CardHeader className={`flex flex-row items-center justify-between space-y-0 ${isCompactCard ? 'pb-1' : 'pb-2'}`}>
-                    <CardTitle className={`text-xs md:text-sm font-medium text-muted-foreground ${isCompactCard ? 'text-xs' : ''}`}>
-                      {stat.title}
-                    </CardTitle>
-                    <Icon className={`h-3 w-3 md:h-4 md:w-4 text-muted-foreground ${isCompactCard ? 'h-3 w-3' : ''}`} />
-                  </CardHeader>
-                  <CardContent className={isCompactCard ? 'pt-1' : ''}>
-                    <div className={`${isCompactCard ? 'text-base md:text-lg' : 'text-lg md:text-2xl'} font-bold`}>
-                      {stat.loading ? (
-                        <div className={`${isCompactCard ? 'h-4 md:h-5 w-12 md:w-16' : 'h-6 md:h-8 w-16 md:w-24'} bg-gray-700 animate-pulse rounded`}></div>
-                      ) : stat.type === 'holdings' ? (
-                        <span className={`${isCompactCard ? 'text-base md:text-lg' : 'text-lg md:text-2xl'} font-bold`}>{stat.value}</span>
-                      ) : (
-                        <FormattedNumber
-                          value={stat.value}
-                          type={stat.type}
-                          currency="EUR"
-                          showTooltip={false}
-                          className={`${isCompactCard ? 'text-base md:text-lg' : 'text-lg md:text-2xl'} font-bold`}
-                        />
-                      )}
-                    </div>
-                    {stat.trend !== 'neutral' && !stat.loading && (
-                      <p className={`text-xs flex items-center gap-1 ${isCompactCard ? 'mt-0.5' : 'mt-1'} ${
-                        stat.trend === 'up' ? 'text-green-500' : 'text-red-500'
-                      }`}>
-                        {stat.trend === 'up' ? (
-                          <TrendingUp className="h-3 w-3" />
-                        ) : (
-                          <TrendingDown className="h-3 w-3" />
-                        )}
-                        {Math.abs(stat.trendValue).toFixed(2)}%
-                      </p>
-                    )}
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        </div>
+        <ResizablePanelGroup
+          direction="vertical"
+          className="min-h-[800px] w-full rounded-lg border border-border/20 glass p-4"
+        >
+          <ResizablePanel defaultSize={65}>
+            <ResizablePanelGroup direction="horizontal">
+              <ResizablePanel defaultSize={70} className="pr-2 md:pr-4">
+                <div className="h-full overflow-y-auto pr-2">
+                  <PortfolioOverview />
+                </div>
+              </ResizablePanel>
+              <ResizableHandle withHandle />
+              <ResizablePanel defaultSize={30} className="pl-2 md:pl-4">
+                <div className="h-full overflow-y-auto grid grid-cols-2 lg:grid-cols-1 gap-4 md:gap-6">
+                  {statsCards.map((stat, index) => {
+                    const Icon = stat.icon;
+                    const isCompactCard = stat.compact;
+                    
+                    return (
+                      <Card key={stat.title} className="glass glass-hover">
+                        <CardHeader className={`flex flex-row items-center justify-between space-y-0 ${isCompactCard ? 'pb-1' : 'pb-2'}`}>
+                          <CardTitle className={`text-xs md:text-sm font-medium text-muted-foreground ${isCompactCard ? 'text-xs' : ''}`}>
+                            {stat.title}
+                          </CardTitle>
+                          <Icon className={`h-3 w-3 md:h-4 md:w-4 text-muted-foreground ${isCompactCard ? 'h-3 w-3' : ''}`} />
+                        </CardHeader>
+                        <CardContent className={isCompactCard ? 'pt-1' : ''}>
+                          <div className={`${isCompactCard ? 'text-base md:text-lg' : 'text-lg md:text-2xl'} font-bold`}>
+                            {stat.loading ? (
+                              <div className={`${isCompactCard ? 'h-4 md:h-5 w-12 md:w-16' : 'h-6 md:h-8 w-16 md:w-24'} bg-gray-700 animate-pulse rounded`}></div>
+                            ) : stat.type === 'holdings' ? (
+                              <span className={`${isCompactCard ? 'text-base md:text-lg' : 'text-lg md:text-2xl'} font-bold`}>{stat.value}</span>
+                            ) : (
+                              <FormattedNumber
+                                value={stat.value}
+                                type={stat.type}
+                                currency="EUR"
+                                showTooltip={false}
+                                className={`${isCompactCard ? 'text-base md:text-lg' : 'text-lg md:text-2xl'} font-bold`}
+                              />
+                            )}
+                          </div>
+                          {stat.trend !== 'neutral' && !stat.loading && (
+                            <p className={`text-xs flex items-center gap-1 ${isCompactCard ? 'mt-0.5' : 'mt-1'} ${
+                              stat.trend === 'up' ? 'text-green-500' : 'text-red-500'
+                            }`}>
+                              {stat.trend === 'up' ? (
+                                <TrendingUp className="h-3 w-3" />
+                              ) : (
+                                <TrendingDown className="h-3 w-3" />
+                              )}
+                              {Math.abs(stat.trendValue).toFixed(2)}%
+                            </p>
+                          )}
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              </ResizablePanel>
+            </ResizablePanelGroup>
+          </ResizablePanel>
+          <ResizableHandle withHandle />
+          <ResizablePanel defaultSize={35} className="pt-2 md:pt-4">
+            <div className="h-full overflow-y-auto pr-2">
+              <RecentTransactions />
+            </div>
+          </ResizablePanel>
+        </ResizablePanelGroup>
 
-        {/* Recent Transactions Only */}
-        <div className="grid grid-cols-1 gap-6 md:gap-8">
-          <RecentTransactions />
-        </div>
       </main>
       <Footer />
     </div>
