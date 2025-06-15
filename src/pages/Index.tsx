@@ -1,22 +1,19 @@
+
 import { motion } from "framer-motion";
 import { ArrowRight, Command } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import Navigation from "@/components/Navigation";
-import Footer from "@/components/Footer";
 import { TextGenerateEffect } from "@/components/ui/text-generate-effect";
-import { Link } from "react-router-dom"; // Import Link
+import { Link } from "react-router-dom";
 
 const Index = () => {
   return (
     <div className="min-h-screen bg-black text-foreground">
-      <Navigation />
-      
       {/* Hero Section */}
       <motion.section 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="relative container px-4 pt-40 pb-20 flex flex-col items-center text-center" // Centered content
+        className="relative container px-4 pt-40 pb-20 flex flex-col items-center text-center"
       >
         {/* Background */}
         <div 
@@ -50,7 +47,7 @@ const Index = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
-            className="text-lg md:text-xl text-gray-200 mb-8 max-w-2xl mx-auto" // Centered paragraph
+            className="text-lg md:text-xl text-gray-200 mb-8 max-w-2xl mx-auto"
           >
             Experience seamless cryptocurrency trading with advanced features, real-time analytics, and institutional-grade security.{" "}
             <span className="text-white">Start trading in minutes.</span>
@@ -60,7 +57,7 @@ const Index = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
-            className="flex flex-col sm:flex-row gap-4 items-center justify-center" // Centered buttons
+            className="flex flex-col sm:flex-row gap-4 items-center justify-center"
           >
             <Button asChild size="lg" className="rounded-full">
               <Link to="/dashboard">
@@ -91,10 +88,7 @@ const Index = () => {
         </motion.div>
       </motion.section>
 
-      {/* Sections like LogoCarousel, Features, Pricing, Testimonials, CTA can be removed or moved to other specific pages if desired */}
-      {/* For now, I'm keeping them to maintain some content on the landing page, but they can be selectively removed */}
-
-      {/* CTA Section (Simplified or could be a link to register/dashboard) */}
+      {/* CTA Section */}
       <section className="container px-4 py-20 relative bg-black">
         <div 
           className="absolute inset-0 opacity-40"
@@ -123,11 +117,6 @@ const Index = () => {
           </Button>
         </motion.div>
       </section>
-
-      {/* Footer */}
-      <div className="bg-black">
-        <Footer />
-      </div>
     </div>
   );
 };
