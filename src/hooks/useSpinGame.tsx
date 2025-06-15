@@ -40,6 +40,7 @@ export const useSpinGame = () => {
   const [configurations, setConfigurations] = useState<SpinConfiguration[]>([]);
 
   const fetchConfigurations = async () => {
+    console.log('[useSpinGame] Fetching spin configurations');
     try {
       const { data, error } = await supabase
         .from('spin_configurations')
@@ -55,15 +56,19 @@ export const useSpinGame = () => {
         .eq('is_active', true)
         .order('reward_tier');
 
+      console.log('[useSpinGame] Configurations query result:', { data, error });
+      
       if (error) throw error;
       setConfigurations(data || []);
     } catch (error: any) {
-      console.error('Error fetching spin configurations:', error);
+      console.error('[useSpinGame] Error fetching spin configurations:', error);
       toast.error('Failed to load game configurations');
     }
   };
 
   const generateSpinResult = (betAmountBtc: number): SpinResult | null => {
+    console.log('[useSpinGame] Generating spin result with configurations:', configurations.length);
+    
     if (configurations.length === 0) return null;
 
     // Generate random number to determine tier
@@ -79,6 +84,8 @@ export const useSpinGame = () => {
       }
     }
 
+    console.log('[useSpinGame] Selected configuration:', selectedConfig);
+
     if (!selectedConfig || !selectedConfig.crypto) return null;
 
     // Generate multiplier within tier range
@@ -91,17 +98,23 @@ export const useSpinGame = () => {
     const rewardUsdValue = betAmountUsd * multiplier;
     const rewardAmount = rewardUsdValue / selectedConfig.crypto.current_price;
 
-    return {
+    const result = {
       reward_amount: rewardAmount,
       reward_cryptocurrency_id: selectedConfig.cryptocurrency_id,
       reward_usd_value: rewardUsdValue,
       multiplier,
       crypto: selectedConfig.crypto
     };
+
+    console.log('[useSpinGame] Generated spin result:', result);
+    return result;
   };
 
   const executeSpin = async (betAmountBtc: number): Promise<SpinResult | null> => {
+    console.log('[useSpinGame] Executing spin with bet amount:', betAmountBtc);
+    
     if (!user) {
+      console.error('[useSpinGame] User not authenticated');
       toast.error('User not authenticated');
       return null;
     }
@@ -112,6 +125,8 @@ export const useSpinGame = () => {
     try {
       // Check if user has enough BTC
       const btcHolding = portfolio?.find(p => p.crypto.symbol === 'BTC');
+      console.log('[useSpinGame] BTC holding:', btcHolding);
+      
       if (!btcHolding || btcHolding.quantity < betAmountBtc) {
         toast.error('Insufficient BTC balance');
         return null;
@@ -125,6 +140,8 @@ export const useSpinGame = () => {
 
       const btcPrice = btcHolding.crypto.current_price || 50000;
       const betAmountUsd = betAmountBtc * btcPrice;
+
+      console.log('[useSpinGame] Creating transactions...');
 
       // Start database transaction
       const { data: btcCrypto } = await supabase
@@ -152,6 +169,7 @@ export const useSpinGame = () => {
         .select()
         .single();
 
+      console.log('[useSpinGame] Debit transaction result:', { debitTransaction, debitError });
       if (debitError) throw debitError;
 
       // Create credit transaction for reward
@@ -169,6 +187,7 @@ export const useSpinGame = () => {
         .select()
         .single();
 
+      console.log('[useSpinGame] Credit transaction result:', { creditTransaction, creditError });
       if (creditError) throw creditError;
 
       // Record the spin game
@@ -190,7 +209,10 @@ export const useSpinGame = () => {
           }
         });
 
+      console.log('[useSpinGame] Spin game record result:', { spinError });
       if (spinError) throw spinError;
+
+      console.log('[useSpinGame] Updating portfolios...');
 
       // Update BTC portfolio (deduct bet)
       const newBtcQuantity = btcHolding.quantity - betAmountBtc;
@@ -259,10 +281,11 @@ export const useSpinGame = () => {
       refetchPortfolio();
       toast.success(`You won ${spinResult.reward_amount.toFixed(6)} ${spinResult.crypto.symbol}!`);
       
+      console.log('[useSpinGame] Spin execution completed successfully');
       return spinResult;
 
     } catch (error: any) {
-      console.error('Spin execution error:', error);
+      console.error('[useSpinGame] Spin execution error:', error);
       toast.error(`Spin failed: ${error.message}`);
       return null;
     } finally {

@@ -17,11 +17,22 @@ import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components
 import TradeSheet from '@/components/TradeSheet';
 
 const TradingPage = () => {
+  console.log('[TradingPage] Component mounting');
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [sortConfig, setSortConfig] = useState<{ key: keyof Cryptocurrency; direction: 'ascending' | 'descending' } | null>({ key: 'market_cap_rank', direction: 'ascending' });
   const [selectedCryptoForTrade, setSelectedCryptoForTrade] = useState<Cryptocurrency | null>(null);
+  
   const { cryptocurrencies, loading, error, refetch, isRealtimeConnected } = useCryptocurrencies();
+  
+  console.log('[TradingPage] Cryptocurrencies data:', {
+    count: cryptocurrencies?.length || 0,
+    loading,
+    error,
+    isRealtimeConnected
+  });
+  
   const navigate = useNavigate();
   const { toast } = useToast();
 

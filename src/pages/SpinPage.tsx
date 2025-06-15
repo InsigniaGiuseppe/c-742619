@@ -13,9 +13,19 @@ import { Dice6, TrendingUp, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 
 const SpinPage: React.FC = () => {
+  console.log('[SpinPage] Component mounting');
+  
   const { user } = useAuth();
   const { portfolio } = usePortfolio();
   const { configurations, loading, spinning, fetchConfigurations, executeSpin } = useSpinGame();
+  
+  console.log('[SpinPage] Hooks data:', {
+    user: !!user,
+    portfolioCount: portfolio?.length || 0,
+    configurationsCount: configurations?.length || 0,
+    loading,
+    spinning
+  });
   
   const [betAmount, setBetAmount] = useState([0.0001]);
   const [lastSpinResult, setLastSpinResult] = useState<any>(null);
@@ -28,7 +38,16 @@ const SpinPage: React.FC = () => {
   const btcPrice = btcHolding?.crypto.current_price || 50000;
   const betAmountUsd = betAmountBtc * btcPrice;
 
+  console.log('[SpinPage] BTC data:', {
+    btcHolding: !!btcHolding,
+    btcBalance,
+    btcPrice,
+    betAmountBtc,
+    betAmountUsd
+  });
+
   useEffect(() => {
+    console.log('[SpinPage] Fetching configurations');
     fetchConfigurations();
   }, []);
 
@@ -49,6 +68,7 @@ const SpinPage: React.FC = () => {
   }, [cooldownTime]);
 
   const generateRouletteItems = () => {
+    console.log('[SpinPage] Generating roulette items with configurations:', configurations?.length);
     return configurations.map((config, index) => ({
       id: config.id,
       crypto: config.crypto!,
@@ -58,6 +78,13 @@ const SpinPage: React.FC = () => {
   };
 
   const handleSpin = async () => {
+    console.log('[SpinPage] Spin button clicked', {
+      canSpin,
+      btcBalance,
+      betAmountBtc,
+      hasConfigurations: configurations?.length > 0
+    });
+    
     if (!canSpin) {
       toast.error('Please wait for cooldown to finish');
       return;
@@ -71,7 +98,10 @@ const SpinPage: React.FC = () => {
     setCanSpin(false);
     setCooldownTime(10); // 10-second cooldown
 
+    console.log('[SpinPage] Executing spin...');
     const result = await executeSpin(betAmountBtc);
+    console.log('[SpinPage] Spin result:', result);
+    
     if (result) {
       setLastSpinResult(result);
     }
