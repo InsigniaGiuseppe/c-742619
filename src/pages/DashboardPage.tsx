@@ -26,6 +26,7 @@ const DashboardPage = () => {
       trend: 'neutral' as const,
       trendValue: 0,
       loading: balanceLoading,
+      compact: true,
     },
     {
       title: 'Portfolio Value',
@@ -35,6 +36,7 @@ const DashboardPage = () => {
       trend: totalProfitLoss >= 0 ? 'up' : 'down',
       trendValue: totalProfitLossPercentage,
       loading: loading,
+      compact: true,
     },
     {
       title: 'Total Profit/Loss',
@@ -83,32 +85,34 @@ const DashboardPage = () => {
           <div className="grid grid-cols-2 lg:grid-cols-1 gap-4 md:gap-6">
             {statsCards.map((stat, index) => {
               const Icon = stat.icon;
+              const isCompactCard = stat.compact;
+              
               return (
                 <Card key={stat.title} className="glass glass-hover">
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground">
+                  <CardHeader className={`flex flex-row items-center justify-between space-y-0 ${isCompactCard ? 'pb-1' : 'pb-2'}`}>
+                    <CardTitle className={`text-xs md:text-sm font-medium text-muted-foreground ${isCompactCard ? 'text-xs' : ''}`}>
                       {stat.title}
                     </CardTitle>
-                    <Icon className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
+                    <Icon className={`h-3 w-3 md:h-4 md:w-4 text-muted-foreground ${isCompactCard ? 'h-3 w-3' : ''}`} />
                   </CardHeader>
-                  <CardContent>
-                    <div className="text-lg md:text-2xl font-bold">
+                  <CardContent className={isCompactCard ? 'pt-1' : ''}>
+                    <div className={`${isCompactCard ? 'text-base md:text-lg' : 'text-lg md:text-2xl'} font-bold`}>
                       {stat.loading ? (
-                        <div className="h-6 md:h-8 w-16 md:w-24 bg-gray-700 animate-pulse rounded"></div>
+                        <div className={`${isCompactCard ? 'h-4 md:h-5 w-12 md:w-16' : 'h-6 md:h-8 w-16 md:w-24'} bg-gray-700 animate-pulse rounded`}></div>
                       ) : stat.type === 'holdings' ? (
-                        <span className="text-lg md:text-2xl font-bold">{stat.value}</span>
+                        <span className={`${isCompactCard ? 'text-base md:text-lg' : 'text-lg md:text-2xl'} font-bold`}>{stat.value}</span>
                       ) : (
                         <FormattedNumber
                           value={stat.value}
                           type={stat.type}
                           currency="EUR"
                           showTooltip={false}
-                          className="text-lg md:text-2xl font-bold"
+                          className={`${isCompactCard ? 'text-base md:text-lg' : 'text-lg md:text-2xl'} font-bold`}
                         />
                       )}
                     </div>
                     {stat.trend !== 'neutral' && !stat.loading && (
-                      <p className={`text-xs flex items-center gap-1 mt-1 ${
+                      <p className={`text-xs flex items-center gap-1 ${isCompactCard ? 'mt-0.5' : 'mt-1'} ${
                         stat.trend === 'up' ? 'text-green-500' : 'text-red-500'
                       }`}>
                         {stat.trend === 'up' ? (

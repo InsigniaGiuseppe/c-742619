@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -28,6 +27,10 @@ export interface LendingStats {
   totalEarnedInterest: number;
   averageYield: number;
   activeLendingCount: number;
+  estimatedDailyReturn: number;
+  estimatedMonthlyReturn: number;
+  daysSinceLastPayout: number;
+  nextPayoutIn: string;
 }
 
 const fetchLendingPositions = async (userId: string): Promise<LendingPosition[]> => {
@@ -75,22 +78,77 @@ const fetchLendingStats = async (userId: string): Promise<LendingStats> => {
     throw new Error(error.message);
   }
 
+  // Get last payout date
+  const { data: lastPayout } = await supabase
+    .from('lending_interest_payments')
+    .select('payment_date')
+    .eq('user_id', userId)
+    .order('payment_date', { ascending: false })
+    .limit(1)
+    .single();
+
   const stats = positions?.reduce((acc, position) => {
     const currentValue = position.amount_lent * (position.crypto?.current_price || 0);
+    const dailyRate = position.annual_interest_rate / 365;
+    const dailyReturn = position.amount_lent * dailyRate * (position.crypto?.current_price || 0);
+    
     acc.totalLentValue += currentValue;
     acc.totalEarnedInterest += position.total_interest_earned * (position.crypto?.current_price || 0);
+    acc.estimatedDailyReturn += dailyReturn;
     return acc;
   }, {
     totalLentValue: 0,
     totalEarnedInterest: 0,
+    estimatedDailyReturn: 0,
+    estimatedMonthlyReturn: 0,
     averageYield: 0,
-    activeLendingCount: positions?.length || 0
-  }) || { totalLentValue: 0, totalEarnedInterest: 0, averageYield: 0, activeLendingCount: 0 };
+    activeLendingCount: positions?.length || 0,
+    daysSinceLastPayout: 0,
+    nextPayoutIn: 'Tomorrow at 9:00 AM'
+  }) || { 
+    totalLentValue: 0, 
+    totalEarnedInterest: 0, 
+    estimatedDailyReturn: 0,
+    estimatedMonthlyReturn: 0,
+    averageYield: 0, 
+    activeLendingCount: 0,
+    daysSinceLastPayout: 0,
+    nextPayoutIn: 'Tomorrow at 9:00 AM'
+  };
+
+  // Calculate monthly return (30 days)
+  stats.estimatedMonthlyReturn = stats.estimatedDailyReturn * 30;
 
   // Calculate average yield
   if (stats.activeLendingCount > 0) {
     const totalRate = positions?.reduce((sum, pos) => sum + pos.annual_interest_rate, 0) || 0;
     stats.averageYield = (totalRate / stats.activeLendingCount) * 100;
+  }
+
+  // Calculate days since last payout
+  if (lastPayout) {
+    const lastPayoutDate = new Date(lastPayout.payment_date);
+    const today = new Date();
+    const diffTime = Math.abs(today.getTime() - lastPayoutDate.getTime());
+    stats.daysSinceLastPayout = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  }
+
+  // Calculate next payout time
+  const now = new Date();
+  const tomorrow9AM = new Date();
+  tomorrow9AM.setDate(tomorrow9AM.getDate() + 1);
+  tomorrow9AM.setHours(9, 0, 0, 0);
+  
+  if (now.getHours() < 9) {
+    // If before 9 AM today, next payout is today at 9 AM
+    const today9AM = new Date();
+    today9AM.setHours(9, 0, 0, 0);
+    const hoursUntil = Math.ceil((today9AM.getTime() - now.getTime()) / (1000 * 60 * 60));
+    stats.nextPayoutIn = hoursUntil <= 1 ? 'In less than 1 hour' : `In ${hoursUntil} hours`;
+  } else {
+    // After 9 AM today, next payout is tomorrow at 9 AM
+    const hoursUntil = Math.ceil((tomorrow9AM.getTime() - now.getTime()) / (1000 * 60 * 60));
+    stats.nextPayoutIn = `In ${hoursUntil} hours`;
   }
 
   console.log('[useLending] Calculated lending stats:', stats);
@@ -217,7 +275,16 @@ export const useLending = () => {
 
   return {
     lendingPositions: positionsQuery.data || [],
-    lendingStats: statsQuery.data || { totalLentValue: 0, totalEarnedInterest: 0, averageYield: 0, activeLendingCount: 0 },
+    lendingStats: statsQuery.data || { 
+      totalLentValue: 0, 
+      totalEarnedInterest: 0, 
+      averageYield: 0, 
+      activeLendingCount: 0,
+      estimatedDailyReturn: 0,
+      estimatedMonthlyReturn: 0,
+      daysSinceLastPayout: 0,
+      nextPayoutIn: 'Tomorrow at 9:00 AM'
+    },
     loading: positionsQuery.isLoading || statsQuery.isLoading,
     error: positionsQuery.error?.message || statsQuery.error?.message || null,
     startLending: startLendingMutation.mutate,
