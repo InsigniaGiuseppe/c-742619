@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { TrendingUp, TrendingDown } from 'lucide-react';
@@ -14,9 +14,28 @@ interface CryptoCardProps {
 
 const CryptoCard: React.FC<CryptoCardProps> = ({ crypto, onTrade }) => {
   const isPriceUp = (crypto.price_change_percentage_24h || 0) >= 0;
+  const [priceGlow, setPriceGlow] = useState('');
+  const prevPriceRef = useRef(crypto.current_price);
+
+  useEffect(() => {
+    const prevPrice = prevPriceRef.current;
+    if (prevPrice !== crypto.current_price) {
+      if (crypto.current_price > prevPrice) {
+        setPriceGlow('price-glow-up');
+      } else {
+        setPriceGlow('price-glow-down');
+      }
+
+      const timer = setTimeout(() => setPriceGlow(''), 2000); // Duration of the glow animation
+      
+      prevPriceRef.current = crypto.current_price;
+      
+      return () => clearTimeout(timer);
+    }
+  }, [crypto.current_price]);
 
   return (
-    <Card className="glass glass-hover transition-all duration-200 hover:scale-[1.02]">
+    <Card className={`glass glass-hover transition-all duration-200 hover:scale-[1.02] ${priceGlow}`}>
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
