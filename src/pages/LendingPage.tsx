@@ -35,7 +35,22 @@ const LendingPage = () => {
   const [lendingAmount, setLendingAmount] = useState<string>('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  const availableCryptos = portfolio.filter(item => item.quantity > 0);
+  // Create a map of lent amounts for quick lookup
+  const lentAmounts = lendingPositions.reduce((acc, pos) => {
+    if (pos.status === 'active') {
+      acc[pos.cryptocurrency_id] = (acc[pos.cryptocurrency_id] || 0) + pos.amount_lent;
+    }
+    return acc;
+  }, {} as Record<string, number>);
+
+  // Calculate available cryptos for lending, considering already lent amounts
+  const availableCryptos = portfolio
+    .map(item => {
+      const lentAmount = lentAmounts[item.cryptocurrency_id] || 0;
+      const availableQuantity = item.quantity - lentAmount;
+      return { ...item, available_quantity: availableQuantity };
+    })
+    .filter(item => item.available_quantity > 1e-8); // Use a small epsilon to filter out dust
 
   const handleStartLending = () => {
     if (!selectedCrypto || !lendingAmount) {
@@ -44,9 +59,10 @@ const LendingPage = () => {
     }
 
     const amount = parseFloat(lendingAmount);
-    const selectedPosition = portfolio.find(p => p.cryptocurrency_id === selectedCrypto);
+    // Find the selected crypto from our calculated availableCryptos list
+    const selectedPosition = availableCryptos.find(p => p.cryptocurrency_id === selectedCrypto);
 
-    if (!selectedPosition || amount > selectedPosition.quantity) {
+    if (!selectedPosition || amount > selectedPosition.available_quantity) {
       toast.error('Insufficient balance for this lending amount');
       return;
     }
@@ -55,7 +71,7 @@ const LendingPage = () => {
       { cryptoId: selectedCrypto, amount },
       {
         onSuccess: () => {
-          toast.success('Lending position started successfully!');
+          toast.success('Lending successful!');
           setIsDialogOpen(false);
           setSelectedCrypto('');
           setLendingAmount('');
@@ -157,7 +173,7 @@ const LendingPage = () => {
                                     symbol={crypto.crypto.symbol}
                                     size="sm"
                                   />
-                                  <span>{crypto.crypto.symbol} - Available: {crypto.quantity.toFixed(6)}</span>
+                                  <span>{crypto.crypto.symbol} - Available: {crypto.available_quantity.toFixed(6)}</span>
                                 </div>
                               </SelectItem>
                             ))}
@@ -190,7 +206,7 @@ const LendingPage = () => {
                       <Button 
                         onClick={handleStartLending} 
                         className="w-full button-gradient"
-                        disabled={isStartingLending || !selectedCrypto || !lendingAmount}
+                        disabled={isStartingLending || !selectedCrypto || !lendingAmount || parseFloat(lendingAmount) <= 0}
                       >
                         {isStartingLending ? 'Starting...' : 'Start Lending'}
                       </Button>

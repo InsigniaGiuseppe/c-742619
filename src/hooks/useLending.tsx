@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -181,38 +182,81 @@ export const useLending = () => {
   // Mutation to start lending
   const startLendingMutation = useMutation({
     mutationFn: async ({ cryptoId, amount }: { cryptoId: string; amount: number }) => {
-      console.log('[useLending] Starting lending:', { cryptoId, amount });
+      console.log('[useLending] Attempting to start lending:', { cryptoId, amount, userId: user!.id });
       
-      // Get crypto info to determine APR
+      if (!user) throw new Error("User not authenticated");
+
+      // Check for existing active position to consolidate
+      const { data: existingPosition, error: fetchError } = await supabase
+        .from('user_lending')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('cryptocurrency_id', cryptoId)
+        .eq('status', 'active')
+        .maybeSingle();
+
+      if (fetchError) {
+        console.error('[useLending] Error fetching existing position:', fetchError);
+        throw fetchError;
+      }
+      
       const { data: crypto } = await supabase
         .from('cryptocurrencies')
         .select('symbol')
         .eq('id', cryptoId)
         .single();
+      
+      let newOrUpdatedPosition;
 
-      // Top 5 coins get 5% APR, others get 3%
-      const topCoins = ['BTC', 'ETH', 'USDT', 'BNB', 'SOL'];
-      const annualRate = topCoins.includes(crypto?.symbol?.toUpperCase()) ? 0.05 : 0.03;
+      if (existingPosition) {
+        // Consolidate: Update existing position
+        console.log('[useLending] Existing position found. Consolidating.', existingPosition);
+        const { data, error } = await supabase
+          .from('user_lending')
+          .update({
+            amount_lent: existingPosition.amount_lent + amount,
+            original_amount_lent: existingPosition.original_amount_lent + amount,
+          })
+          .eq('id', existingPosition.id)
+          .select()
+          .single();
 
-      const { data, error } = await supabase
-        .from('user_lending')
-        .insert({
-          user_id: user!.id,
-          cryptocurrency_id: cryptoId,
-          amount_lent: amount,
-          original_amount_lent: amount,
-          annual_interest_rate: annualRate,
-        })
-        .select()
-        .single();
+        if (error) {
+          console.error('[useLending] Error updating lending position:', error);
+          throw error;
+        }
+        newOrUpdatedPosition = data;
+      } else {
+        // Create new position
+        console.log('[useLending] No existing position. Creating new one.');
+        const topCoins = ['BTC', 'ETH', 'USDT', 'BNB', 'SOL'];
+        const annualRate = topCoins.includes(crypto?.symbol?.toUpperCase()) ? 0.05 : 0.03;
 
-      if (error) throw error;
+        const { data, error } = await supabase
+          .from('user_lending')
+          .insert({
+            user_id: user.id,
+            cryptocurrency_id: cryptoId,
+            amount_lent: amount,
+            original_amount_lent: amount,
+            annual_interest_rate: annualRate,
+          })
+          .select()
+          .single();
 
-      // Create transaction record
+        if (error) {
+          console.error('[useLending] Error inserting new lending position:', error);
+          throw error;
+        }
+        newOrUpdatedPosition = data;
+      }
+
+      // Create transaction record regardless of new or updated
+      console.log('[useLending] Creating transaction history record.');
       await supabase
         .from('transaction_history')
         .insert({
-          user_id: user!.id,
+          user_id: user.id,
           cryptocurrency_id: cryptoId,
           transaction_type: 'lending_start',
           amount: amount,
@@ -220,14 +264,18 @@ export const useLending = () => {
           description: `Started lending ${amount} ${crypto?.symbol}`,
         });
 
-      return data;
+      return newOrUpdatedPosition;
     },
     onSuccess: () => {
+      console.log('[useLending] startLendingMutation success. Invalidating queries.');
       queryClient.invalidateQueries({ queryKey });
       queryClient.invalidateQueries({ queryKey: statsKey });
       queryClient.invalidateQueries({ queryKey: ['portfolio'] });
       queryClient.invalidateQueries({ queryKey: ['transaction-history'] });
     },
+    onError: (error) => {
+      console.error('[useLending] startLendingMutation error:', error.message);
+    }
   });
 
   // Mutation to cancel lending
@@ -297,3 +345,4 @@ export const useLending = () => {
     },
   };
 };
+
