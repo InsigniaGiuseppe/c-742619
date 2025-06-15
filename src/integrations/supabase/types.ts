@@ -644,6 +644,61 @@ export type Database = {
           },
         ]
       }
+      lending_interest_payments: {
+        Row: {
+          created_at: string
+          cryptocurrency_id: string
+          id: string
+          interest_amount: number
+          payment_date: string
+          transaction_id: string | null
+          user_id: string
+          user_lending_id: string
+        }
+        Insert: {
+          created_at?: string
+          cryptocurrency_id: string
+          id?: string
+          interest_amount: number
+          payment_date?: string
+          transaction_id?: string | null
+          user_id: string
+          user_lending_id: string
+        }
+        Update: {
+          created_at?: string
+          cryptocurrency_id?: string
+          id?: string
+          interest_amount?: number
+          payment_date?: string
+          transaction_id?: string | null
+          user_id?: string
+          user_lending_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lending_interest_payments_cryptocurrency_id_fkey"
+            columns: ["cryptocurrency_id"]
+            isOneToOne: false
+            referencedRelation: "cryptocurrencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lending_interest_payments_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transaction_history"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lending_interest_payments_user_lending_id_fkey"
+            columns: ["user_lending_id"]
+            isOneToOne: false
+            referencedRelation: "user_lending"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       matches: {
         Row: {
           color: string
@@ -1232,6 +1287,59 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_lending: {
+        Row: {
+          amount_lent: number
+          annual_interest_rate: number
+          created_at: string
+          cryptocurrency_id: string
+          id: string
+          lending_cancelled_at: string | null
+          lending_started_at: string
+          original_amount_lent: number
+          status: string
+          total_interest_earned: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount_lent: number
+          annual_interest_rate?: number
+          created_at?: string
+          cryptocurrency_id: string
+          id?: string
+          lending_cancelled_at?: string | null
+          lending_started_at?: string
+          original_amount_lent: number
+          status?: string
+          total_interest_earned?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount_lent?: number
+          annual_interest_rate?: number
+          created_at?: string
+          cryptocurrency_id?: string
+          id?: string
+          lending_cancelled_at?: string | null
+          lending_started_at?: string
+          original_amount_lent?: number
+          status?: string
+          total_interest_earned?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_lending_cryptocurrency_id_fkey"
+            columns: ["cryptocurrency_id"]
+            isOneToOne: false
+            referencedRelation: "cryptocurrencies"
             referencedColumns: ["id"]
           },
         ]

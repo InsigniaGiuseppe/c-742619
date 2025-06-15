@@ -30,7 +30,8 @@ const fetchPortfolio = async (userId: string): Promise<{
 }> => {
   console.log('[usePortfolio] Fetching portfolio for user:', userId);
   
-  const { data, error } = await supabase
+  // Fetch trading portfolio
+  const { data: portfolioData, error: portfolioError } = await supabase
     .from('user_portfolios')
     .select(`
       *,
@@ -46,14 +47,36 @@ const fetchPortfolio = async (userId: string): Promise<{
     .eq('user_id', userId)
     .gt('quantity', 0);
 
-  if (error) {
-    console.error('[usePortfolio] Error fetching portfolio:', error);
-    throw new Error(error.message);
+  if (portfolioError) {
+    console.error('[usePortfolio] Error fetching portfolio:', portfolioError);
+    throw new Error(portfolioError.message);
   }
 
-  console.log('[usePortfolio] Raw data fetched from supabase:', data);
+  // Fetch lending positions for P&L calculation
+  const { data: lendingData, error: lendingError } = await supabase
+    .from('user_lending')
+    .select(`
+      *,
+      crypto:cryptocurrencies(
+        id,
+        name,
+        symbol,
+        current_price,
+        logo_url
+      )
+    `)
+    .eq('user_id', userId)
+    .eq('status', 'active');
 
-  const portfolioData = data?.map(item => {
+  if (lendingError) {
+    console.error('[usePortfolio] Error fetching lending data:', lendingError);
+    // Don't throw error for lending data, just log it
+  }
+
+  console.log('[usePortfolio] Raw portfolio data:', portfolioData);
+  console.log('[usePortfolio] Raw lending data:', lendingData);
+
+  const portfolioItems = portfolioData?.map(item => {
     // Calculate live current value using current market price
     const liveCurrentValue = item.quantity * (item.crypto?.current_price || 0);
     
@@ -71,21 +94,43 @@ const fetchPortfolio = async (userId: string): Promise<{
   }) || [];
 
   // Calculate totals using live values
-  const totalVal = portfolioData.reduce((sum, item) => sum + item.current_value, 0);
-  const totalPL = portfolioData.reduce((sum, item) => sum + item.profit_loss, 0);
-  const totalInvested = portfolioData.reduce((sum, item) => sum + item.total_invested, 0);
+  const tradingTotalValue = portfolioItems.reduce((sum, item) => sum + item.current_value, 0);
+  const tradingTotalPL = portfolioItems.reduce((sum, item) => sum + item.profit_loss, 0);
+  const tradingTotalInvested = portfolioItems.reduce((sum, item) => sum + item.total_invested, 0);
+
+  // Calculate lending values for P&L
+  let lendingTotalValue = 0;
+  let lendingTotalInvested = 0;
+  let lendingTotalInterestEarned = 0;
+
+  if (lendingData) {
+    lendingData.forEach(lending => {
+      const currentLendingValue = lending.amount_lent * (lending.crypto?.current_price || 0);
+      const originalInvestment = lending.original_amount_lent * (lending.crypto?.current_price || 0);
+      const interestInCrypto = lending.total_interest_earned;
+      const interestInUSD = interestInCrypto * (lending.crypto?.current_price || 0);
+      
+      lendingTotalValue += currentLendingValue;
+      lendingTotalInvested += originalInvestment;
+      lendingTotalInterestEarned += interestInUSD;
+    });
+  }
+
+  // Combine trading and lending for total portfolio metrics
+  const totalValue = tradingTotalValue + lendingTotalValue;
+  const totalInvested = tradingTotalInvested + lendingTotalInvested;
+  const totalPL = tradingTotalPL + lendingTotalInterestEarned; // Trading P&L + Lending interest earned
   const totalPLPercentage = totalInvested > 0 ? (totalPL / totalInvested) * 100 : 0;
 
-  console.log('[usePortfolio] Processed data with live pricing:', {
-    portfolio: portfolioData,
-    totalValue: totalVal,
-    totalProfitLoss: totalPL,
-    totalProfitLossPercentage: totalPLPercentage,
+  console.log('[usePortfolio] Portfolio calculations:', {
+    trading: { value: tradingTotalValue, invested: tradingTotalInvested, pl: tradingTotalPL },
+    lending: { value: lendingTotalValue, invested: lendingTotalInvested, interest: lendingTotalInterestEarned },
+    combined: { totalValue, totalInvested, totalPL, totalPLPercentage }
   });
 
   return {
-    portfolio: portfolioData,
-    totalValue: totalVal,
+    portfolio: portfolioItems,
+    totalValue: totalValue,
     totalProfitLoss: totalPL,
     totalProfitLossPercentage: totalPLPercentage,
   };
