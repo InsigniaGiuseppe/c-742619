@@ -3,202 +3,203 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { Vault, Lock } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import CryptoLogo from '@/components/CryptoLogo';
 import FormattedNumber from '@/components/FormattedNumber';
+import { toast } from 'sonner';
+
+interface Crypto {
+  id: string;
+  name: string;
+  symbol: string;
+  logo_url: string;
+  current_price: number;
+}
 
 interface IndividualVaultCardProps {
-  crypto: {
-    id: string;
-    name: string;
-    symbol: string;
-    logo_url?: string;
-    current_price: number;
-  };
+  crypto: Crypto;
   availableBalance: number;
-  onVault: (cryptoId: string, amount: number, durationDays: number) => void;
+  onVault: (cryptoId: string, amount: number, durationDays: number) => Promise<void>;
 }
 
 const IndividualVaultCard: React.FC<IndividualVaultCardProps> = ({
   crypto,
   availableBalance,
-  onVault
+  onVault,
 }) => {
-  const [selectedDuration, setSelectedDuration] = useState<string>('');
-  const [amount, setAmount] = useState<string>('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // APY rates based on duration and crypto type
-  const getApyForDuration = (days: number) => {
-    const topCoins = ['BTC', 'ETH', 'USDT', 'SOL'];
-    const isTopCoin = topCoins.includes(crypto.symbol.toUpperCase());
-    
-    switch (days) {
-      case 30:
-        return isTopCoin ? 4.5 : 3.0;
-      case 60:
-        return isTopCoin ? 6.0 : 4.5;
-      case 90:
-        return isTopCoin ? 8.0 : 6.0;
-      default:
-        return 0;
-    }
-  };
-
-  const durationOptions = [
-    { days: 30, label: '30 Days' },
-    { days: 60, label: '60 Days' },
-    { days: 90, label: '90 Days' }
-  ];
-
-  const currentApy = selectedDuration ? getApyForDuration(parseInt(selectedDuration)) : 0;
-  const vaultAmount = parseFloat(amount) || 0;
-  const estimatedReturn = vaultAmount * (currentApy / 100) * (parseInt(selectedDuration) || 0) / 365;
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [amount, setAmount] = useState('');
+  const [duration, setDuration] = useState('30');
+  const [isVaulting, setIsVaulting] = useState(false);
 
   const handleVault = async () => {
-    if (!selectedDuration || !amount || vaultAmount <= 0 || vaultAmount > availableBalance) {
+    const vaultAmount = parseFloat(amount);
+    const vaultDuration = parseInt(duration);
+
+    if (!vaultAmount || vaultAmount <= 0) {
+      toast.error('Please enter a valid amount');
       return;
     }
 
-    setIsSubmitting(true);
+    if (vaultAmount > availableBalance) {
+      toast.error('Insufficient balance');
+      return;
+    }
+
+    setIsVaulting(true);
     try {
-      await onVault(crypto.id, vaultAmount, parseInt(selectedDuration));
+      await onVault(crypto.id, vaultAmount, vaultDuration);
+      setIsDialogOpen(false);
       setAmount('');
-      setSelectedDuration('');
+    } catch (error) {
+      console.error('Vault error:', error);
     } finally {
-      setIsSubmitting(false);
+      setIsVaulting(false);
     }
   };
 
-  const canVault = selectedDuration && amount && vaultAmount > 0 && vaultAmount <= availableBalance;
+  const getAPY = (days: number) => {
+    // Simple APY calculation based on duration
+    const baseAPY = 5; // 5% base APY
+    const bonusAPY = Math.floor(days / 30) * 2; // 2% bonus per 30 days
+    return Math.min(baseAPY + bonusAPY, 15); // Cap at 15%
+  };
+
+  const selectedAPY = getAPY(parseInt(duration));
 
   return (
-    <Card className="glass glass-hover hover:bg-white/15">
+    <Card className="glass glass-hover hover:bg-white/15 h-full flex flex-col">
       <CardHeader className="pb-4">
-        <div className="flex items-center gap-3">
-          <CryptoLogo 
+        <CardTitle className="flex items-center gap-3">
+          <CryptoLogo
             logo_url={crypto.logo_url}
             name={crypto.name}
             symbol={crypto.symbol}
-            size="lg"
+            className="w-8 h-8"
           />
-          <div className="flex-1">
-            <CardTitle className="flex items-center gap-2 text-white">
-              <Vault className="w-5 h-5" />
-              {crypto.symbol} Vault
-            </CardTitle>
-            <p className="text-sm text-muted-foreground">{crypto.name}</p>
+          <div>
+            <div className="font-semibold">{crypto.name}</div>
+            <div className="text-sm text-muted-foreground">{crypto.symbol} Vault</div>
           </div>
-        </div>
+        </CardTitle>
       </CardHeader>
       
-      <CardContent className="space-y-4">
-        {/* Available Balance */}
-        <div className="p-3 bg-white/5 rounded-lg border border-white/10">
+      <CardContent className="flex-grow flex flex-col justify-between space-y-4">
+        <div className="space-y-3">
           <div className="flex justify-between items-center">
-            <span className="text-sm text-muted-foreground">Available Balance:</span>
+            <span className="text-sm text-muted-foreground">Available Balance</span>
             <div className="text-right">
-              <p className="font-semibold text-white">{availableBalance.toFixed(6)} {crypto.symbol}</p>
-              <FormattedNumber 
-                value={availableBalance * crypto.current_price} 
-                type="currency" 
-                showTooltip={false} 
-                className="text-xs text-muted-foreground" 
-              />
+              <div className="font-semibold">
+                <FormattedNumber value={availableBalance} type="price" /> {crypto.symbol}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                ≈ <FormattedNumber value={availableBalance * crypto.current_price} type="currency" />
+              </div>
             </div>
+          </div>
+          
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-muted-foreground">Est. APY</span>
+            <span className="font-semibold text-green-400">5-15%</span>
+          </div>
+
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-muted-foreground">Min. Duration</span>
+            <span className="font-semibold">30 days</span>
           </div>
         </div>
 
-        {/* Duration Selection */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-white">Lock Duration</label>
-          <Select value={selectedDuration} onValueChange={setSelectedDuration}>
-            <SelectTrigger className="bg-black/20 border-white/20">
-              <SelectValue placeholder="Select duration" />
-            </SelectTrigger>
-            <SelectContent>
-              {durationOptions.map((option) => (
-                <SelectItem key={option.days} value={option.days.toString()}>
-                  <div className="flex items-center justify-between w-full">
-                    <span>{option.label}</span>
-                    <Badge className="ml-2 bg-green-500/20 text-green-400 border-green-500/30">
-                      {getApyForDuration(option.days)}% APY
-                    </Badge>
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Amount Input */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-white">Amount to Vault</label>
-          <div className="relative">
-            <Input
-              type="number"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              max={availableBalance}
-              step="0.000001"
-              className="bg-black/20 border-white/20 pr-20"
-              placeholder="0.000000"
-            />
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setAmount(availableBalance.toString())}
-              className="absolute right-1 top-1 h-8 px-2 text-xs text-green-400 hover:text-green-300"
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button 
+              className="w-full" 
+              disabled={availableBalance <= 0}
             >
-              MAX
+              {availableBalance > 0 ? 'Vault Crypto' : 'No Balance'}
             </Button>
-          </div>
-          {amount && vaultAmount > availableBalance && (
-            <p className="text-xs text-red-400">Insufficient balance</p>
-          )}
-        </div>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <CryptoLogo
+                  logo_url={crypto.logo_url}
+                  name={crypto.name}
+                  symbol={crypto.symbol}
+                  className="w-6 h-6"
+                />
+                Vault {crypto.symbol}
+              </DialogTitle>
+              <DialogDescription>
+                Lock your {crypto.symbol} to earn passive income with daily payouts.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="amount">Amount to Vault</Label>
+                <Input
+                  id="amount"
+                  type="number"
+                  placeholder="0.00"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  max={availableBalance}
+                  step="0.00000001"
+                />
+                <div className="text-xs text-muted-foreground">
+                  Available: <FormattedNumber value={availableBalance} type="price" /> {crypto.symbol}
+                </div>
+              </div>
 
-        {/* Estimated Returns */}
-        {selectedDuration && vaultAmount > 0 && vaultAmount <= availableBalance && (
-          <div className="p-3 bg-green-500/10 rounded-lg border border-green-500/20">
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">APY:</span>
-                <span className="text-green-400 font-semibold">{currentApy}%</span>
+              <div className="space-y-2">
+                <Label htmlFor="duration">Lock Duration</Label>
+                <Select value={duration} onValueChange={setDuration}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="30">30 days ({getAPY(30)}% APY)</SelectItem>
+                    <SelectItem value="60">60 days ({getAPY(60)}% APY)</SelectItem>
+                    <SelectItem value="90">90 days ({getAPY(90)}% APY)</SelectItem>
+                    <SelectItem value="180">180 days ({getAPY(180)}% APY)</SelectItem>
+                    <SelectItem value="365">365 days ({getAPY(365)}% APY)</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Estimated Return:</span>
-                <span className="text-green-400 font-semibold">
-                  +{estimatedReturn.toFixed(6)} {crypto.symbol}
-                </span>
+
+              <div className="bg-muted/50 p-3 rounded-lg space-y-1">
+                <div className="flex justify-between text-sm">
+                  <span>Vault Amount</span>
+                  <span>{amount || '0'} {crypto.symbol}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>Duration</span>
+                  <span>{duration} days</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>Est. APY</span>
+                  <span className="text-green-400">{selectedAPY}%</span>
+                </div>
+                <div className="flex justify-between text-sm font-semibold">
+                  <span>Est. Daily Yield</span>
+                  <span className="text-green-400">
+                    {amount ? ((parseFloat(amount) * selectedAPY / 100) / 365).toFixed(8) : '0'} {crypto.symbol}
+                  </span>
+                </div>
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Total at Maturity:</span>
-                <span className="text-white font-semibold">
-                  {(vaultAmount + estimatedReturn).toFixed(6)} {crypto.symbol}
-                </span>
-              </div>
+
+              <Button 
+                onClick={handleVault} 
+                disabled={isVaulting || !amount || parseFloat(amount) <= 0}
+                className="w-full"
+              >
+                {isVaulting ? 'Creating Vault...' : 'Confirm Vault'}
+              </Button>
             </div>
-          </div>
-        )}
-
-        {/* Vault Button */}
-        <Button
-          onClick={handleVault}
-          disabled={!canVault || isSubmitting}
-          className="w-full bg-green-500 hover:bg-green-600 text-white disabled:opacity-50"
-        >
-          <Lock className="w-4 h-4 mr-2" />
-          {isSubmitting ? 'Vaulting...' : 'Lock in Vault'}
-        </Button>
-
-        {availableBalance === 0 && (
-          <p className="text-xs text-center text-muted-foreground">
-            No {crypto.symbol} available to vault
-          </p>
-        )}
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   );

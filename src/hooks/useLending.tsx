@@ -2,365 +2,162 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
 
 export interface LendingPosition {
   id: string;
-  user_id: string;
   cryptocurrency_id: string;
-  amount_lent: number;
-  original_amount_lent: number;
-  annual_interest_rate: number;
-  total_interest_earned: number;
-  status: string;
-  lending_started_at: string;
-  lending_cancelled_at?: string;
+  amount: number;
+  interest_rate: number;
+  duration_days: number;
+  start_date: string;
+  end_date: string;
+  status: 'active' | 'completed' | 'cancelled';
+  accrued_interest: number;
   crypto: {
-    id: string;
     name: string;
     symbol: string;
+    logo_url: string;
     current_price: number;
-    logo_url?: string;
   };
 }
 
-export interface LendingStats {
-  totalLentValue: number;
-  totalEarnedInterest: number;
-  averageYield: number;
-  activeLendingCount: number;
-  estimatedDailyReturn: number;
-  estimatedMonthlyReturn: number;
-  daysSinceLastPayout: number;
-  nextPayoutIn: string;
-}
-
 const fetchLendingPositions = async (userId: string): Promise<LendingPosition[]> => {
-  console.log('[useLending] Fetching lending positions for user:', userId);
-  
   const { data, error } = await supabase
     .from('user_lending')
     .select(`
       *,
       crypto:cryptocurrencies(
-        id,
         name,
         symbol,
-        current_price,
-        logo_url
+        logo_url,
+        current_price
       )
     `)
     .eq('user_id', userId)
-    .eq('status', 'active')
-    .order('lending_started_at', { ascending: false });
+    .order('created_at', { ascending: false });
 
   if (error) {
-    console.error('[useLending] Error fetching lending positions:', error);
+    console.error('Error fetching lending positions:', error);
     throw new Error(error.message);
   }
 
-  console.log('[useLending] Fetched lending positions:', data);
   return data || [];
-};
-
-const fetchLendingStats = async (userId: string): Promise<LendingStats> => {
-  console.log('[useLending] Fetching lending stats for user:', userId);
-  
-  const { data: positions, error } = await supabase
-    .from('user_lending')
-    .select(`
-      *,
-      crypto:cryptocurrencies(current_price)
-    `)
-    .eq('user_id', userId)
-    .eq('status', 'active');
-
-  if (error) {
-    console.error('[useLending] Error fetching lending stats:', error);
-    throw new Error(error.message);
-  }
-
-  // Get last payout date
-  const { data: lastPayout } = await supabase
-    .from('lending_interest_payments')
-    .select('payment_date')
-    .eq('user_id', userId)
-    .order('payment_date', { ascending: false })
-    .limit(1)
-    .single();
-
-  const stats = positions?.reduce((acc, position) => {
-    const currentValue = position.amount_lent * (position.crypto?.current_price || 0);
-    const dailyRate = position.annual_interest_rate / 365;
-    const dailyReturn = position.amount_lent * dailyRate * (position.crypto?.current_price || 0);
-    
-    acc.totalLentValue += currentValue;
-    acc.totalEarnedInterest += position.total_interest_earned * (position.crypto?.current_price || 0);
-    acc.estimatedDailyReturn += dailyReturn;
-    return acc;
-  }, {
-    totalLentValue: 0,
-    totalEarnedInterest: 0,
-    estimatedDailyReturn: 0,
-    estimatedMonthlyReturn: 0,
-    averageYield: 0,
-    activeLendingCount: positions?.length || 0,
-    daysSinceLastPayout: 0,
-    nextPayoutIn: 'Tomorrow at 9:00 AM'
-  }) || { 
-    totalLentValue: 0, 
-    totalEarnedInterest: 0, 
-    estimatedDailyReturn: 0,
-    estimatedMonthlyReturn: 0,
-    averageYield: 0, 
-    activeLendingCount: 0,
-    daysSinceLastPayout: 0,
-    nextPayoutIn: 'Tomorrow at 9:00 AM'
-  };
-
-  // Calculate monthly return (30 days)
-  stats.estimatedMonthlyReturn = stats.estimatedDailyReturn * 30;
-
-  // Calculate average yield
-  if (stats.activeLendingCount > 0) {
-    const totalRate = positions?.reduce((sum, pos) => sum + pos.annual_interest_rate, 0) || 0;
-    stats.averageYield = (totalRate / stats.activeLendingCount) * 100;
-  }
-
-  // Calculate days since last payout
-  if (lastPayout) {
-    const lastPayoutDate = new Date(lastPayout.payment_date);
-    const today = new Date();
-    const diffTime = Math.abs(today.getTime() - lastPayoutDate.getTime());
-    stats.daysSinceLastPayout = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  }
-
-  // Calculate next payout time
-  const now = new Date();
-  const tomorrow9AM = new Date();
-  tomorrow9AM.setDate(tomorrow9AM.getDate() + 1);
-  tomorrow9AM.setHours(9, 0, 0, 0);
-  
-  if (now.getHours() < 9) {
-    // If before 9 AM today, next payout is today at 9 AM
-    const today9AM = new Date();
-    today9AM.setHours(9, 0, 0, 0);
-    const hoursUntil = Math.ceil((today9AM.getTime() - now.getTime()) / (1000 * 60 * 60));
-    stats.nextPayoutIn = hoursUntil <= 1 ? 'In less than 1 hour' : `In ${hoursUntil} hours`;
-  } else {
-    // After 9 AM today, next payout is tomorrow at 9 AM
-    const hoursUntil = Math.ceil((tomorrow9AM.getTime() - now.getTime()) / (1000 * 60 * 60));
-    stats.nextPayoutIn = `In ${hoursUntil} hours`;
-  }
-
-  console.log('[useLending] Calculated lending stats:', stats);
-  return stats;
 };
 
 export const useLending = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  
-  const queryKey = ['lending-positions', user?.id];
-  const statsKey = ['lending-stats', user?.id];
 
-  const positionsQuery = useQuery({
-    queryKey,
+  const query = useQuery({
+    queryKey: ['lending-positions', user?.id],
     queryFn: () => fetchLendingPositions(user!.id),
     enabled: !!user,
-    staleTime: 30000,
-    refetchInterval: 60000,
   });
 
-  const statsQuery = useQuery({
-    queryKey: statsKey,
-    queryFn: () => fetchLendingStats(user!.id),
-    enabled: !!user,
-    staleTime: 30000,
-    refetchInterval: 60000,
-  });
-
-  // Mutation to start lending
-  const startLendingMutation = useMutation({
-    mutationFn: async ({ cryptoId, amount }: { cryptoId: string; amount: number }) => {
-      console.log('[useLending] Attempting to start lending:', { cryptoId, amount, userId: user!.id });
-      
-      if (!user) throw new Error("User not authenticated");
-
-      // Check for existing active position to consolidate
-      const { data: existingPosition, error: fetchError } = await supabase
-        .from('user_lending')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('cryptocurrency_id', cryptoId)
-        .eq('status', 'active')
-        .maybeSingle();
-
-      if (fetchError) {
-        console.error('[useLending] Error fetching existing position:', fetchError);
-        throw fetchError;
-      }
-      
-      const { data: crypto } = await supabase
-        .from('cryptocurrencies')
-        .select('symbol, current_price')
-        .eq('id', cryptoId)
-        .single();
-      
-      let newOrUpdatedPosition;
-
-      if (existingPosition) {
-        // Consolidate: Update existing position
-        console.log('[useLending] Existing position found. Consolidating.', existingPosition);
-        const { data, error } = await supabase
-          .from('user_lending')
-          .update({
-            amount_lent: existingPosition.amount_lent + amount,
-            original_amount_lent: existingPosition.original_amount_lent + amount,
-          })
-          .eq('id', existingPosition.id)
-          .select()
-          .single();
-
-        if (error) {
-          console.error('[useLending] Error updating lending position:', error);
-          throw error;
-        }
-        newOrUpdatedPosition = data;
-      } else {
-        // Create new position
-        console.log('[useLending] No existing position. Creating new one.');
-        const topCoins = ['BTC', 'ETH', 'USDT', 'BNB', 'SOL'];
-        const annualRate = topCoins.includes(crypto?.symbol?.toUpperCase()) ? 0.05 : 0.03;
-
-        const { data, error } = await supabase
-          .from('user_lending')
-          .insert({
-            user_id: user.id,
-            cryptocurrency_id: cryptoId,
-            amount_lent: amount,
-            original_amount_lent: amount,
-            annual_interest_rate: annualRate,
-          })
-          .select()
-          .single();
-
-        if (error) {
-          console.error('[useLending] Error inserting new lending position:', error);
-          throw error;
-        }
-        newOrUpdatedPosition = data;
-      }
-
-      // Create transaction record regardless of new or updated
-      console.log('[useLending] Creating transaction history record.');
-      const { data: transactionData, error: transactionError } = await supabase
-        .from('transaction_history')
-        .insert({
-          user_id: user.id,
-          cryptocurrency_id: cryptoId,
-          transaction_type: 'lending_start',
-          amount: amount,
-          usd_value: amount * (crypto?.current_price || 0),
-          status: 'completed',
-          description: `Started lending ${amount} ${crypto?.symbol}`,
-        })
-        .select()
-        .single();
-
-      if (transactionError) {
-        console.error('[useLending] Error creating transaction:', transactionError);
-        throw transactionError;
-      }
-
-      console.log('[useLending] Transaction created successfully:', transactionData);
-      return newOrUpdatedPosition;
-    },
-    onSuccess: () => {
-      console.log('[useLending] startLendingMutation success. Invalidating queries.');
-      queryClient.invalidateQueries({ queryKey });
-      queryClient.invalidateQueries({ queryKey: statsKey });
-      queryClient.invalidateQueries({ queryKey: ['portfolio'] });
-      queryClient.invalidateQueries({ queryKey: ['transaction-history'] });
-    },
-    onError: (error) => {
-      console.error('[useLending] startLendingMutation error:', error.message);
-    }
-  });
-
-  // Mutation to cancel lending
   const cancelLendingMutation = useMutation({
     mutationFn: async (lendingId: string) => {
-      console.log('[useLending] Cancelling lending:', lendingId);
+      console.log('[useLending] Cancelling lending position:', lendingId);
       
-      const { data, error } = await supabase
+      // Get the lending position details first
+      const { data: lendingPosition, error: fetchError } = await supabase
         .from('user_lending')
-        .update({
-          status: 'cancelled',
-          lending_cancelled_at: new Date().toISOString(),
-        })
+        .select('*')
         .eq('id', lendingId)
         .eq('user_id', user!.id)
-        .select(`
-          *,
-          crypto:cryptocurrencies(symbol, current_price)
-        `)
         .single();
 
-      if (error) throw error;
+      if (fetchError || !lendingPosition) {
+        throw new Error('Lending position not found');
+      }
 
-      // Create transaction record for cancellation
-      console.log('[useLending] Creating cancellation transaction record.');
-      const { data: transactionData, error: transactionError } = await supabase
+      if (lendingPosition.status !== 'active') {
+        throw new Error('Can only cancel active lending positions');
+      }
+
+      // Update lending status to cancelled
+      const { error: updateError } = await supabase
+        .from('user_lending')
+        .update({ 
+          status: 'cancelled',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', lendingId)
+        .eq('user_id', user!.id);
+
+      if (updateError) {
+        console.error('Error updating lending status:', updateError);
+        throw new Error(updateError.message);
+      }
+
+      // Get current portfolio for this crypto
+      const { data: currentPortfolio, error: portfolioError } = await supabase
+        .from('user_portfolios')
+        .select('*')
+        .eq('user_id', user!.id)
+        .eq('cryptocurrency_id', lendingPosition.cryptocurrency_id)
+        .single();
+
+      if (portfolioError && portfolioError.code !== 'PGRST116') {
+        console.error('Error fetching current portfolio:', portfolioError);
+        throw new Error(portfolioError.message);
+      }
+
+      // Calculate new quantity (restore the lent amount)
+      const newQuantity = (currentPortfolio?.quantity || 0) + lendingPosition.amount;
+
+      // Update or insert portfolio record
+      const { error: portfolioUpdateError } = await supabase
+        .from('user_portfolios')
+        .upsert({
+          user_id: user!.id,
+          cryptocurrency_id: lendingPosition.cryptocurrency_id,
+          quantity: newQuantity,
+          updated_at: new Date().toISOString()
+        });
+
+      if (portfolioUpdateError) {
+        console.error('Error updating portfolio:', portfolioUpdateError);
+        throw new Error(portfolioUpdateError.message);
+      }
+
+      // Create transaction record for the cancellation
+      const { error: transactionError } = await supabase
         .from('transaction_history')
         .insert({
           user_id: user!.id,
-          cryptocurrency_id: data.cryptocurrency_id,
+          cryptocurrency_id: lendingPosition.cryptocurrency_id,
           transaction_type: 'lending_cancelled',
-          amount: data.amount_lent,
-          usd_value: data.amount_lent * (data.crypto?.current_price || 0),
+          amount: lendingPosition.amount,
           status: 'completed',
-          description: `Cancelled lending and returned ${data.amount_lent} ${data.crypto?.symbol}`,
-        })
-        .select()
-        .single();
+          description: `Cancelled lending position of ${lendingPosition.amount} tokens`,
+          created_at: new Date().toISOString()
+        });
 
       if (transactionError) {
-        console.error('[useLending] Error creating cancellation transaction:', transactionError);
-        throw transactionError;
+        console.error('Error creating transaction record:', transactionError);
+        // Don't throw here as the main operation succeeded
       }
 
-      console.log('[useLending] Cancellation transaction created:', transactionData);
-      return data;
+      return { success: true };
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey });
-      queryClient.invalidateQueries({ queryKey: statsKey });
+      // Invalidate both lending and portfolio queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['lending-positions'] });
       queryClient.invalidateQueries({ queryKey: ['portfolio'] });
-      queryClient.invalidateQueries({ queryKey: ['transaction-history'] });
+      queryClient.invalidateQueries({ queryKey: ['user-portfolios'] });
+      toast.success('Lending position cancelled successfully');
+    },
+    onError: (error: any) => {
+      console.error('Error cancelling lending position:', error);
+      toast.error(`Failed to cancel lending position: ${error.message}`);
     },
   });
 
   return {
-    lendingPositions: positionsQuery.data || [],
-    lendingStats: statsQuery.data || { 
-      totalLentValue: 0, 
-      totalEarnedInterest: 0, 
-      averageYield: 0, 
-      activeLendingCount: 0,
-      estimatedDailyReturn: 0,
-      estimatedMonthlyReturn: 0,
-      daysSinceLastPayout: 0,
-      nextPayoutIn: 'Tomorrow at 9:00 AM'
-    },
-    loading: positionsQuery.isLoading || statsQuery.isLoading,
-    error: positionsQuery.error?.message || statsQuery.error?.message || null,
-    startLending: startLendingMutation.mutate,
+    ...query,
     cancelLending: cancelLendingMutation.mutate,
-    isStartingLending: startLendingMutation.isPending,
-    isCancellingLending: cancelLendingMutation.isPending,
-    refetch: () => {
-      positionsQuery.refetch();
-      statsQuery.refetch();
-    },
+    isCancelling: cancelLendingMutation.isPending,
+    refetch: query.refetch,
   };
 };
