@@ -103,38 +103,24 @@ const LiveTradingChart: React.FC<LiveTradingChartProps> = ({
     );
   }
 
-  // Prepare chart data with stable volume calculation
-  const chartData = liveData.map((item, index) => {
-    // Generate more stable volume based on price volatility and index
-    const priceRange = Math.max(item.high - item.low, item.close * 0.001); // Min 0.1% range
-    const baseVolume = item.close * 50000; // Base volume relative to price
-    const volatilityMultiplier = (priceRange / item.close) * 10; // Higher volatility = higher volume
-    const indexVariation = 0.7 + (index % 7) * 0.1; // Vary by 10% based on position
-    const volume = baseVolume * volatilityMultiplier * indexVariation;
-    
-    return {
-      time: new Date(item.time).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-      timeMs: item.time,
-      open: item.open,
-      high: item.high,
-      low: item.low,
-      close: item.close,
-      volume: volume,
-      price: item.close,
-      isGreen: item.close >= item.open
-    };
-  });
+  // Prepare chart data - simplified without volume
+  const chartData = liveData.map((item) => ({
+    time: new Date(item.time).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+    timeMs: item.time,
+    open: item.open,
+    high: item.high,
+    low: item.low,
+    close: item.close,
+    price: item.close,
+    isGreen: item.close >= item.open
+  }));
 
-  // Calculate proper Y-axis domains
+  // Calculate proper Y-axis domain with padding
   const allPrices = chartData.flatMap(d => [d.open, d.high, d.low, d.close]);
   const minPrice = Math.min(...allPrices);
   const maxPrice = Math.max(...allPrices);
   const priceRange = maxPrice - minPrice;
-  const pricePadding = Math.max(priceRange * 0.05, maxPrice * 0.01); // 5% padding or 1% of max price
-  
-  const allVolumes = chartData.map(d => d.volume);
-  const maxVolume = Math.max(...allVolumes);
-  const minVolume = 0; // Volume always starts from 0
+  const pricePadding = Math.max(priceRange * 0.05, maxPrice * 0.01);
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -153,7 +139,6 @@ const LiveTradingChart: React.FC<LiveTradingChartProps> = ({
           {(chartType === 'line' || chartType === 'area') && (
             <p className="text-sm text-gray-300">Price: ${data.price?.toFixed(2)}</p>
           )}
-          <p className="text-sm text-gray-300">Volume: {data.volume?.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
         </div>
       );
     }
@@ -163,7 +148,7 @@ const LiveTradingChart: React.FC<LiveTradingChartProps> = ({
   return (
     <div className="w-full h-[400px]">
       <ResponsiveContainer width="100%" height="100%">
-        <ComposedChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+        <ComposedChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
           <XAxis 
             dataKey="time" 
@@ -171,36 +156,17 @@ const LiveTradingChart: React.FC<LiveTradingChartProps> = ({
             fontSize={12}
           />
           <YAxis 
-            yAxisId="price"
             orientation="right"
             stroke="#9CA3AF"
             fontSize={12}
             domain={[minPrice - pricePadding, maxPrice + pricePadding]}
             tickFormatter={(value) => `$${value.toFixed(2)}`}
           />
-          <YAxis 
-            yAxisId="volume"
-            orientation="left"
-            stroke="#9CA3AF"
-            fontSize={12}
-            domain={[minVolume, maxVolume * 1.2]}
-            tickFormatter={(value) => `${(value / 1000).toFixed(0)}K`}
-          />
           <Tooltip content={<CustomTooltip />} />
-          
-          {/* Volume bars with reduced opacity */}
-          <Bar 
-            yAxisId="volume"
-            dataKey="volume" 
-            fill="#374151" 
-            opacity={0.15}
-            stroke="none"
-          />
           
           {/* Price display based on chart type */}
           {chartType === 'line' && (
             <Line 
-              yAxisId="price"
               type="monotone" 
               dataKey="price" 
               stroke="#8B5CF6" 
@@ -211,7 +177,6 @@ const LiveTradingChart: React.FC<LiveTradingChartProps> = ({
           
           {chartType === 'area' && (
             <Area 
-              yAxisId="price"
               type="monotone" 
               dataKey="price" 
               stroke="#8B5CF6" 
@@ -222,7 +187,6 @@ const LiveTradingChart: React.FC<LiveTradingChartProps> = ({
           
           {chartType === 'candlestick' && (
             <Bar 
-              yAxisId="price"
               dataKey="high"
               shape={(props: any) => <RechartsCandlestick {...props} />}
             />
