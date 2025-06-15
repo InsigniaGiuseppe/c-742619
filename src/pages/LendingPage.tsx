@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
@@ -16,10 +17,12 @@ import { useLending } from '@/hooks/useLending';
 import { usePortfolio } from '@/hooks/usePortfolio';
 import { formatCryptoQuantity } from '@/lib/cryptoFormatters';
 import { motion } from 'framer-motion';
+import { useToast } from '@/hooks/use-toast';
 
 const LendingPage = () => {
   const { lendingPositions, lendingStats, loading, startLending, cancelLending, isStartingLending, isCancellingLending } = useLending();
   const { portfolio } = usePortfolio();
+  const { toast } = useToast();
   
   const [selectedCrypto, setSelectedCrypto] = useState('');
   const [lendAmount, setLendAmount] = useState('');
@@ -34,7 +37,10 @@ const LendingPage = () => {
     return (amount * annualRate) / 365;
   };
 
-  const selectedCryptoData = portfolio.find(p => p.cryptocurrency_id === selectedCrypto);
+  // Filter portfolio to only show coins with available balance (quantity > 0)
+  const availableCoins = portfolio.filter(holding => holding.quantity > 0);
+
+  const selectedCryptoData = availableCoins.find(p => p.cryptocurrency_id === selectedCrypto);
   const lendAmountNum = parseFloat(lendAmount) || 0;
   const expectedDailyReturn = selectedCryptoData ? getDailyReturn(lendAmountNum, selectedCryptoData.crypto?.symbol || '') : 0;
   const expectedDailyReturnUSD = expectedDailyReturn * (selectedCryptoData?.crypto?.current_price || 0);
@@ -44,18 +50,39 @@ const LendingPage = () => {
     
     try {
       await startLending({ cryptoId: selectedCrypto, amount: lendAmountNum });
+      
+      const cryptoSymbol = selectedCryptoData?.crypto?.symbol || 'crypto';
+      toast({
+        title: "Lending Started Successfully!",
+        description: `You've started lending ${formatCryptoQuantity(lendAmountNum)} ${cryptoSymbol}. You'll start earning interest daily.`,
+      });
+      
       setSelectedCrypto('');
       setLendAmount('');
     } catch (error) {
       console.error('Error starting lending:', error);
+      toast({
+        title: "Error Starting Lending",
+        description: "There was an error starting your lending position. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
   const handleCancelLending = async (lendingId: string) => {
     try {
       await cancelLending(lendingId);
+      toast({
+        title: "Lending Cancelled Successfully!",
+        description: "Your lending position has been cancelled and the funds returned to your portfolio.",
+      });
     } catch (error) {
       console.error('Error cancelling lending:', error);
+      toast({
+        title: "Error Cancelling Lending",
+        description: "There was an error cancelling your lending position. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -272,7 +299,7 @@ const LendingPage = () => {
                   </p>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  {portfolio.length === 0 ? (
+                  {availableCoins.length === 0 ? (
                     <div className="text-center py-8 text-muted-foreground space-y-2">
                       <div className="text-lg">No holdings available</div>
                       <div className="text-sm">You need to own cryptocurrency to start lending</div>
@@ -287,7 +314,7 @@ const LendingPage = () => {
                             <SelectValue placeholder="Choose a crypto to lend" />
                           </SelectTrigger>
                           <SelectContent>
-                            {portfolio.map((holding) => (
+                            {availableCoins.map((holding) => (
                               <SelectItem key={holding.cryptocurrency_id} value={holding.cryptocurrency_id}>
                                 <div className="flex items-center gap-2">
                                   <CryptoLogo 
