@@ -1,7 +1,5 @@
 
 import React, { useState, useEffect } from 'react';
-import Navigation from '@/components/Navigation';
-import Footer from '@/components/Footer';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -153,7 +151,7 @@ const AdminUsers = () => {
     }
 
     return users.map((user) => (
-      <TableRow key={user.id} className="hover:bg-muted/5">
+      <TableRow key={user.id} className="hover:bg-white/10">
         <TableCell>
           <Checkbox
             checked={selectedUsers.includes(user.id)}
@@ -205,82 +203,78 @@ const AdminUsers = () => {
   };
 
   return (
-    <div className="min-h-screen bg-black text-foreground flex flex-col">
-      <Navigation />
-      <main className="flex-grow container mx-auto px-4 py-20 pt-24">
-        <div className="mb-8">
-          <Button 
-            onClick={() => navigate('/admin')}
-            variant="outline" 
-            className="glass mb-4"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Admin Dashboard
-          </Button>
+    <div className="space-y-8">
+      <div className="mb-8">
+        <Button 
+          onClick={() => navigate('/admin')}
+          variant="outline" 
+          className="glass mb-4"
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back to Admin Dashboard
+        </Button>
 
-          <div className="flex items-center gap-3 mb-4">
-            <img 
-              src="/lovable-uploads/a2c0bb3a-a47b-40bf-ba26-d79f2f9e741b.png" 
-              alt="PROMPTO TRADING Logo" 
-              className="w-10 h-10 object-contain"
-              onError={(e) => {
-                e.currentTarget.style.display = 'none';
-              }}
-            />
-            <div>
-              <h1 className="text-4xl font-bold">User Management</h1>
-              <p className="text-muted-foreground">Manage user accounts, KYC status, and permissions</p>
-            </div>
+        <div className="flex items-center gap-3 mb-4">
+          <img 
+            src="/lovable-uploads/a2c0bb3a-a47b-40bf-ba26-d79f2f9e741b.png" 
+            alt="PROMPTO TRADING Logo" 
+            className="w-10 h-10 object-contain"
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
+            }}
+          />
+          <div>
+            <h1 className="text-4xl font-bold">User Management</h1>
+            <p className="text-muted-foreground">Manage user accounts, KYC status, and permissions</p>
           </div>
         </div>
+      </div>
 
-        {/* Advanced Filters */}
-        <AdvancedUserFilters
-          filters={filters}
-          onFiltersChange={setFilters}
-          onReset={resetFilters}
-          activeFilterCount={getActiveFilterCount()}
-        />
+      {/* Advanced Filters */}
+      <AdvancedUserFilters
+        filters={filters}
+        onFiltersChange={setFilters}
+        onReset={resetFilters}
+        activeFilterCount={getActiveFilterCount()}
+      />
 
-        {/* Bulk Operations */}
-        <BulkUserOperations
-          users={users || []}
-          selectedUsers={selectedUsers}
-          onSelectionChange={setSelectedUsers}
-          onRefresh={refetch}
-        />
+      {/* Bulk Operations */}
+      <BulkUserOperations
+        users={users || []}
+        selectedUsers={selectedUsers}
+        onSelectionChange={setSelectedUsers}
+        onRefresh={refetch}
+      />
 
-        {/* Users Table */}
-        <Card className="glass glass-hover">
-          <CardHeader>
-            <CardTitle>All Users ({isLoading ? '...' : users?.length ?? 0})</CardTitle>
-            <CardDescription>Click on a user to view detailed information</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Select</TableHead>
-                    <TableHead>Full Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Account Status</TableHead>
-                    <TableHead>Account Type</TableHead>
-                    <TableHead>KYC Status</TableHead>
-                    <TableHead>Registered At</TableHead>
-                    <TableHead>Last Login</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {renderTableContent()}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
-      </main>
-      <Footer />
+      {/* Users Table */}
+      <Card className="glass glass-hover">
+        <CardHeader>
+          <CardTitle>All Users ({isLoading ? '...' : users?.length ?? 0})</CardTitle>
+          <CardDescription>Click on a user to view detailed information</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Select</TableHead>
+                  <TableHead>Full Name</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Account Status</TableHead>
+                  <TableHead>Account Type</TableHead>
+                  <TableHead>KYC Status</TableHead>
+                  <TableHead>Registered At</TableHead>
+                  <TableHead>Last Login</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {renderTableContent()}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
       
       {userToBlock && (
         <AlertDialog open={!!userToBlock} onOpenChange={(open) => !open && setUserToBlock(null)}>

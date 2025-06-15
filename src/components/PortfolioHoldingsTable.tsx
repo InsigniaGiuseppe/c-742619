@@ -182,7 +182,7 @@ const PortfolioHoldingsTable: React.FC<PortfolioHoldingsTableProps> = ({ portfol
                       const priceChange24h = holding.crypto?.price_change_percentage_24h || 0;
 
                       return (
-                        <TableRow key={holding.cryptocurrency_id} className="hover:bg-white/5">
+                        <TableRow key={holding.cryptocurrency_id} className="hover:bg-white/10">
                           <TableCell>
                             <div className="flex items-center gap-3">
                               {holding.crypto?.logo_url ? (
