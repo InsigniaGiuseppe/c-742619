@@ -26,7 +26,7 @@ const UserVaultsList: React.FC = () => {
   };
 
   return (
-    <Card className="glass glass-hover">
+    <Card className="glass glass-hover hover:bg-white/15">
       <CardHeader>
         <CardTitle>My Vaults</CardTitle>
         <CardDescription>Your active and past vault positions.</CardDescription>

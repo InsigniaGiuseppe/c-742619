@@ -2,16 +2,17 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Users, DollarSign, Clock, Shield, FileText, Wallet, TrendingUp, AlertTriangle, ArrowRight, ClipboardCheck, BarChart } from 'lucide-react';
+import { Users, DollarSign, Clock, Shield, FileText, Wallet, TrendingUp, AlertTriangle, ArrowRight, ClipboardCheck, BarChart, Activity } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { TextGenerateEffect } from '@/components/ui/text-generate-effect';
-import { useAdminStats } from '@/hooks/useAdminStats';
+import { useEnhancedAdminStats } from '@/hooks/useEnhancedAdminStats';
 import FormattedNumber from '@/components/FormattedNumber';
+import AdminCharts from '@/components/admin/AdminCharts';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
-  const { data: stats, isLoading, error } = useAdminStats();
+  const { data: stats, isLoading, error } = useEnhancedAdminStats();
 
   const adminSections = [
     {
@@ -76,21 +77,23 @@ const AdminDashboard = () => {
     if (isLoading || !stats) {
       return [
         { title: 'Total Users', value: 0, icon: Users, color: 'text-blue-400', isLoading: true },
-        { title: 'Total Balances', value: 0, icon: DollarSign, color: 'text-green-400', isLoading: true, type: 'currency' as const },
+        { title: 'Assets Under Management', value: 0, icon: DollarSign, color: 'text-green-400', isLoading: true, type: 'currency' as const },
+        { title: 'Trades Per Day', value: 0, icon: Activity, color: 'text-orange-400', isLoading: true },
         { title: 'Pending KYCs', value: 0, icon: Clock, color: 'text-yellow-400', isLoading: true },
         { title: 'Pending Transactions', value: 0, icon: AlertTriangle, color: 'text-red-400', isLoading: true },
         { title: 'Total Trading Profit', value: 0, icon: TrendingUp, color: 'text-purple-400', isLoading: true, type: 'currency' as const },
-        { title: 'Total Trades', value: 0, icon: BarChart, color: 'text-orange-400', isLoading: true }
+        { title: 'Total Trades', value: 0, icon: BarChart, color: 'text-cyan-400', isLoading: true }
       ];
     }
 
     return [
       { title: 'Total Users', value: stats.totalUsers, icon: Users, color: 'text-blue-400' },
-      { title: 'Total Balances', value: stats.totalBalances, icon: DollarSign, color: 'text-green-400', type: 'currency' as const },
+      { title: 'Assets Under Management', value: stats.assetsUnderManagement, icon: DollarSign, color: 'text-green-400', type: 'currency' as const },
+      { title: 'Trades Per Day', value: stats.tradesPerDay, icon: Activity, color: 'text-orange-400' },
       { title: 'Pending KYCs', value: stats.pendingKycs, icon: Clock, color: 'text-yellow-400' },
       { title: 'Pending Transactions', value: stats.pendingTransactions, icon: AlertTriangle, color: 'text-red-400' },
       { title: 'Total Trading Profit', value: stats.totalTradingProfit, icon: TrendingUp, color: 'text-purple-400', type: 'currency' as const },
-      { title: 'Total Trades', value: stats.totalTrades, icon: BarChart, color: 'text-orange-400' }
+      { title: 'Total Trades', value: stats.totalTrades, icon: BarChart, color: 'text-cyan-400' }
     ];
   };
 
@@ -124,7 +127,7 @@ const AdminDashboard = () => {
         className="space-y-12"
       >
         {/* Stats Cards */}
-        <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-6">
           {error && (
             <div className="col-span-full text-center p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
               <p className="text-red-400">Error loading statistics: {error.message}</p>
@@ -156,6 +159,18 @@ const AdminDashboard = () => {
           ))}
         </motion.div>
 
+        {/* Charts Section */}
+        {stats && (
+          <motion.div variants={itemVariants}>
+            <h2 className="text-2xl font-bold text-center mb-6">Analytics Overview</h2>
+            <AdminCharts 
+              dailyTradingVolume={stats.dailyTradingVolume}
+              userGrowth={stats.userGrowth}
+              aumGrowth={stats.aumGrowth}
+            />
+          </motion.div>
+        )}
+
         {/* Admin Sections */}
         <motion.div variants={itemVariants}>
           <h2 className="text-2xl font-bold text-center mb-6">Management Areas</h2>
@@ -180,25 +195,6 @@ const AdminDashboard = () => {
               </Card>
             ))}
           </div>
-        </motion.div>
-
-        {/* Quick Actions */}
-        <motion.div variants={itemVariants}>
-          <Card className="glass glass-hover mt-8">
-            <CardHeader className="text-center">
-              <CardTitle className="text-2xl">Quick Actions</CardTitle>
-              <CardDescription>Common administrative tasks for quick access</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-wrap gap-4 justify-center">
-                <Button onClick={() => navigate('/admin/users')} variant="outline" className="glass"><Users className="w-4 h-4 mr-2" />View All Users</Button>
-                <Button onClick={() => navigate('/admin/kyc')} variant="outline" className="glass"><ClipboardCheck className="w-4 h-4 mr-2" />KYC Submissions</Button>
-                <Button onClick={() => navigate('/admin/transactions')} variant="outline" className="glass"><AlertTriangle className="w-4 h-4 mr-2" />Pending Approvals</Button>
-                <Button onClick={() => navigate('/admin/wallets')} variant="outline" className="glass"><Wallet className="w-4 h-4 mr-2" />Wallet Verifications</Button>
-                <Button onClick={() => navigate('/admin/audit-log')} variant="outline" className="glass"><FileText className="w-4 h-4 mr-2" />View Audit Logs</Button>
-              </div>
-            </CardContent>
-          </Card>
         </motion.div>
       </motion.div>
     </div>
