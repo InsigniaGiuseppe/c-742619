@@ -110,18 +110,28 @@ export const useSpinGame = () => {
         }
 
         // Update reserve balance with losses and fees
-        const { error: reserveError } = await supabase
+        const { data: currentReserve, error: fetchReserveError } = await supabase
           .from('platform_reserves')
-          .update({ 
-            balance: supabase.sql`balance + ${totalDeduction}`,
-            total_losses_collected: supabase.sql`total_losses_collected + ${betAmount}`,
-            total_fees_collected: supabase.sql`total_fees_collected + ${feeAmount}`,
-            updated_at: new Date().toISOString()
-          })
-          .eq('cryptocurrency_id', btcPortfolio.cryptocurrency_id);
+          .select('balance, total_losses_collected, total_fees_collected')
+          .eq('cryptocurrency_id', btcPortfolio.cryptocurrency_id)
+          .single();
 
-        if (reserveError) {
-          console.error('[useSpinGame] Error updating reserve balance:', reserveError);
+        if (fetchReserveError) {
+          console.error('[useSpinGame] Error fetching reserve balance:', fetchReserveError);
+        } else {
+          const { error: reserveError } = await supabase
+            .from('platform_reserves')
+            .update({ 
+              balance: Number(currentReserve.balance) + totalDeduction,
+              total_losses_collected: Number(currentReserve.total_losses_collected) + betAmount,
+              total_fees_collected: Number(currentReserve.total_fees_collected) + feeAmount,
+              updated_at: new Date().toISOString()
+            })
+            .eq('cryptocurrency_id', btcPortfolio.cryptocurrency_id);
+
+          if (reserveError) {
+            console.error('[useSpinGame] Error updating reserve balance:', reserveError);
+          }
         }
 
         const lossResult: SpinResult = {
@@ -215,18 +225,28 @@ export const useSpinGame = () => {
         throw new Error('Failed to update BTC balance');
       }
 
-      // Update reserve balance with fee
-      const { error: reserveError } = await supabase
+      // Update reserve balance with fee only (winners don't contribute to losses)
+      const { data: currentReserve, error: fetchReserveError } = await supabase
         .from('platform_reserves')
-        .update({ 
-          balance: supabase.sql`balance + ${feeAmount}`,
-          total_fees_collected: supabase.sql`total_fees_collected + ${feeAmount}`,
-          updated_at: new Date().toISOString()
-        })
-        .eq('cryptocurrency_id', btcPortfolio.cryptocurrency_id);
+        .select('balance, total_fees_collected')
+        .eq('cryptocurrency_id', btcPortfolio.cryptocurrency_id)
+        .single();
 
-      if (reserveError) {
-        console.error('[useSpinGame] Error updating reserve balance:', reserveError);
+      if (fetchReserveError) {
+        console.error('[useSpinGame] Error fetching reserve balance:', fetchReserveError);
+      } else {
+        const { error: reserveError } = await supabase
+          .from('platform_reserves')
+          .update({ 
+            balance: Number(currentReserve.balance) + feeAmount,
+            total_fees_collected: Number(currentReserve.total_fees_collected) + feeAmount,
+            updated_at: new Date().toISOString()
+          })
+          .eq('cryptocurrency_id', btcPortfolio.cryptocurrency_id);
+
+        if (reserveError) {
+          console.error('[useSpinGame] Error updating reserve balance:', reserveError);
+        }
       }
 
       // Update or create reward crypto portfolio
