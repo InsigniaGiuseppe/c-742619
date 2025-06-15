@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -21,7 +20,7 @@ interface Crypto {
 interface IndividualVaultCardProps {
   crypto: Crypto;
   availableBalance: number;
-  onVault: (cryptoId: string, amount: number, durationDays: number) => Promise<void>;
+  onVault: (cryptoId: string, amount: number, durationDays: number) => Promise<boolean>;
 }
 
 const IndividualVaultCard: React.FC<IndividualVaultCardProps> = ({
@@ -50,9 +49,11 @@ const IndividualVaultCard: React.FC<IndividualVaultCardProps> = ({
 
     setIsVaulting(true);
     try {
-      await onVault(crypto.id, vaultAmount, vaultDuration);
-      setIsDialogOpen(false);
-      setAmount('');
+      const success = await onVault(crypto.id, vaultAmount, vaultDuration);
+      if (success) {
+        setIsDialogOpen(false);
+        setAmount('');
+      }
     } catch (error) {
       console.error('Vault error:', error);
     } finally {
