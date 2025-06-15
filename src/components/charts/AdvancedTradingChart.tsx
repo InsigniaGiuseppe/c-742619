@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Cryptocurrency } from '@/hooks/useCryptocurrencies';
 import TradingChartControls from './TradingChartControls';
 import CryptoStatsDisplay from './CryptoStatsDisplay';
-import LiveTradingChart from './LiveTradingChart';
+import EnhancedLiveTradingChart from './EnhancedLiveTradingChart';
 
 export type ChartType = 'candlestick' | 'line' | 'area';
 
@@ -47,7 +47,7 @@ const AdvancedTradingChart: React.FC<AdvancedTradingChartProps> = ({ crypto }) =
         </div>
       </CardHeader>
       <CardContent>
-        <LiveTradingChart 
+        <EnhancedLiveTradingChart 
           crypto={crypto} 
           chartType={chartType} 
           timeframe={timeframe} 
