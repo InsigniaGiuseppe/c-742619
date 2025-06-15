@@ -17,7 +17,6 @@ import { useToast } from '@/components/ui/use-toast';
 
 const navLinks = [
   { href: '/dashboard', label: 'Dashboard' },
-  { href: '/wallet', label: 'Wallet' },
   { href: '/trading', label: 'Trading' },
   { href: '/lending', label: 'Lending' },
   { href: '/vaults', label: 'Vaults' },
@@ -94,6 +93,9 @@ const Navigation: React.FC = () => {
                     <DropdownMenuLabel className="text-foreground">My Account</DropdownMenuLabel>
                     <DropdownMenuItem className="hover:bg-white/10 transition-colors">
                       <Link to="/profile" className="w-full">Profile</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem className="hover:bg-white/10 transition-colors">
+                      <Link to="/wallet" className="w-full">Wallet</Link>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator className="bg-white/10" />
                     <DropdownMenuItem 

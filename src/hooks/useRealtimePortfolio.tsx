@@ -11,19 +11,21 @@ export const useRealtimePortfolio = () => {
   const lending = useLending();
   const [isRealtime, setIsRealtime] = useState(false);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const isSubscribedRef = useRef(false);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || isSubscribedRef.current) return;
 
     // Clean up existing channel before creating a new one
     if (channelRef.current) {
       supabase.removeChannel(channelRef.current);
       channelRef.current = null;
       setIsRealtime(false);
+      isSubscribedRef.current = false;
     }
 
     // Create a new channel with a unique name to avoid conflicts
-    const channelName = `crypto-price-updates-${Date.now()}`;
+    const channelName = `crypto-updates-${user.id}-${Date.now()}`;
     const channel = supabase
       .channel(channelName)
       .on(
@@ -71,9 +73,11 @@ export const useRealtimePortfolio = () => {
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
           setIsRealtime(true);
+          isSubscribedRef.current = true;
           console.log('[Realtime] Connected to portfolio and lending updates');
         } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
           setIsRealtime(false);
+          isSubscribedRef.current = false;
           console.log('[Realtime] Disconnected from portfolio and lending updates');
         }
       });
@@ -86,6 +90,7 @@ export const useRealtimePortfolio = () => {
         channelRef.current = null;
       }
       setIsRealtime(false);
+      isSubscribedRef.current = false;
     };
   }, [user?.id]); // Only depend on user.id to prevent unnecessary re-subscriptions
 
