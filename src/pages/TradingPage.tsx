@@ -1,7 +1,5 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Navigation from '@/components/Navigation';
-import Footer from '@/components/Footer';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search, Wifi, WifiOff, LayoutGrid, List } from 'lucide-react';
@@ -82,8 +80,7 @@ const TradingPage = () => {
   );
 
   return (
-    <div className="min-h-screen bg-black text-foreground flex flex-col">
-      <Navigation />
+    <>
       <ConnectionStatusIndicator />
       <motion.main
         initial={{ opacity: 0, y: 20 }}
@@ -200,7 +197,6 @@ const TradingPage = () => {
           </div>
         )}
       </motion.main>
-      <Footer />
       <TradeSheet
         crypto={selectedCryptoForTrade}
         open={!!selectedCryptoForTrade}
@@ -210,7 +206,7 @@ const TradingPage = () => {
           }
         }}
       />
-    </div>
+    </>
   );
 };
 
