@@ -4,12 +4,9 @@ import DashboardWidget from './DashboardWidget';
 import BalanceWidget from './widgets/BalanceWidget';
 import PortfolioValueWidget from './widgets/PortfolioValueWidget';
 import ProfitLossWidget from './widgets/ProfitLossWidget';
-import HoldingsWidget from './widgets/HoldingsWidget';
-import TotalInvestedWidget from './widgets/TotalInvestedWidget';
 import PortfolioGrowthChartWidget from './widgets/PortfolioGrowthChartWidget';
 import PortfolioDistributionWidget from './widgets/PortfolioDistributionWidget';
 import PortfolioHoldingsTableWidget from './widgets/PortfolioHoldingsTableWidget';
-import RecentTransactionsWidget from './widgets/RecentTransactionsWidget';
 
 interface WidgetConfig {
   id: string;
@@ -18,15 +15,12 @@ interface WidgetConfig {
 }
 
 const widgetConfigs: WidgetConfig[] = [
-  { id: 'recent-transactions', component: RecentTransactionsWidget, className: 'md:col-span-12 lg:col-span-12' },
-  { id: 'balance', component: BalanceWidget, className: 'md:col-span-6 lg:col-span-3' },
-  { id: 'portfolio-value', component: PortfolioValueWidget, className: 'md:col-span-6 lg:col-span-3' },
-  { id: 'total-invested', component: TotalInvestedWidget, className: 'md:col-span-6 lg:col-span-3' },
-  { id: 'profit-loss', component: ProfitLossWidget, className: 'md:col-span-6 lg:col-span-3' },
-  { id: 'portfolio-growth-chart', component: PortfolioGrowthChartWidget, className: 'md:col-span-12 lg:col-span-7' },
-  { id: 'portfolio-distribution', component: PortfolioDistributionWidget, className: 'md:col-span-12 lg:col-span-5' },
-  { id: 'portfolio-holdings-table', component: PortfolioHoldingsTableWidget, className: 'md:col-span-12 lg:col-span-9' },
-  { id: 'holdings', component: HoldingsWidget, className: 'md:col-span-6 lg:col-span-3' },
+  { id: 'balance', component: BalanceWidget, className: 'md:col-span-6 lg:col-span-4' },
+  { id: 'portfolio-value', component: PortfolioValueWidget, className: 'md:col-span-6 lg:col-span-4' },
+  { id: 'profit-loss', component: ProfitLossWidget, className: 'md:col-span-12 lg:col-span-4' },
+  { id: 'portfolio-holdings-table', component: PortfolioHoldingsTableWidget, className: 'md:col-span-12' },
+  { id: 'portfolio-distribution', component: PortfolioDistributionWidget, className: 'md:col-span-12' },
+  { id: 'portfolio-growth-chart', component: PortfolioGrowthChartWidget, className: 'md:col-span-12' },
 ];
 
 const DashboardLayoutManager: React.FC = () => {
