@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -52,9 +51,6 @@ const Navigation: React.FC = () => {
           </div>
 
           <div className="hidden md:flex items-center space-x-8">
-            <Link to="/" className="text-gray-300 hover:text-white transition-colors">
-              Home
-            </Link>
             {session && (
               <>
                 <Link to="/dashboard" className="text-gray-300 hover:text-white transition-colors">
@@ -73,12 +69,14 @@ const Navigation: React.FC = () => {
                   <Dice6 className="w-4 h-4" />
                   Spin & Win
                 </Link>
-                <Link to="/wallet" className="text-gray-300 hover:text-white transition-colors">
-                  Wallet
-                </Link>
-                <Link to="/profile" className="text-gray-300 hover:text-white transition-colors">
-                  Profile
-                </Link>
+                {isAdmin && (
+                  <Link 
+                    to="/admin" 
+                    className="text-sm font-semibold text-orange-400 hover:text-orange-300 transition-colors duration-300"
+                  >
+                    Admin
+                  </Link>
+                )}
               </>
             )}
           </div>
