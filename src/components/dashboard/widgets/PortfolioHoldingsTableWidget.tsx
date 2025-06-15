@@ -6,7 +6,7 @@ import { TrendingUp } from 'lucide-react';
 import { useRealtimePortfolio } from '@/hooks/useRealtimePortfolio';
 
 const PortfolioHoldingsTableWidget: React.FC = () => {
-  const { data: portfolio = [], isRealtime } = useRealtimePortfolio();
+  const { portfolio = [], isRealtime } = useRealtimePortfolio();
 
   return (
     <PortfolioHoldingsTable portfolio={portfolio} isRealtime={isRealtime} />
