@@ -33,8 +33,8 @@ const SpinRoulette: React.FC<SpinRouletteProps> = ({
   useEffect(() => {
     if (isSpinning && winningItem) {
       // Generate roulette items with winning item positioned correctly
-      const totalItems = 50;
-      const winningIndex = Math.floor(totalItems * 0.85); // Position winner near the end
+      const totalItems = 100;
+      const winningIndex = Math.floor(totalItems * 0.88); // Position winner near the end
       const generatedItems: SpinItem[] = [];
 
       for (let i = 0; i < totalItems; i++) {
@@ -66,6 +66,8 @@ const SpinRoulette: React.FC<SpinRouletteProps> = ({
         return 'drop-shadow-[0_0_25px_rgba(59,130,246,0.9)]';
       case 'epic': 
         return 'drop-shadow-[0_0_30px_rgba(147,51,234,1)]';
+      case 'legendary': 
+        return 'drop-shadow-[0_0_35px_rgba(255,215,0,1)]';
       default: 
         return 'drop-shadow-[0_0_20px_rgba(156,163,175,0.8)]';
     }
@@ -79,13 +81,31 @@ const SpinRoulette: React.FC<SpinRouletteProps> = ({
         return 'ring-blue-400/80';
       case 'epic': 
         return 'ring-purple-400/90';
+      case 'legendary': 
+        return 'ring-yellow-400/90';
       default: 
         return 'ring-gray-400/60';
     }
   };
 
+  const getTierBgGlow = (tier: string) => {
+    switch (tier) {
+      case 'common': 
+        return 'bg-gray-400/20';
+      case 'rare': 
+        return 'bg-blue-400/25';
+      case 'epic': 
+        return 'bg-purple-400/30';
+      case 'legendary': 
+        return 'bg-yellow-400/35';
+      default: 
+        return 'bg-gray-400/20';
+    }
+  };
+
   const cardWidth = 80; // Width of each crypto logo + spacing
   const gap = 16; // Gap between items
+  const totalDistance = (cardWidth + gap) * 85; // Distance to travel to reach winner
 
   return (
     <div className="relative w-full h-40 overflow-hidden bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 rounded-xl border border-white/10">
@@ -105,11 +125,11 @@ const SpinRoulette: React.FC<SpinRouletteProps> = ({
               className="flex items-center gap-4 pl-8"
               initial={{ x: '100%' }}
               animate={{ 
-                x: `calc(-50% - ${(cardWidth + gap) * 42}px)` // Calculate exact position for winner
+                x: `-${totalDistance}px`
               }}
               transition={{
                 duration: 4,
-                ease: [0.25, 0.1, 0.0, 1], // Custom cubic-bezier for realistic deceleration
+                ease: [0.25, 0.46, 0.45, 0.94], // Custom ease-out for realistic deceleration
                 type: "tween"
               }}
               onAnimationComplete={() => {
@@ -121,6 +141,7 @@ const SpinRoulette: React.FC<SpinRouletteProps> = ({
               {currentItems.map((item, index) => {
                 const glowClass = getTierGlow(item.tier);
                 const ringClass = getTierRingColor(item.tier);
+                const bgGlowClass = getTierBgGlow(item.tier);
                 const isWinner = item.id.startsWith('winner-');
                 
                 return (
@@ -144,8 +165,8 @@ const SpinRoulette: React.FC<SpinRouletteProps> = ({
                       delay: index * 0.05
                     }}
                   >
-                    {/* Crypto logo with tier-based glow and ring */}
-                    <div className={`relative ring-3 ${ringClass} rounded-full p-2 mb-2 ${glowClass}`}>
+                    {/* Crypto logo with tier-based glow */}
+                    <div className={`relative rounded-full p-2 mb-2 ${glowClass}`}>
                       <CryptoLogo
                         symbol={item.crypto?.symbol || 'UNK'}
                         logo_url={item.crypto?.logo_url}
@@ -155,6 +176,21 @@ const SpinRoulette: React.FC<SpinRouletteProps> = ({
                       />
                       
                       {/* Enhanced tier-based particle effects */}
+                      {item.tier === 'legendary' && (
+                        <motion.div
+                          className="absolute inset-0 rounded-full bg-yellow-400/40 pointer-events-none"
+                          animate={{
+                            opacity: [0.4, 0.9, 0.4],
+                            scale: [1, 1.3, 1]
+                          }}
+                          transition={{
+                            duration: 0.8,
+                            repeat: Infinity,
+                            ease: "easeInOut"
+                          }}
+                        />
+                      )}
+
                       {item.tier === 'epic' && (
                         <motion.div
                           className="absolute inset-0 rounded-full bg-purple-400/30 pointer-events-none"
@@ -218,7 +254,7 @@ const SpinRoulette: React.FC<SpinRouletteProps> = ({
           )}
         </AnimatePresence>
 
-        {/* Static display when not spinning - simplified */}
+        {/* Static display when not spinning */}
         {!isSpinning && (
           <div className="flex items-center justify-center w-full h-full">
             <div className="flex justify-center gap-6">
@@ -239,7 +275,7 @@ const SpinRoulette: React.FC<SpinRouletteProps> = ({
                       delay: index * 0.2
                     }}
                   >
-                    <div className={`ring-2 ${ringClass} rounded-full p-2 mb-2 ${glowClass}`}>
+                    <div className={`rounded-full p-2 mb-2 ${glowClass}`}>
                       <CryptoLogo
                         symbol={item.crypto?.symbol || 'UNK'}
                         logo_url={item.crypto?.logo_url}
@@ -248,7 +284,7 @@ const SpinRoulette: React.FC<SpinRouletteProps> = ({
                       />
                     </div>
                     <div className="text-xs text-white font-medium text-center">
-                      {item.crypto?.symbol || 'UNK'}
+                      {(item.crypto?.symbol || 'UNK').toUpperCase()}
                     </div>
                   </motion.div>
                 );

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { usePortfolio } from '@/hooks/usePortfolio';
@@ -86,6 +85,26 @@ const SpinPage: React.FC = () => {
     return () => clearInterval(interval);
   }, [cooldownTime]);
 
+  const getMultiplierColor = (multiplier: number) => {
+    if (multiplier >= 5) return 'text-yellow-400'; // Legendary
+    if (multiplier >= 3) return 'text-purple-400'; // Epic
+    if (multiplier >= 1.5) return 'text-blue-400'; // Rare
+    return 'text-gray-400'; // Common
+  };
+
+  const getTierBadgeStyle = (tier: string) => {
+    switch (tier) {
+      case 'legendary':
+        return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
+      case 'epic':
+        return 'bg-purple-500/20 text-purple-400 border-purple-500/30';
+      case 'rare':
+        return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
+      default:
+        return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
+    }
+  };
+
   const generateRouletteItems = () => {
     console.log('[SpinPage] Generating roulette items with configurations:', configurations?.length);
     return configurations.map((config, index) => ({
@@ -128,12 +147,6 @@ const SpinPage: React.FC = () => {
     if (result) {
       setLastSpinResult(result);
     }
-  };
-
-  const getMultiplierColor = (multiplier: number) => {
-    if (multiplier >= 3) return 'text-purple-400';
-    if (multiplier >= 1.5) return 'text-blue-400';
-    return 'text-gray-400';
   };
 
   if (!user) {
@@ -241,11 +254,19 @@ const SpinPage: React.FC = () => {
                 logo_url: undefined
               },
               amount: lastSpinResult.rewardAmount,
-              tier: lastSpinResult.multiplier >= 3 ? 'epic' : lastSpinResult.multiplier >= 1.5 ? 'rare' : 'common'
+              tier: lastSpinResult.isWin ? (
+                lastSpinResult.multiplier >= 5 ? 'legendary' :
+                lastSpinResult.multiplier >= 3 ? 'epic' : 
+                lastSpinResult.multiplier >= 1.5 ? 'rare' : 'common'
+              ) : 'common'
             } : undefined}
             onSpinComplete={() => {
               if (lastSpinResult) {
-                toast.success(`🎉 You won ${lastSpinResult.rewardAmount.toFixed(6)} ${lastSpinResult.rewardCrypto}!`);
+                if (lastSpinResult.isWin) {
+                  toast.success(`🎉 You won ${lastSpinResult.rewardAmount.toFixed(6)} ${lastSpinResult.rewardCrypto}!`);
+                } else {
+                  toast.error(`😢 You lost! Better luck next time.`);
+                }
               }
             }}
           />
@@ -278,6 +299,10 @@ const SpinPage: React.FC = () => {
               Insufficient BTC balance. You need at least {betAmountBtc.toFixed(6)} BTC to spin.
             </div>
           )}
+
+          <div className="text-center text-xs text-muted-foreground">
+            0.01% fee applies to all spins • ~49% chance to lose your bet
+          </div>
         </CardContent>
       </Card>
 
@@ -287,21 +312,15 @@ const SpinPage: React.FC = () => {
           <CardTitle>Reward Tiers</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {configurations.map((config) => (
               <div key={config.id} className="p-4 rounded-lg glass glass-hover">
                 <div className="flex items-center justify-between mb-2">
-                  <Badge 
-                    className={
-                      config.reward_tier === 'epic' ? 'bg-purple-500/20 text-purple-400 border-purple-500/30' :
-                      config.reward_tier === 'rare' ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' :
-                      'bg-gray-500/20 text-gray-400 border-gray-500/30'
-                    }
-                  >
+                  <Badge className={getTierBadgeStyle(config.reward_tier)}>
                     {config.reward_tier.toUpperCase()}
                   </Badge>
                   <span className="text-sm text-muted-foreground">
-                    {(config.probability * 100).toFixed(1)}%
+                    {(config.probability * 100).toFixed(2)}%
                   </span>
                 </div>
                 <div className="flex items-center gap-2 mb-2">
@@ -326,6 +345,19 @@ const SpinPage: React.FC = () => {
                 </div>
               </div>
             ))}
+          </div>
+          <div className="mt-4 p-3 rounded-lg bg-red-900/20 border border-red-500/30">
+            <div className="flex items-center justify-between mb-1">
+              <Badge className="bg-red-500/20 text-red-400 border-red-500/30">
+                LOSE
+              </Badge>
+              <span className="text-sm text-red-400">
+                ~49%
+              </span>
+            </div>
+            <div className="text-sm text-red-400">
+              0x multiplier - You lose your BTC bet
+            </div>
           </div>
         </CardContent>
       </Card>
