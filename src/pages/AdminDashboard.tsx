@@ -81,8 +81,7 @@ const AdminDashboard = () => {
         { title: 'Trades Per Day', value: 0, icon: Activity, color: 'text-orange-400', isLoading: true },
         { title: 'Pending KYCs', value: 0, icon: Clock, color: 'text-yellow-400', isLoading: true },
         { title: 'Pending Transactions', value: 0, icon: AlertTriangle, color: 'text-red-400', isLoading: true },
-        { title: 'Total Trading Profit', value: 0, icon: TrendingUp, color: 'text-purple-400', isLoading: true, type: 'currency' as const },
-        { title: 'Total Trades', value: 0, icon: BarChart, color: 'text-cyan-400', isLoading: true }
+        { title: 'Total Trading Profit', value: 0, icon: TrendingUp, color: 'text-purple-400', isLoading: true, type: 'currency' as const }
       ];
     }
 
@@ -92,8 +91,7 @@ const AdminDashboard = () => {
       { title: 'Trades Per Day', value: stats.tradesPerDay, icon: Activity, color: 'text-orange-400' },
       { title: 'Pending KYCs', value: stats.pendingKycs, icon: Clock, color: 'text-yellow-400' },
       { title: 'Pending Transactions', value: stats.pendingTransactions, icon: AlertTriangle, color: 'text-red-400' },
-      { title: 'Total Trading Profit', value: stats.totalTradingProfit, icon: TrendingUp, color: 'text-purple-400', type: 'currency' as const },
-      { title: 'Total Trades', value: stats.totalTrades, icon: BarChart, color: 'text-cyan-400' }
+      { title: 'Total Trading Profit', value: stats.totalTradingProfit, icon: TrendingUp, color: 'text-purple-400', type: 'currency' as const }
     ];
   };
 
@@ -126,8 +124,8 @@ const AdminDashboard = () => {
         animate="visible"
         className="space-y-12"
       >
-        {/* Stats Cards */}
-        <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-6">
+        {/* Stats Cards - Better formatted with improved grid */}
+        <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
           {error && (
             <div className="col-span-full text-center p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
               <p className="text-red-400">Error loading statistics: {error.message}</p>
@@ -135,11 +133,11 @@ const AdminDashboard = () => {
           )}
           {getStatCards().map((stat, index) => (
             <Card key={index} className="glass glass-hover">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-                <stat.icon className={`h-4 w-4 ${stat.color}`} />
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+                <CardTitle className="text-sm font-medium leading-tight">{stat.title}</CardTitle>
+                <stat.icon className={`h-5 w-5 ${stat.color} flex-shrink-0`} />
               </CardHeader>
-              <CardContent>
+              <CardContent className="pt-0">
                 <div className={`text-2xl font-bold ${stat.color}`}>
                   {stat.isLoading ? (
                     <div className="h-8 w-20 bg-gray-700 animate-pulse rounded"></div>
@@ -167,6 +165,7 @@ const AdminDashboard = () => {
               dailyTradingVolume={stats.dailyTradingVolume}
               userGrowth={stats.userGrowth}
               aumGrowth={stats.aumGrowth}
+              totalTradesData={stats.dailyTradingVolume.map(item => ({ date: item.date, trades: item.trades }))}
             />
           </motion.div>
         )}
