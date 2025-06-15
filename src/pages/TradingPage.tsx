@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
@@ -21,6 +21,7 @@ import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components
 const TradingPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [sortConfig, setSortConfig] = useState<{ key: keyof Cryptocurrency; direction: 'ascending' | 'descending' } | null>({ key: 'market_cap_rank', direction: 'ascending' });
   const { cryptocurrencies, loading, error, refetch, isRealtimeConnected } = useCryptocurrencies();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -29,6 +30,36 @@ const TradingPage = () => {
     crypto.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     crypto.symbol.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const sortedCryptos = useMemo(() => {
+    let sortableItems = [...filteredCryptos];
+    if (sortConfig) {
+      sortableItems.sort((a, b) => {
+        const aValue = a[sortConfig.key];
+        const bValue = b[sortConfig.key];
+
+        if (aValue == null) return 1;
+        if (bValue == null) return -1;
+
+        if (aValue < bValue) {
+          return sortConfig.direction === 'ascending' ? -1 : 1;
+        }
+        if (aValue > bValue) {
+          return sortConfig.direction === 'ascending' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+    return sortableItems;
+  }, [filteredCryptos, sortConfig]);
+
+  const requestSort = (key: keyof Cryptocurrency) => {
+    let direction: 'ascending' | 'descending' = 'ascending';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'ascending') {
+      direction = 'descending';
+    }
+    setSortConfig({ key, direction });
+  };
 
   const handleTrade = (crypto: Cryptocurrency) => {
     navigate(`/crypto/${crypto.symbol.toLowerCase()}`);
@@ -149,7 +180,7 @@ const TradingPage = () => {
                   </div>
                 ) : (
                   <div className="glass rounded-lg p-0.5">
-                    <CryptoTable cryptos={filteredCryptos} onTrade={handleTrade} />
+                    <CryptoTable cryptos={sortedCryptos} onTrade={handleTrade} onSort={requestSort} sortConfig={sortConfig} />
                   </div>
                 )
               ) : (
