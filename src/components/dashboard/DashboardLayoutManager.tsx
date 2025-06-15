@@ -1,7 +1,7 @@
 
 import React from 'react';
 import DashboardWidget from './DashboardWidget';
-import BalanceWidget from './widgets/BalanceWidget';
+import EnhancedBalanceWidget from './widgets/EnhancedBalanceWidget';
 import PortfolioValueWidget from './widgets/PortfolioValueWidget';
 import ProfitLossWidget from './widgets/ProfitLossWidget';
 import PortfolioGrowthChartWidget from './widgets/PortfolioGrowthChartWidget';
@@ -16,7 +16,7 @@ interface WidgetConfig {
 }
 
 const widgetConfigs: WidgetConfig[] = [
-  { id: 'balance', component: BalanceWidget, className: 'md:col-span-6 lg:col-span-4' },
+  { id: 'balance', component: EnhancedBalanceWidget, className: 'md:col-span-6 lg:col-span-4' },
   { id: 'portfolio-value', component: PortfolioValueWidget, className: 'md:col-span-6 lg:col-span-4' },
   { id: 'profit-loss', component: ProfitLossWidget, className: 'md:col-span-12 lg:col-span-4' },
   { id: 'portfolio-holdings-table', component: PortfolioHoldingsTableWidget, className: 'md:col-span-12' },
