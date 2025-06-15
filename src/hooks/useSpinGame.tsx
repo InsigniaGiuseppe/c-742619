@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { usePortfolio } from '@/hooks/usePortfolio';
@@ -91,7 +90,7 @@ export const useSpinGame = () => {
 
       console.log('[useSpinGame] Spin result calculated:', spinResult);
 
-      // Create debit transaction (bet) - now works with fixed constraint
+      // Create debit transaction (bet) - using correct transaction type
       const { data: debitTransaction, error: debitError } = await supabase
         .from('transaction_history')
         .insert({
@@ -111,7 +110,7 @@ export const useSpinGame = () => {
         throw new Error(`Failed to process bet transaction: ${debitError.message}`);
       }
 
-      // Create credit transaction (reward) - now works with fixed constraint
+      // Create credit transaction (reward) - using correct transaction type
       const { data: creditTransaction, error: creditError } = await supabase
         .from('transaction_history')
         .insert({

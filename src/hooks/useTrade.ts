@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -172,7 +171,8 @@ export const useTrade = (crypto: Cryptocurrency | undefined) => {
 
       // Step 2: Create transaction history record with correct transaction_type
       console.log(`${logPrefix} 2. Inserting into transaction_history...`);
-      const transactionType = tradeType === 'buy' ? 'trade_buy' : 'trade_sell';
+      // Use valid transaction types that match our constraint
+      const transactionType = tradeType === 'buy' ? 'buy' : 'sell';
       
       const { data: transaction, error: transactionError } = await supabase
         .from('transaction_history')
