@@ -111,11 +111,7 @@ const Navigation = () => {
                   <Link
                     key={link.path}
                     to={link.path}
-                    className={`px-3 py-2 text-sm font-medium transition-colors ${
-                      isActive(link.path)
-                        ? 'text-blue-400 bg-blue-400/10'
-                        : 'text-gray-300 hover:text-white hover:bg-gray-800'
-                    } rounded-md`}
+                    className={`px-3 py-2 text-sm font-medium transition-colors ${isActive(link.path) ? 'text-blue-400 bg-blue-400/10' : 'text-gray-300 hover:text-white hover:bg-gray-800'} rounded-md`}
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     {link.label}
@@ -133,9 +129,9 @@ const Navigation = () => {
                     Profile
                   </Link>
                   <button onClick={() => {
-              handleSignOut();
-              setIsMobileMenuOpen(false);
-            }} className="flex items-center w-full px-3 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-gray-800 rounded-md">
+                      handleSignOut();
+                      setIsMobileMenuOpen(false);
+                    }} className="flex items-center w-full px-3 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-gray-800 rounded-md">
                     <LogOut className="mr-2 h-4 w-4" />
                     Sign Out
                   </button>
