@@ -16,8 +16,8 @@ interface FormattedNumberProps {
 const FormattedNumber: React.FC<FormattedNumberProps> = ({
   value,
   type = 'currency',
-  currency = 'USD',
-  locale = 'en-US',
+  currency = 'EUR', // Changed default from USD to EUR
+  locale = 'nl-NL', // Changed default from en-US to nl-NL
   showTooltip = true,
   compact = false,
   className = ''

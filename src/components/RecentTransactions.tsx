@@ -163,8 +163,9 @@ const RecentTransactions = () => {
                   </div>
                   <div className="text-right space-y-1">
                     <FormattedNumber
-                      value={transaction.usd_value || 0}
+                      value={transaction.eur_value || 0}
                       type="currency"
+                      currency="EUR"
                       showTooltip={false}
                       className="font-semibold"
                     />

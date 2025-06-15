@@ -2,15 +2,18 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useExchangeRate } from '@/hooks/useExchangeRate';
+import { convertUsdToEur } from '@/lib/currencyConverter';
 
 export const useUserBalance = () => {
   const { user } = useAuth();
-  const [balance, setBalance] = useState<number>(0);
+  const { exchangeRate } = useExchangeRate();
+  const [balanceUsd, setBalanceUsd] = useState<number>(0);
   const [loading, setLoading] = useState(true);
 
   const fetchBalance = async () => {
     if (!user) {
-      setBalance(0);
+      setBalanceUsd(0);
       setLoading(false);
       return;
     }
@@ -25,13 +28,13 @@ export const useUserBalance = () => {
 
       if (error) {
         console.error('Error fetching user balance:', error);
-        setBalance(0);
+        setBalanceUsd(0);
       } else {
-        setBalance(data?.demo_balance_usd || 0);
+        setBalanceUsd(data?.demo_balance_usd || 0);
       }
     } catch (error) {
       console.error('Error fetching user balance:', error);
-      setBalance(0);
+      setBalanceUsd(0);
     } finally {
       setLoading(false);
     }
@@ -41,8 +44,12 @@ export const useUserBalance = () => {
     fetchBalance();
   }, [user?.id]);
 
+  // Convert USD balance to EUR for display
+  const balanceEur = convertUsdToEur(balanceUsd, exchangeRate);
+
   return {
-    balance,
+    balance: balanceEur, // Return EUR balance for display
+    balanceUsd, // Keep USD balance for internal calculations
     loading,
     refetch: fetchBalance
   };

@@ -1,13 +1,15 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from './useAuth';
 import { Cryptocurrency } from './useCryptocurrencies';
 import { useQueryClient } from '@tanstack/react-query';
+import { useExchangeRate } from './useExchangeRate';
+import { convertUsdToEur, convertEurToUsd } from '@/lib/currencyConverter';
 
 export const useTrade = (crypto: Cryptocurrency | undefined) => {
   const { user } = useAuth();
+  const { exchangeRate } = useExchangeRate();
   const queryClient = useQueryClient();
   
   const [tradeType, setTradeType] = useState<'buy' | 'sell'>('buy');
@@ -15,7 +17,7 @@ export const useTrade = (crypto: Cryptocurrency | undefined) => {
   const [amountEUR, setAmountEUR] = useState('');
   const [amountCoin, setAmountCoin] = useState('');
   const [isProcessingTrade, setIsProcessingTrade] = useState(false);
-  const [userBalance, setUserBalance] = useState(0);
+  const [userBalanceUsd, setUserBalanceUsd] = useState(0);
   const [userHoldings, setUserHoldings] = useState(0);
 
   const fetchUserData = useCallback(async () => {
@@ -36,7 +38,7 @@ export const useTrade = (crypto: Cryptocurrency | undefined) => {
       }
 
       if (profile) {
-        setUserBalance(profile.demo_balance_usd || 10000);
+        setUserBalanceUsd(profile.demo_balance_usd || 10000);
       }
 
       // Fetch user's holdings for this crypto
@@ -65,8 +67,10 @@ export const useTrade = (crypto: Cryptocurrency | undefined) => {
 
   const handleAmountEURChange = (value: string) => {
     setAmountEUR(value);
-    if (crypto && value) {
-      const coinAmount = parseFloat(value) / crypto.current_price;
+    if (crypto && value && exchangeRate) {
+      // Convert EUR to USD for crypto price calculation
+      const usdAmount = convertEurToUsd(parseFloat(value), exchangeRate);
+      const coinAmount = usdAmount / crypto.current_price;
       setAmountCoin(coinAmount.toFixed(8));
     } else {
       setAmountCoin('');
@@ -75,8 +79,10 @@ export const useTrade = (crypto: Cryptocurrency | undefined) => {
 
   const handleAmountCoinChange = (value: string) => {
     setAmountCoin(value);
-    if (crypto && value) {
-      const eurAmount = parseFloat(value) * crypto.current_price;
+    if (crypto && value && exchangeRate) {
+      // Calculate USD value first, then convert to EUR
+      const usdAmount = parseFloat(value) * crypto.current_price;
+      const eurAmount = convertUsdToEur(usdAmount, exchangeRate);
       setAmountEUR(eurAmount.toFixed(2));
     } else {
       setAmountEUR('');
@@ -84,27 +90,32 @@ export const useTrade = (crypto: Cryptocurrency | undefined) => {
   };
 
   const handleTrade = async () => {
-    if (!user || !crypto || !amountEUR || !amountCoin) {
+    if (!user || !crypto || !amountEUR || !amountCoin || !exchangeRate) {
       toast.error('Please fill in all fields');
       return;
     }
 
+    // Convert EUR amount to USD for backend calculations
     const eurValue = parseFloat(amountEUR);
+    const usdValue = convertEurToUsd(eurValue, exchangeRate);
     const coinAmount = parseFloat(amountCoin);
-    const feeAmount = eurValue * 0.0035; // Updated to 0.35%
-    const totalCost = eurValue + feeAmount;
+    const feeAmountUsd = usdValue * 0.0035; // Updated to 0.35%
+    const totalCostUsd = usdValue + feeAmountUsd;
+    const userBalanceEur = convertUsdToEur(userBalanceUsd, exchangeRate);
 
     console.log('[useTrade] Initiating trade with params:', {
       userId: user.id,
       cryptoId: crypto.id,
       tradeType,
       eurValue,
+      usdValue,
       coinAmount,
-      userBalance,
+      userBalanceUsd,
+      userBalanceEur,
       userHoldings,
     });
 
-    if (tradeType === 'buy' && totalCost > userBalance) {
+    if (tradeType === 'buy' && eurValue > userBalanceEur) {
       toast.error('Insufficient balance');
       return;
     }
@@ -118,7 +129,7 @@ export const useTrade = (crypto: Cryptocurrency | undefined) => {
     const logPrefix = `[Trade-Step]`;
 
     try {
-      // Step 1: Create trading order
+      // Step 1: Create trading order (store in USD)
       console.log(`${logPrefix} 1. Inserting into trading_orders...`);
       const { data: order, error: orderError } = await supabase
         .from('trading_orders')
@@ -128,8 +139,8 @@ export const useTrade = (crypto: Cryptocurrency | undefined) => {
           order_type: tradeType,
           amount: coinAmount,
           price_per_unit: crypto.current_price,
-          total_value: eurValue,
-          fees: feeAmount,
+          total_value: usdValue, // Store USD value
+          fees: feeAmountUsd, // Store USD fees
           order_status: 'completed',
           executed_at: new Date().toISOString()
         })
@@ -151,8 +162,8 @@ export const useTrade = (crypto: Cryptocurrency | undefined) => {
           cryptocurrency_id: crypto.id,
           transaction_type: transactionType,
           amount: coinAmount,
-          usd_value: eurValue,
-          fee_amount: feeAmount,
+          usd_value: usdValue, // Store USD value
+          fee_amount: feeAmountUsd, // Store USD fees
           status: 'completed',
           description: `${tradeType.toUpperCase()} ${coinAmount.toFixed(8)} ${crypto.symbol}`,
           reference_order_id: order.id
@@ -234,8 +245,8 @@ export const useTrade = (crypto: Cryptocurrency | undefined) => {
       // Step 4: Update user balance
       console.log(`${logPrefix} 4. Updating user balance...`);
       const newBalance = tradeType === 'buy' 
-        ? userBalance - totalCost 
-        : userBalance + eurValue - feeAmount;
+        ? userBalanceUsd - totalCostUsd 
+        : userBalanceUsd + eurValue - feeAmountUsd;
       
       const { data: updatedProfile, error: balanceError } = await supabase
         .from('profiles')
@@ -256,7 +267,7 @@ export const useTrade = (crypto: Cryptocurrency | undefined) => {
       queryClient.invalidateQueries({ queryKey: historyQueryKey });
       queryClient.invalidateQueries({ queryKey: ['admin-transactions'] });
       
-      toast.success(`Successfully ${tradeType === 'buy' ? 'bought' : 'sold'} ${coinAmount.toFixed(8)} ${crypto.symbol}`);
+      toast.success(`Successfully ${tradeType === 'buy' ? 'bought' : 'sold'} ${coinAmount.toFixed(8)} ${crypto.symbol} for €${eurValue.toFixed(2)}`);
       
       setAmountEUR('');
       setAmountCoin('');
@@ -269,6 +280,9 @@ export const useTrade = (crypto: Cryptocurrency | undefined) => {
     }
   };
 
+  // Convert user balance to EUR for display
+  const userBalanceEur = convertUsdToEur(userBalanceUsd, exchangeRate);
+
   return {
     user,
     tradeType,
@@ -280,7 +294,7 @@ export const useTrade = (crypto: Cryptocurrency | undefined) => {
     handleAmountEURChange,
     handleAmountCoinChange,
     isProcessingTrade,
-    userBalance,
+    userBalance: userBalanceEur, // Return EUR balance for display
     userHoldings,
     handleTrade,
   };

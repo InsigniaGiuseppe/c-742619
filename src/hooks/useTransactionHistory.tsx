@@ -1,6 +1,9 @@
+
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useExchangeRate } from '@/hooks/useExchangeRate';
+import { convertUsdToEur } from '@/lib/currencyConverter';
 
 export interface Transaction {
   id: string;
@@ -8,7 +11,9 @@ export interface Transaction {
   transaction_type: string;
   amount?: number;
   usd_value?: number;
+  eur_value?: number; // Add EUR converted value
   fee_amount?: number;
+  eur_fee_amount?: number; // Add EUR converted fee
   status: string;
   description?: string;
   created_at: string;
@@ -47,6 +52,7 @@ const fetchTransactions = async (userId: string): Promise<Transaction[]> => {
 
 export const useTransactionHistory = () => {
   const { user } = useAuth();
+  const { exchangeRate } = useExchangeRate();
   const queryKey = ['transaction-history', user?.id];
 
   const query = useQuery({
@@ -60,8 +66,15 @@ export const useTransactionHistory = () => {
     refetchInterval: 60000, // Refetch every minute
   });
 
+  // Convert USD values to EUR for display
+  const transactionsEur = query.data?.map(transaction => ({
+    ...transaction,
+    eur_value: transaction.usd_value ? convertUsdToEur(transaction.usd_value, exchangeRate) : undefined,
+    eur_fee_amount: transaction.fee_amount ? convertUsdToEur(transaction.fee_amount, exchangeRate) : undefined,
+  })) || [];
+
   return {
-    transactions: query.data || [],
+    transactions: transactionsEur,
     loading: query.isLoading,
     error: query.error?.message || null,
     refetch: query.refetch,

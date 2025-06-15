@@ -2,6 +2,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useExchangeRate } from '@/hooks/useExchangeRate';
+import { convertUsdToEur } from '@/lib/currencyConverter';
 
 export interface PortfolioItem {
   id: string;
@@ -138,6 +140,7 @@ const fetchPortfolio = async (userId: string): Promise<{
 
 export const usePortfolio = () => {
   const { user } = useAuth();
+  const { exchangeRate } = useExchangeRate();
   const queryKey = ['portfolio', user?.id];
 
   const query = useQuery({
@@ -151,12 +154,25 @@ export const usePortfolio = () => {
     refetchInterval: 25000, // Refetch every 25 seconds for live pricing
   });
 
+  // Convert all USD values to EUR for display
+  const portfolioEur = query.data?.portfolio.map(item => ({
+    ...item,
+    average_buy_price: convertUsdToEur(item.average_buy_price, exchangeRate),
+    total_invested: convertUsdToEur(item.total_invested, exchangeRate),
+    current_value: convertUsdToEur(item.current_value, exchangeRate),
+    profit_loss: convertUsdToEur(item.profit_loss, exchangeRate),
+    crypto: {
+      ...item.crypto,
+      current_price: convertUsdToEur(item.crypto.current_price, exchangeRate)
+    }
+  })) || [];
+
   return {
-    portfolio: query.data?.portfolio || [],
+    portfolio: portfolioEur,
     loading: query.isLoading,
     error: query.error?.message || null,
-    totalValue: query.data?.totalValue || 0,
-    totalProfitLoss: query.data?.totalProfitLoss || 0,
+    totalValue: convertUsdToEur(query.data?.totalValue || 0, exchangeRate),
+    totalProfitLoss: convertUsdToEur(query.data?.totalProfitLoss || 0, exchangeRate),
     totalProfitLossPercentage: query.data?.totalProfitLossPercentage || 0,
     refetch: query.refetch,
   };

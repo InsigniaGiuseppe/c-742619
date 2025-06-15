@@ -7,6 +7,8 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { formatCurrency, formatPrice } from '@/lib/formatters';
 import { Cryptocurrency } from '@/hooks/useCryptocurrencies';
 import { useTrade } from '@/hooks/useTrade';
+import { useExchangeRate } from '@/hooks/useExchangeRate';
+import { convertUsdToEur } from '@/lib/currencyConverter';
 import { toast } from 'sonner';
 
 interface TradeWidgetProps {
@@ -14,6 +16,7 @@ interface TradeWidgetProps {
 }
 
 const TradeWidget: React.FC<TradeWidgetProps> = ({ crypto }) => {
+  const { exchangeRate } = useExchangeRate();
   const {
     user,
     tradeType,
@@ -29,12 +32,15 @@ const TradeWidget: React.FC<TradeWidgetProps> = ({ crypto }) => {
     handleTrade,
   } = useTrade(crypto);
 
+  // Convert crypto price to EUR
+  const cryptoPriceEur = convertUsdToEur(crypto.current_price, exchangeRate);
+
   return (
     <Card className="glass glass-hover">
       <CardHeader>
         <CardTitle>Trade {crypto.symbol.toUpperCase()}</CardTitle>
         <p className="text-sm text-muted-foreground">
-          Account Balance: {formatCurrency(userBalance)}
+          Account Balance: {formatCurrency(userBalance, { currency: 'EUR' })}
         </p>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -81,7 +87,7 @@ const TradeWidget: React.FC<TradeWidgetProps> = ({ crypto }) => {
           </div>
 
           <div>
-            <label className="text-sm text-muted-foreground">Amount (USD)</label>
+            <label className="text-sm text-muted-foreground">Amount (EUR)</label>
             <Input
               type="number"
               placeholder="0.00"
@@ -106,15 +112,15 @@ const TradeWidget: React.FC<TradeWidgetProps> = ({ crypto }) => {
             <div className="p-3 bg-white/5 rounded-lg text-sm space-y-2">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Price</span>
-                <span>{formatPrice(crypto.current_price)}</span>
+                <span>{formatPrice(cryptoPriceEur, 'EUR')}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Fee (0.35%)</span>
-                <span>{formatCurrency(parseFloat(amountEUR) * 0.0035, { maximumFractionDigits: 4 })}</span>
+                <span>{formatCurrency(parseFloat(amountEUR) * 0.0035, { currency: 'EUR', maximumFractionDigits: 4 })}</span>
               </div>
               <div className="flex justify-between font-bold text-base border-t border-white/10 pt-2 mt-2">
                 <span>Total</span>
-                <span>{formatCurrency(parseFloat(amountEUR) * 1.0035)}</span>
+                <span>{formatCurrency(parseFloat(amountEUR) * 1.0035, { currency: 'EUR' })}</span>
               </div>
             </div>
           )}

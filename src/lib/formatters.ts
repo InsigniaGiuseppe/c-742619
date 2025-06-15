@@ -15,8 +15,8 @@ export const formatCurrency = (
   options: FormatOptions = {}
 ): string => {
   const {
-    currency = 'USD',
-    locale = 'en-US',
+    currency = 'EUR', // Changed default from USD to EUR
+    locale = 'nl-NL', // Changed default from en-US to nl-NL
     minimumFractionDigits,
     maximumFractionDigits,
     compact = false
@@ -104,9 +104,9 @@ const formatCrypto = (amount: number, currency: CurrencyType, locale: LocaleType
   return cleanNumber;
 };
 
-export const formatPrice = (price: number, currency: CurrencyType = 'USD'): string => {
+export const formatPrice = (price: number, currency: CurrencyType = 'EUR'): string => { // Changed default
   if (currency === 'crypto' || currency === 'BTC' || currency === 'ETH') {
-    return formatCrypto(price, currency, 'en-US');
+    return formatCrypto(price, currency, 'nl-NL');
   }
   
   if (price < 0.01) {
@@ -119,7 +119,7 @@ export const formatPrice = (price: number, currency: CurrencyType = 'USD'): stri
 };
 
 export const formatMarketCap = (marketCap: number): string => {
-  return formatCurrency(marketCap, { currency: 'USD', compact: true });
+  return formatCurrency(marketCap, { currency: 'EUR', compact: true }); // Changed from USD to EUR
 };
 
 export const formatPercentage = (percentage: number): string => {

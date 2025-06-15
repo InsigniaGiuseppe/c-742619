@@ -10,7 +10,7 @@ import FormattedNumber from '@/components/FormattedNumber';
 import { motion } from 'framer-motion';
 import RecentTransactions from '@/components/RecentTransactions';
 import PortfolioOverview from '@/components/PortfolioOverview';
-import { TrendingUp, TrendingDown, Wallet, DollarSign } from 'lucide-react';
+import { TrendingUp, TrendingDown, Wallet, Euro } from 'lucide-react';
 
 const DashboardPage = () => {
   const { user } = useAuth();
@@ -22,7 +22,7 @@ const DashboardPage = () => {
       title: 'Available Balance',
       value: balance,
       type: 'currency' as const,
-      icon: DollarSign,
+      icon: Euro, // Changed from DollarSign to Euro
       trend: 'neutral' as const,
       trendValue: 0,
       loading: balanceLoading,
@@ -49,7 +49,7 @@ const DashboardPage = () => {
       title: 'Holdings',
       value: portfolio.length,
       type: 'holdings' as const,
-      icon: DollarSign,
+      icon: Euro, // Changed from DollarSign to Euro
       trend: 'neutral' as const,
       trendValue: 0,
       loading: loading,
@@ -101,6 +101,7 @@ const DashboardPage = () => {
                         <FormattedNumber
                           value={stat.value}
                           type={stat.type}
+                          currency="EUR"
                           showTooltip={false}
                           className="text-2xl font-bold"
                         />
