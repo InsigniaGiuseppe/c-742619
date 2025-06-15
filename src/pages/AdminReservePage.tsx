@@ -197,12 +197,14 @@ const AdminReservePage: React.FC = () => {
                       {reserve.asset_symbol === 'EUR' ? (
                         <FormattedNumber value={reserve.reserve_amount} type="currency" currency="EUR" />
                       ) : (
-                        <>
-                          <FormattedNumber value={reserve.reserve_amount} type="price" />
-                          <span className="ml-1 text-sm text-muted-foreground">
-                            {reserve.asset_symbol}
+                        <div className="flex flex-col">
+                          <span>
+                            {reserve.reserve_amount.toLocaleString('en-US', { 
+                              minimumFractionDigits: 0,
+                              maximumFractionDigits: 8 
+                            })} {reserve.asset_symbol}
                           </span>
-                        </>
+                        </div>
                       )}
                     </div>
                   </TableCell>

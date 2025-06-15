@@ -31,32 +31,18 @@ const SpinRewardTierDisplay: React.FC<SpinRewardTierDisplayProps> = ({
   const getTierColor = (tier: string) => {
     switch (tier.toLowerCase()) {
       case 'bronze':
-        return 'bg-gradient-to-r from-amber-600 to-amber-800 shadow-amber-500/50';
+        return 'bg-gradient-to-r from-amber-600 to-amber-800';
       case 'silver':
-        return 'bg-gradient-to-r from-gray-400 to-gray-600 shadow-gray-400/50';
+        return 'bg-gradient-to-r from-gray-400 to-gray-600';
       case 'gold':
-        return 'bg-gradient-to-r from-yellow-400 to-yellow-600 shadow-yellow-400/50';
+        return 'bg-gradient-to-r from-yellow-400 to-yellow-600';
       case 'diamond':
-        return 'bg-gradient-to-r from-blue-400 to-purple-600 shadow-blue-400/50';
+        return 'bg-gradient-to-r from-blue-400 to-purple-600';
       case 'legendary':
-        return 'bg-gradient-to-r from-purple-500 to-pink-600 shadow-purple-500/50';
+        return 'bg-gradient-to-r from-purple-500 to-pink-600';
       default:
-        return 'bg-gradient-to-r from-gray-500 to-gray-700 shadow-gray-500/50';
+        return 'bg-gradient-to-r from-gray-500 to-gray-700';
     }
-  };
-
-  const getTierGlow = (tier: string, isSelected: boolean) => {
-    if (!isSelected) return '';
-    
-    const glowColors = {
-      bronze: 'shadow-[0_0_30px_#d97706,0_0_60px_#d97706,0_0_90px_#d97706] animate-pulse',
-      silver: 'shadow-[0_0_30px_#9ca3af,0_0_60px_#9ca3af,0_0_90px_#9ca3af] animate-pulse',
-      gold: 'shadow-[0_0_30px_#eab308,0_0_60px_#eab308,0_0_90px_#eab308] animate-pulse',
-      diamond: 'shadow-[0_0_30px_#3b82f6,0_0_60px_#3b82f6,0_0_90px_#3b82f6] animate-pulse',
-      legendary: 'shadow-[0_0_30px_#a855f7,0_0_60px_#a855f7,0_0_90px_#a855f7] animate-pulse'
-    };
-    
-    return glowColors[tier.toLowerCase() as keyof typeof glowColors] || '';
   };
 
   const getRarityText = (probability: number) => {
@@ -72,7 +58,6 @@ const SpinRewardTierDisplay: React.FC<SpinRewardTierDisplayProps> = ({
       {rewards.map((reward, index) => {
         const isSelected = selectedTier === reward.tier;
         const tierColor = getTierColor(reward.tier);
-        const glowEffect = getTierGlow(reward.tier, isSelected);
         
         return (
           <div
@@ -80,13 +65,16 @@ const SpinRewardTierDisplay: React.FC<SpinRewardTierDisplayProps> = ({
             className={`
               relative p-4 rounded-xl border-2 transition-all duration-500 transform
               ${tierColor}
-              ${isSelected ? 'border-white scale-110 z-10' : 'border-transparent hover:border-white/30'}
-              ${glowEffect}
+              ${isSelected 
+                ? 'border-white scale-110 z-10 shadow-2xl animate-pulse' 
+                : 'border-transparent hover:border-white/30'
+              }
               backdrop-blur-sm
             `}
             style={{
-              filter: isSelected ? 'drop-shadow(0 0 20px currentColor)' : 'none',
-              boxShadow: isSelected ? getTierGlow(reward.tier, true).replace('shadow-', '').replace(' animate-pulse', '') : 'none'
+              boxShadow: isSelected 
+                ? `0 0 30px rgba(255, 255, 255, 0.8), 0 0 60px rgba(255, 255, 255, 0.6), 0 0 90px rgba(255, 255, 255, 0.4)`
+                : 'none'
             }}
           >
             {/* Tier Badge */}
@@ -145,11 +133,11 @@ const SpinRewardTierDisplay: React.FC<SpinRewardTierDisplayProps> = ({
               </div>
             )}
 
-            {/* Enhanced tier glow effect overlay for selected items */}
+            {/* Enhanced glow effect overlay for selected items */}
             {isSelected && (
               <>
-                <div className="absolute inset-0 rounded-xl bg-gradient-to-t from-transparent via-white/5 to-white/10 pointer-events-none"></div>
-                <div className="absolute inset-0 rounded-xl animate-pulse bg-gradient-to-r from-transparent via-white/10 to-transparent pointer-events-none"></div>
+                <div className="absolute inset-0 rounded-xl bg-gradient-to-t from-transparent via-white/10 to-white/20 pointer-events-none animate-pulse"></div>
+                <div className="absolute inset-0 rounded-xl animate-pulse bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none"></div>
               </>
             )}
           </div>
