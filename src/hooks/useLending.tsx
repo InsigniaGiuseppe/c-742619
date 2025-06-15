@@ -106,39 +106,71 @@ export const useLending = () => {
         throw new Error(updateError.message);
       }
 
-      // Get current portfolio for this crypto
-      const { data: currentPortfolio, error: portfolioError } = await supabase
-        .from('user_portfolios')
-        .select('*')
-        .eq('user_id', user!.id)
-        .eq('cryptocurrency_id', lendingPosition.cryptocurrency_id)
-        .single();
-
-      if (portfolioError && portfolioError.code !== 'PGRST116') {
-        console.error('Error fetching current portfolio:', portfolioError);
-        throw new Error(portfolioError.message);
-      }
-
-      // Calculate new quantity (restore the lent amount + interest)
+      // Calculate total to return (lent amount + interest earned)
       const totalToReturn = lendingPosition.amount_lent + lendingPosition.total_interest_earned;
-      const newQuantity = (currentPortfolio?.quantity || 0) + totalToReturn;
 
-      // Update or insert portfolio record
+      // Use UPSERT to handle potential duplicate key constraint
       const { error: portfolioUpdateError } = await supabase
         .from('user_portfolios')
         .upsert({
           user_id: user!.id,
           cryptocurrency_id: lendingPosition.cryptocurrency_id,
-          quantity: newQuantity,
+          quantity: totalToReturn,
           updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'user_id,cryptocurrency_id',
+          ignoreDuplicates: false
         });
 
       if (portfolioUpdateError) {
         console.error('Error updating portfolio:', portfolioUpdateError);
-        throw new Error(portfolioUpdateError.message);
+        
+        // If UPSERT failed, try to get current portfolio and update manually
+        const { data: currentPortfolio, error: getError } = await supabase
+          .from('user_portfolios')
+          .select('quantity')
+          .eq('user_id', user!.id)
+          .eq('cryptocurrency_id', lendingPosition.cryptocurrency_id)
+          .single();
+
+        if (!getError && currentPortfolio) {
+          // Update existing record
+          const newQuantity = currentPortfolio.quantity + totalToReturn;
+          const { error: manualUpdateError } = await supabase
+            .from('user_portfolios')
+            .update({
+              quantity: newQuantity,
+              updated_at: new Date().toISOString()
+            })
+            .eq('user_id', user!.id)
+            .eq('cryptocurrency_id', lendingPosition.cryptocurrency_id);
+
+          if (manualUpdateError) {
+            throw new Error(`Failed to update portfolio: ${manualUpdateError.message}`);
+          }
+        } else {
+          // Create new record
+          const { error: insertError } = await supabase
+            .from('user_portfolios')
+            .insert({
+              user_id: user!.id,
+              cryptocurrency_id: lendingPosition.cryptocurrency_id,
+              quantity: totalToReturn,
+              average_buy_price: 0,
+              total_invested: 0,
+              current_value: 0,
+              profit_loss: 0,
+              profit_loss_percentage: 0,
+              updated_at: new Date().toISOString()
+            });
+
+          if (insertError) {
+            throw new Error(`Failed to create portfolio record: ${insertError.message}`);
+          }
+        }
       }
 
-      // Create transaction record for the cancellation (this should now work with fixed constraint)
+      // Create transaction record for the cancellation
       const { error: transactionError } = await supabase
         .from('transaction_history')
         .insert({

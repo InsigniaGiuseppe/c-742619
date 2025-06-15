@@ -57,8 +57,8 @@ const EnhancedBalanceWidget: React.FC = () => {
         onOpenChange={setShowDepositModal} 
       />
       <WithdrawModal 
-        open={showWithdrawModal} 
-        onOpenChange={setShowWithdrawModal} 
+        isOpen={showWithdrawModal} 
+        onClose={() => setShowWithdrawModal(false)} 
       />
     </div>
   );
