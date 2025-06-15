@@ -102,7 +102,7 @@ export const useLending = () => {
       // Update lending status to cancelled
       const { error: updateError } = await supabase
         .from('user_lending')
-        .update({ 
+        .update({
           status: 'cancelled',
           lending_cancelled_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
@@ -115,55 +115,26 @@ export const useLending = () => {
         throw new Error(updateError.message);
       }
 
-      // Calculate total to return (lent amount + interest earned)
       const totalToReturn = lendingPosition.amount_lent + lendingPosition.total_interest_earned;
 
-      // Check if portfolio entry already exists
-      const { data: existingPortfolio, error: getError } = await supabase
+      // Use upsert for portfolio record (in case row doesn't exist)
+      const { data: upserted, error: upsertError } = await supabase
         .from('user_portfolios')
-        .select('*')
-        .eq('user_id', user!.id)
-        .eq('cryptocurrency_id', lendingPosition.cryptocurrency_id)
-        .single();
+        .upsert({
+          user_id: user!.id,
+          cryptocurrency_id: lendingPosition.cryptocurrency_id,
+          quantity: totalToReturn,
+          average_buy_price: 0,
+          total_invested: 0,
+          current_value: totalToReturn * (lendingPosition.crypto?.current_price || 0),
+          profit_loss: 0,
+          profit_loss_percentage: 0
+        }, { onConflict: 'user_id,cryptocurrency_id' })
+        .select();
 
-      if (existingPortfolio) {
-        // Update existing portfolio entry
-        const newQuantity = existingPortfolio.quantity + totalToReturn;
-        const { error: updatePortfolioError } = await supabase
-          .from('user_portfolios')
-          .update({
-            quantity: newQuantity,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', existingPortfolio.id);
-
-        if (updatePortfolioError) {
-          console.error('Error updating existing portfolio:', updatePortfolioError);
-          throw new Error(`Failed to update portfolio: ${updatePortfolioError.message}`);
-        }
-      } else if (getError && getError.code !== 'PGRST116') {
-        // PGRST116 means no rows found, which is fine
-        console.error('Error checking portfolio:', getError);
-        throw new Error(`Failed to check portfolio: ${getError.message}`);
-      } else {
-        // Create new portfolio entry
-        const { error: insertError } = await supabase
-          .from('user_portfolios')
-          .insert({
-            user_id: user!.id,
-            cryptocurrency_id: lendingPosition.cryptocurrency_id,
-            quantity: totalToReturn,
-            average_buy_price: 0,
-            total_invested: 0,
-            current_value: totalToReturn * (lendingPosition.crypto?.current_price || 0),
-            profit_loss: 0,
-            profit_loss_percentage: 0
-          });
-
-        if (insertError) {
-          console.error('Error creating portfolio entry:', insertError);
-          throw new Error(`Failed to create portfolio record: ${insertError.message}`);
-        }
+      if (upsertError) {
+        console.error('Error upserting portfolio:', upsertError);
+        throw new Error(`Failed to update portfolio: ${upsertError.message}`);
       }
 
       // Create transaction record for the cancellation
@@ -181,7 +152,7 @@ export const useLending = () => {
 
       if (transactionError) {
         console.error('Error creating transaction record:', transactionError);
-        // Log the error but don't throw since the main operation succeeded
+        // Log but do not throw
         console.warn('Transaction recording failed but lending cancellation succeeded');
       }
 

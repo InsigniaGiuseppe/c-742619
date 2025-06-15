@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { motion } from 'framer-motion';
 
@@ -22,7 +21,7 @@ const SpinRewardTierDisplay: React.FC<SpinRewardTierDisplayProps> = ({
       case 'common':
         return {
           color: 'from-gray-400 to-gray-600',
-          glowColor: 'shadow-gray-400/50',
+          glowColor: 'shadow-[0_0_24px_6px_rgba(180,180,180,0.65)]',
           borderColor: 'border-gray-400',
           scale: 1.0,
           pulseIntensity: 0.05
@@ -30,7 +29,7 @@ const SpinRewardTierDisplay: React.FC<SpinRewardTierDisplayProps> = ({
       case 'rare':
         return {
           color: 'from-blue-400 to-blue-600',
-          glowColor: 'shadow-blue-400/50',
+          glowColor: 'shadow-[0_0_32px_10px_rgba(70,130,255,0.65)]',
           borderColor: 'border-blue-400',
           scale: 1.1,
           pulseIntensity: 0.1
@@ -38,7 +37,7 @@ const SpinRewardTierDisplay: React.FC<SpinRewardTierDisplayProps> = ({
       case 'epic':
         return {
           color: 'from-purple-400 to-purple-600',
-          glowColor: 'shadow-purple-400/50',
+          glowColor: 'shadow-[0_0_36px_12px_rgba(150,70,255,0.75)]',
           borderColor: 'border-purple-400',
           scale: 1.2,
           pulseIntensity: 0.15
@@ -46,7 +45,7 @@ const SpinRewardTierDisplay: React.FC<SpinRewardTierDisplayProps> = ({
       case 'legendary':
         return {
           color: 'from-yellow-400 to-orange-500',
-          glowColor: 'shadow-yellow-400/50',
+          glowColor: 'shadow-[0_0_48px_18px_rgba(255,180,35,0.8)]',
           borderColor: 'border-yellow-400',
           scale: 1.3,
           pulseIntensity: 0.2
@@ -54,7 +53,7 @@ const SpinRewardTierDisplay: React.FC<SpinRewardTierDisplayProps> = ({
       default:
         return {
           color: 'from-gray-400 to-gray-600',
-          glowColor: 'shadow-gray-400/50',
+          glowColor: 'shadow-[0_0_24px_6px_rgba(180,180,180,0.65)]',
           borderColor: 'border-gray-400',
           scale: 1.0,
           pulseIntensity: 0.05
@@ -67,19 +66,19 @@ const SpinRewardTierDisplay: React.FC<SpinRewardTierDisplayProps> = ({
   return (
     <motion.div
       initial={{ scale: 0, opacity: 0 }}
-      animate={{ 
-        scale: config.scale, 
+      animate={{
+        scale: config.scale,
         opacity: 1,
       }}
-      transition={{ 
-        type: "spring", 
-        stiffness: 260, 
+      transition={{
+        type: "spring",
+        stiffness: 260,
         damping: 20,
         duration: 0.6
       }}
-      className={`relative ${className}`}
+      className={`relative z-10 ${className}`}
     >
-      {/* Outer glow effect */}
+      {/* Outer glow effect (z-20 for glow above background) */}
       <motion.div
         animate={{
           scale: [1, 1 + config.pulseIntensity, 1],
@@ -89,16 +88,19 @@ const SpinRewardTierDisplay: React.FC<SpinRewardTierDisplayProps> = ({
           repeat: Infinity,
           ease: "easeInOut"
         }}
-        className={`absolute inset-0 bg-gradient-to-r ${config.color} rounded-lg blur-lg ${config.glowColor} opacity-75`}
+        className={`absolute inset-0 z-20 bg-gradient-to-r ${config.color} rounded-lg blur-lg opacity-75 ${config.glowColor}`}
+        style={{
+          pointerEvents: 'none',
+        }}
       />
-      
-      {/* Main reward container */}
+
+      {/* Main reward container (z-30 for reward container above glow) */}
       <motion.div
         whileHover={{ scale: 1.05 }}
-        className={`relative bg-gradient-to-r ${config.color} rounded-lg p-6 border-2 ${config.borderColor} backdrop-blur-sm`}
+        className={`relative bg-gradient-to-r ${config.color} rounded-lg p-6 border-2 ${config.borderColor} backdrop-blur-sm z-30`}
       >
-        {/* Tier badge */}
-        <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+        {/* Tier badge (z-40 for badge above reward container) */}
+        <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-40">
           <motion.div
             animate={{
               rotateY: [0, 360],
@@ -144,7 +146,7 @@ const SpinRewardTierDisplay: React.FC<SpinRewardTierDisplayProps> = ({
 
         {/* Animated particles effect for higher tiers */}
         {(tier.toLowerCase() === 'epic' || tier.toLowerCase() === 'legendary') && (
-          <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute inset-0 pointer-events-none z-50">
             {[...Array(6)].map((_, i) => (
               <motion.div
                 key={i}

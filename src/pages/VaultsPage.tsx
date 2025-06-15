@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useRealtimePortfolio } from '@/hooks/useRealtimePortfolio';
 import { useAuth } from '@/hooks/useAuth';
@@ -39,6 +38,9 @@ const VaultsPage: React.FC = () => {
     };
   });
 
+  // Add react-query to get vault configurations if not already available
+  // const { data: vaultConfigs } = useVaults();
+
   const handleVault = async (cryptoId: string, amount: number, durationDays: number) => {
     if (!user) {
       toast.error('Please log in to vault crypto');
@@ -59,13 +61,79 @@ const VaultsPage: React.FC = () => {
         return;
       }
 
+      // Find corresponding vault config by cryptoId and duration
+      const { data: vaultConfigRows, error: vaultConfigError } = await supabase
+        .from('vault_configurations')
+        .select('*')
+        .eq('cryptocurrency_id', cryptoId)
+        .eq('duration_days', durationDays)
+        .limit(1);
+
+      if (vaultConfigError || !vaultConfigRows || vaultConfigRows.length === 0) {
+        toast.error('Vault configuration not found.');
+        return;
+      }
+      const vaultConfig = vaultConfigRows[0];
+
       // Calculate end date
       const endDate = new Date();
       endDate.setDate(endDate.getDate() + durationDays);
 
-      // Create vault position (this would need vault_configurations table to be set up)
-      // For now, we'll show a success message
+      // Insert user_vaults entry
+      const { data: vaultData, error: vaultError } = await supabase
+        .from('user_vaults')
+        .insert({
+          user_id: user.id,
+          vault_config_id: vaultConfig.id,
+          amount_vaulted: amount,
+          ends_at: endDate.toISOString(),
+          status: 'active'
+        })
+        .select()
+        .single();
+
+      if (vaultError || !vaultData) {
+        toast.error('Failed to create vault.');
+        console.error('[VaultsPage] Error vaulting:', vaultError);
+        return;
+      }
+
+      // Update portfolio (subtract amount)
+      const { error: portfolioError } = await supabase
+        .from('user_portfolios')
+        .update({ quantity: cryptoInfo.quantity - amount })
+        .eq('user_id', user.id)
+        .eq('cryptocurrency_id', cryptoId);
+
+      if (portfolioError) {
+        toast.error('Failed to update portfolio.');
+        console.error('[VaultsPage] Portfolio update error:', portfolioError);
+        // Optionally, rollback the created vault
+        await supabase.from('user_vaults').delete().eq('id', vaultData.id);
+        return;
+      }
+
+      // Add transaction record
+      const { error: transactionError } = await supabase.from('transaction_history').insert({
+        user_id: user.id,
+        cryptocurrency_id: cryptoId,
+        amount: amount,
+        usd_value: amount * cryptoInfo.crypto.current_price,
+        transaction_type: 'vault_deposit',
+        description: `Vaulted ${amount} ${cryptoInfo.crypto.symbol} for ${durationDays} days.`,
+        status: 'completed'
+      });
+
+      if (transactionError) {
+        // Do not block core operation, just log.
+        console.warn('Transaction log failed.', transactionError);
+      }
+
       toast.success(`Successfully vaulted ${amount} ${cryptoInfo.crypto.symbol} for ${durationDays} days`);
+
+      // Refresh vaults UI (simulate by reloading, or refetch using query/react-query)
+      if (typeof window !== 'undefined') window.location.reload();
+      // If using react-query: queryClient.invalidateQueries({ queryKey: ['user_vaults', user.id] });
       
     } catch (error: any) {
       console.error('Vault error:', error);
