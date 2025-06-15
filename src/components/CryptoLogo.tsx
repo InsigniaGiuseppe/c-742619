@@ -17,6 +17,7 @@ const CryptoLogo: React.FC<CryptoLogoProps> = ({
   className = '' 
 }) => {
   const [imageError, setImageError] = useState(false);
+  const [fallbackError, setFallbackError] = useState(false);
 
   const sizeClasses = {
     xs: 'w-4 h-4',
@@ -34,22 +35,24 @@ const CryptoLogo: React.FC<CryptoLogoProps> = ({
     xl: 'text-xl'
   };
 
-  // Known logo URLs for major cryptocurrencies as fallbacks
+  // Enhanced logo URLs for major cryptocurrencies
   const knownLogos: Record<string, string> = {
-    'BTC': 'https://cryptologos.cc/logos/bitcoin-btc-logo.png',
-    'ETH': 'https://cryptologos.cc/logos/ethereum-eth-logo.png',
-    'SOL': 'https://cryptologos.cc/logos/solana-sol-logo.png',
-    'USDT': 'https://cryptologos.cc/logos/tether-usdt-logo.png',
-    'BNB': 'https://cryptologos.cc/logos/bnb-bnb-logo.png',
-    'USDC': 'https://cryptologos.cc/logos/usd-coin-usdc-logo.png',
-    'ADA': 'https://cryptologos.cc/logos/cardano-ada-logo.png',
-    'DOGE': 'https://cryptologos.cc/logos/dogecoin-doge-logo.png',
+    'BTC': 'https://assets.coingecko.com/coins/images/1/large/bitcoin.png',
+    'ETH': 'https://assets.coingecko.com/coins/images/279/large/ethereum.png',
+    'SOL': 'https://assets.coingecko.com/coins/images/4128/large/solana.png',
+    'USDT': 'https://assets.coingecko.com/coins/images/325/large/Tether.png',
+    'BNB': 'https://assets.coingecko.com/coins/images/825/large/bnb-icon2_2x.png',
+    'USDC': 'https://assets.coingecko.com/coins/images/6319/large/USD_Coin_icon.png',
+    'ADA': 'https://assets.coingecko.com/coins/images/975/large/cardano.png',
+    'DOGE': 'https://assets.coingecko.com/coins/images/5/large/dogecoin.png',
   };
 
   const fallbackUrl = knownLogos[symbol.toUpperCase()];
+  
+  console.log(`[CryptoLogo] ${symbol}: logo_url=${logo_url}, fallbackUrl=${fallbackUrl}, imageError=${imageError}, fallbackError=${fallbackError}`);
 
-  if (!logo_url && !fallbackUrl || imageError) {
-    // Return initials as fallback
+  // If both original and fallback failed, or no URLs available, show initials
+  if ((!logo_url && !fallbackUrl) || (imageError && fallbackError)) {
     const initials = symbol.slice(0, 2).toUpperCase();
     return (
       <div 
@@ -63,12 +66,22 @@ const CryptoLogo: React.FC<CryptoLogoProps> = ({
     );
   }
 
+  // Try original URL first, then fallback
+  const imageUrl = (!imageError && logo_url) ? logo_url : fallbackUrl;
+  
   return (
     <img 
-      src={logo_url || fallbackUrl}
+      src={imageUrl}
       alt={`${name} logo`}
       className={`${sizeClasses[size]} ${className} rounded-full object-cover`}
-      onError={() => setImageError(true)}
+      onError={() => {
+        console.log(`[CryptoLogo] Image error for ${symbol} with URL: ${imageUrl}`);
+        if (!imageError && logo_url && imageUrl === logo_url) {
+          setImageError(true);
+        } else {
+          setFallbackError(true);
+        }
+      }}
       title={name}
     />
   );

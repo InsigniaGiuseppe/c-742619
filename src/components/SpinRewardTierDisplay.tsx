@@ -84,6 +84,9 @@ const SpinRewardTierDisplay: React.FC<SpinRewardTierDisplayProps> = ({
               ${glowEffect}
               backdrop-blur-sm
             `}
+            style={{
+              filter: isSelected ? 'drop-shadow(0 0 20px currentColor)' : 'none'
+            }}
           >
             {/* Tier Badge */}
             <div className="flex items-center justify-between mb-3">
@@ -135,15 +138,18 @@ const SpinRewardTierDisplay: React.FC<SpinRewardTierDisplayProps> = ({
             {/* Selected Indicator */}
             {isSelected && (
               <div className="absolute -top-2 -right-2">
-                <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center">
-                  <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center animate-pulse">
+                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
                 </div>
               </div>
             )}
 
-            {/* Tier glow effect overlay */}
+            {/* Enhanced tier glow effect overlay for selected items */}
             {isSelected && (
-              <div className="absolute inset-0 rounded-xl bg-gradient-to-t from-transparent via-white/5 to-white/10 pointer-events-none"></div>
+              <>
+                <div className="absolute inset-0 rounded-xl bg-gradient-to-t from-transparent via-white/5 to-white/10 pointer-events-none"></div>
+                <div className="absolute inset-0 rounded-xl animate-pulse bg-gradient-to-r from-transparent via-white/10 to-transparent pointer-events-none"></div>
+              </>
             )}
           </div>
         );

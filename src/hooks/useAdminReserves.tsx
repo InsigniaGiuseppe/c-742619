@@ -33,6 +33,14 @@ const fetchReserves = async (exchangeRate: number): Promise<{
     { symbol: 'USDT', name: 'Tether', amount: 500000 },
   ];
 
+  // Enhanced logo URLs as fallback
+  const enhancedLogos: Record<string, string> = {
+    'BTC': 'https://assets.coingecko.com/coins/images/1/large/bitcoin.png',
+    'ETH': 'https://assets.coingecko.com/coins/images/279/large/ethereum.png',
+    'SOL': 'https://assets.coingecko.com/coins/images/4128/large/solana.png',
+    'USDT': 'https://assets.coingecko.com/coins/images/325/large/Tether.png',
+  };
+
   // Fetch crypto prices and info
   const { data: cryptoData, error: cryptoError } = await supabase
     .from('cryptocurrencies')
@@ -83,7 +91,7 @@ const fetchReserves = async (exchangeRate: number): Promise<{
   const reserves: ReserveAsset[] = [];
   let totalCryptoValue = 0;
 
-  // Add crypto reserves with proper EUR value calculation
+  // Add crypto reserves with proper EUR value calculation and logos
   defaultReserves.forEach(reserve => {
     const cryptoInfo = cryptoData?.find(c => c.symbol.toLowerCase() === reserve.symbol.toLowerCase());
     const userHolding = userHoldings[reserve.symbol] || 0;
@@ -103,6 +111,9 @@ const fetchReserves = async (exchangeRate: number): Promise<{
     if (reserveRatio < 0.1) status = 'Critical';
     else if (reserveRatio < 0.3) status = 'Low';
 
+    // Use enhanced logo URL if database doesn't have one
+    const logoUrl = cryptoInfo?.logo_url || enhancedLogos[reserve.symbol.toUpperCase()];
+
     reserves.push({
       asset_symbol: reserve.symbol,
       asset_name: cryptoInfo?.name || reserve.name,
@@ -110,7 +121,7 @@ const fetchReserves = async (exchangeRate: number): Promise<{
       eur_value: eurValue,
       last_updated: 'just now',
       status,
-      logo_url: cryptoInfo?.logo_url,
+      logo_url: logoUrl,
     });
   });
 
@@ -130,6 +141,7 @@ const fetchReserves = async (exchangeRate: number): Promise<{
     eur_value: actualEurReserve,
     last_updated: 'just now',
     status: eurStatus,
+    // No logo_url for EUR, will use default EUR icon
   });
 
   const totalValue = totalCryptoValue + actualEurReserve;

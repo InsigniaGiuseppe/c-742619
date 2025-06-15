@@ -37,13 +37,15 @@ const IndividualVaultCard: React.FC<IndividualVaultCardProps> = ({
   // Enhanced logo URLs for major cryptocurrencies
   const getEnhancedLogoUrl = (symbol: string) => {
     const logoMap: Record<string, string> = {
-      'BTC': 'https://cryptologos.cc/logos/bitcoin-btc-logo.png',
-      'ETH': 'https://cryptologos.cc/logos/ethereum-eth-logo.png',
-      'SOL': 'https://cryptologos.cc/logos/solana-sol-logo.png',
-      'USDT': 'https://cryptologos.cc/logos/tether-usdt-logo.png',
+      'BTC': 'https://assets.coingecko.com/coins/images/1/large/bitcoin.png',
+      'ETH': 'https://assets.coingecko.com/coins/images/279/large/ethereum.png',
+      'SOL': 'https://assets.coingecko.com/coins/images/4128/large/solana.png',
+      'USDT': 'https://assets.coingecko.com/coins/images/325/large/Tether.png',
     };
     return logoMap[symbol.toUpperCase()] || crypto.logo_url;
   };
+
+  console.log(`[IndividualVaultCard] ${crypto.symbol}: using logo URL:`, getEnhancedLogoUrl(crypto.symbol));
 
   const handleVault = async () => {
     const vaultAmount = parseFloat(amount);
