@@ -12,6 +12,8 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { ArrowDown, CreditCard, Building2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 interface DepositModalProps {
   open: boolean;
@@ -19,6 +21,7 @@ interface DepositModalProps {
 }
 
 const DepositModal: React.FC<DepositModalProps> = ({ open, onOpenChange }) => {
+  const { user } = useAuth();
   const [amount, setAmount] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -28,15 +31,64 @@ const DepositModal: React.FC<DepositModalProps> = ({ open, onOpenChange }) => {
       return;
     }
 
+    if (!user) {
+      toast.error('User not authenticated');
+      return;
+    }
+
     setLoading(true);
     try {
-      // Simulate deposit process
+      const depositAmount = parseFloat(amount);
+      
+      // Get current balance
+      const { data: currentProfile, error: fetchError } = await supabase
+        .from('profiles')
+        .select('demo_balance_usd')
+        .eq('id', user.id)
+        .single();
+
+      if (fetchError) {
+        throw fetchError;
+      }
+
+      const currentBalance = currentProfile.demo_balance_usd || 0;
+      const newBalance = currentBalance + depositAmount;
+
+      // Update user balance
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ demo_balance_usd: newBalance })
+        .eq('id', user.id);
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      // Create transaction history entry
+      const { error: transactionError } = await supabase
+        .from('transaction_history')
+        .insert({
+          user_id: user.id,
+          transaction_type: 'deposit_ideal',
+          usd_value: depositAmount,
+          status: 'completed',
+          description: `iDEAL deposit of €${amount}`
+        });
+
+      if (transactionError) {
+        console.error('Transaction history error:', transactionError);
+        // Don't throw here as the deposit succeeded
+      }
+
+      // Simulate processing time
       await new Promise(resolve => setTimeout(resolve, 2000));
-      toast.success(`Deposit of €${amount} initiated via iDEAL`);
+      
+      toast.success(`Deposit of €${amount} completed successfully`);
       setAmount('');
       onOpenChange(false);
-    } catch (error) {
-      toast.error('Deposit failed. Please try again.');
+    } catch (error: any) {
+      console.error('Deposit error:', error);
+      toast.error(`Deposit failed: ${error.message}`);
     } finally {
       setLoading(false);
     }

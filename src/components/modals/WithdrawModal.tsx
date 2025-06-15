@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import {
   Dialog,
@@ -19,6 +18,8 @@ import {
 import { ArrowUp, Euro, Bitcoin } from 'lucide-react';
 import { toast } from 'sonner';
 import { usePortfolio } from '@/hooks/usePortfolio';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 interface WithdrawModalProps {
   open: boolean;
@@ -28,7 +29,8 @@ interface WithdrawModalProps {
 type WithdrawType = 'selection' | 'eur' | 'crypto';
 
 const WithdrawModal: React.FC<WithdrawModalProps> = ({ open, onOpenChange }) => {
-  const { portfolio } = usePortfolio();
+  const { user } = useAuth();
+  const { portfolio, refetch: refetchPortfolio } = usePortfolio();
   const [withdrawType, setWithdrawType] = useState<WithdrawType>('selection');
   const [amount, setAmount] = useState('');
   const [selectedCrypto, setSelectedCrypto] = useState('');
@@ -41,28 +43,162 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({ open, onOpenChange }) => 
     { id: '2', label: 'Personal ETH', address: '0x742d35Cc...', coin: 'ETH' },
   ];
 
-  const handleWithdraw = async () => {
-    if (!amount || parseFloat(amount) <= 0) {
+  const handleEurWithdraw = async () => {
+    if (!amount || parseFloat(amount) <= 0 || !user) {
       toast.error('Please enter a valid amount');
       return;
     }
 
     setLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      const withdrawAmount = parseFloat(amount);
       
-      if (withdrawType === 'eur') {
-        toast.success(`EUR withdrawal of €${amount} initiated to your verified bank account`);
-      } else {
-        const crypto = portfolio?.find(p => p.crypto.id === selectedCrypto);
-        toast.success(`${crypto?.crypto.symbol} withdrawal of ${amount} initiated to your verified wallet`);
+      // Get current balance
+      const { data: currentProfile, error: fetchError } = await supabase
+        .from('profiles')
+        .select('demo_balance_usd')
+        .eq('id', user.id)
+        .single();
+
+      if (fetchError) {
+        throw fetchError;
       }
+
+      const currentBalance = currentProfile.demo_balance_usd || 0;
       
+      if (currentBalance < withdrawAmount) {
+        toast.error('Insufficient balance');
+        return;
+      }
+
+      const newBalance = currentBalance - withdrawAmount;
+
+      // Update user balance
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ demo_balance_usd: newBalance })
+        .eq('id', user.id);
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      // Create transaction history entry
+      const { error: transactionError } = await supabase
+        .from('transaction_history')
+        .insert({
+          user_id: user.id,
+          transaction_type: 'withdrawal_eur',
+          usd_value: withdrawAmount,
+          status: 'completed',
+          description: `EUR withdrawal of €${amount} to verified bank account`
+        });
+
+      if (transactionError) {
+        console.error('Transaction history error:', transactionError);
+      }
+
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      toast.success(`EUR withdrawal of €${amount} initiated to your verified bank account`);
       resetModal();
-    } catch (error) {
-      toast.error('Withdrawal failed. Please try again.');
+    } catch (error: any) {
+      console.error('EUR withdrawal error:', error);
+      toast.error(`Withdrawal failed: ${error.message}`);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCryptoWithdraw = async () => {
+    if (!amount || parseFloat(amount) <= 0 || !selectedCrypto || !selectedWallet || !user) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const withdrawAmount = parseFloat(amount);
+      const portfolioItem = portfolio?.find(p => p.crypto.id === selectedCrypto);
+      
+      if (!portfolioItem) {
+        toast.error('Selected cryptocurrency not found in portfolio');
+        return;
+      }
+
+      if (portfolioItem.quantity < withdrawAmount) {
+        toast.error('Insufficient cryptocurrency balance');
+        return;
+      }
+
+      // Update portfolio
+      const newQuantity = portfolioItem.quantity - withdrawAmount;
+      const newCurrentValue = newQuantity * (portfolioItem.crypto.current_price || 0);
+
+      if (newQuantity > 0) {
+        // Update existing portfolio entry
+        const { error: portfolioError } = await supabase
+          .from('user_portfolios')
+          .update({
+            quantity: newQuantity,
+            current_value: newCurrentValue,
+            profit_loss: newCurrentValue - portfolioItem.total_invested,
+            profit_loss_percentage: portfolioItem.total_invested > 0 
+              ? ((newCurrentValue - portfolioItem.total_invested) / portfolioItem.total_invested) * 100 
+              : 0
+          })
+          .eq('user_id', user.id)
+          .eq('cryptocurrency_id', selectedCrypto);
+
+        if (portfolioError) {
+          throw portfolioError;
+        }
+      } else {
+        // Remove portfolio entry if quantity becomes 0
+        const { error: portfolioError } = await supabase
+          .from('user_portfolios')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('cryptocurrency_id', selectedCrypto);
+
+        if (portfolioError) {
+          throw portfolioError;
+        }
+      }
+
+      // Create transaction history entry
+      const { error: transactionError } = await supabase
+        .from('transaction_history')
+        .insert({
+          user_id: user.id,
+          cryptocurrency_id: selectedCrypto,
+          transaction_type: 'withdrawal_crypto',
+          amount: withdrawAmount,
+          usd_value: withdrawAmount * (portfolioItem.crypto.current_price || 0),
+          status: 'completed',
+          description: `${portfolioItem.crypto.symbol} withdrawal of ${withdrawAmount} to verified wallet`
+        });
+
+      if (transactionError) {
+        console.error('Transaction history error:', transactionError);
+      }
+
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      toast.success(`${portfolioItem.crypto.symbol} withdrawal of ${amount} initiated to your verified wallet`);
+      refetchPortfolio();
+      resetModal();
+    } catch (error: any) {
+      console.error('Crypto withdrawal error:', error);
+      toast.error(`Withdrawal failed: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleWithdraw = async () => {
+    if (withdrawType === 'eur') {
+      await handleEurWithdraw();
+    } else if (withdrawType === 'crypto') {
+      await handleCryptoWithdraw();
     }
   };
 
