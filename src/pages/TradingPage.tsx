@@ -5,7 +5,7 @@ import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, Wifi, WifiOff } from 'lucide-react';
+import { Search, Wifi, WifiOff, LayoutGrid, List } from 'lucide-react';
 import { useCryptocurrencies, Cryptocurrency } from '@/hooks/useCryptocurrencies';
 import CryptoCard from '@/components/CryptoCard';
 import { useToast } from '@/hooks/use-toast';
@@ -13,9 +13,14 @@ import { motion } from 'framer-motion';
 import CryptoCardSkeleton from '@/components/CryptoCardSkeleton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import TopMovers from '@/components/TopMovers';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import CryptoTable from '@/components/CryptoTable';
+import CryptoTableRowSkeleton from '@/components/CryptoTableRowSkeleton';
+import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 const TradingPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const { cryptocurrencies, loading, error, refetch, isRealtimeConnected } = useCryptocurrencies();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -71,17 +76,25 @@ const TradingPage = () => {
 
         <TopMovers cryptocurrencies={cryptocurrencies} />
 
-        <div className="flex flex-col sm:flex-row gap-4 mb-8 max-w-2xl mx-auto">
-          <div className="relative flex-1 glass rounded-md">
+        <div className="flex flex-col sm:flex-row gap-4 mb-8 max-w-2xl mx-auto items-center">
+          <div className="relative flex-1 glass rounded-md w-full">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
             <Input
               type="text"
               placeholder="Search cryptocurrencies..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0"
+              className="pl-10 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 w-full"
             />
           </div>
+          <ToggleGroup type="single" value={viewMode} onValueChange={(value) => { if (value) setViewMode(value as 'grid' | 'list') }} className="glass p-1 rounded-md">
+            <ToggleGroupItem value="grid" aria-label="Grid view">
+              <LayoutGrid className="h-4 w-4" />
+            </ToggleGroupItem>
+            <ToggleGroupItem value="list" aria-label="List view">
+              <List className="h-4 w-4" />
+            </ToggleGroupItem>
+          </ToggleGroup>
         </div>
 
         {error && !isRealtimeConnected && (
@@ -94,25 +107,53 @@ const TradingPage = () => {
         )}
 
         {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {Array.from({ length: 12 }).map((_, i) => (
-              <CryptoCardSkeleton key={i} />
-            ))}
-          </div>
+          viewMode === 'grid' ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {Array.from({ length: 12 }).map((_, i) => (
+                <CryptoCardSkeleton key={i} />
+              ))}
+            </div>
+          ) : (
+            <div className="glass rounded-lg p-0.5">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-white/10">
+                    <TableHead className="w-[50px]">#</TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Price</TableHead>
+                    <TableHead>24h %</TableHead>
+                    <TableHead>Market Cap</TableHead>
+                    <TableHead className="text-right">Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {Array.from({ length: 12 }).map((_, i) => (
+                    <CryptoTableRowSkeleton key={i} />
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )
         ) : cryptocurrencies.length > 0 ? (
             <>
               {filteredCryptos.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                  {filteredCryptos.map((crypto) => (
-                    <CryptoCard 
-                      key={crypto.id} 
-                      crypto={crypto} 
-                      onTrade={handleTrade}
-                    />
-                  ))}
-                </div>
+                viewMode === 'grid' ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {filteredCryptos.map((crypto) => (
+                      <CryptoCard 
+                        key={crypto.id} 
+                        crypto={crypto} 
+                        onTrade={handleTrade}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="glass rounded-lg p-0.5">
+                    <CryptoTable cryptos={filteredCryptos} onTrade={handleTrade} />
+                  </div>
+                )
               ) : (
-                <div className="text-center">
+                <div className="text-center py-16">
                   <p className="text-muted-foreground">No cryptocurrencies found matching your search.</p>
                 </div>
               )}
