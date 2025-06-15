@@ -105,7 +105,7 @@ const RecentTransactions = () => {
                             logo_url={transaction.crypto.logo_url}
                             name={transaction.crypto.name}
                             symbol={transaction.crypto.symbol}
-                            size="xs"
+                            size="sm"
                           />
                           <div className="absolute -top-1 -right-1 bg-gray-900 rounded-full p-0.5 border border-gray-600">
                             {transactionIcon}
