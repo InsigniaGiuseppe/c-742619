@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -74,10 +73,20 @@ export const useLending = () => {
   const cancelLendingMutation = useMutation({
     mutationFn: async (lendingId: string) => {
       console.log('[useLending] Cancelling lending position:', lendingId);
-      
+
+      // Updated select to include the crypto relationship for correct typing
       const { data: lendingPosition, error: fetchError } = await supabase
         .from('user_lending')
-        .select('*')
+        .select(`
+          *,
+          crypto:cryptocurrencies(
+            id,
+            name,
+            symbol,
+            logo_url,
+            current_price
+          )
+        `)
         .eq('id', lendingId)
         .eq('user_id', user!.id)
         .single();
