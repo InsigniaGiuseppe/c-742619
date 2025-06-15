@@ -1,13 +1,17 @@
-import React from 'react';
+
+import React, { useState } from 'react';
 import { CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { useTransactionHistory } from '@/hooks/useTransactionHistory';
+import { useTransactionHistory, Transaction } from '@/hooks/useTransactionHistory';
 import { Settings, ArrowUp, ArrowDown, PiggyBank } from 'lucide-react';
 import FormattedNumber from './FormattedNumber';
 import CryptoLogo from './CryptoLogo';
+import { format } from 'date-fns';
+import TransactionDetailModal from './TransactionDetailModal';
 
 const RecentTransactions = () => {
   const { transactions, loading } = useTransactionHistory();
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
 
   if (loading) {
     return (
@@ -104,9 +108,10 @@ const RecentTransactions = () => {
               const isLendingTransaction = transaction.transaction_type.includes('lending');
               
               return (
-                <div 
+                <button 
                   key={transaction.id} 
-                  className="flex items-center justify-between p-2 bg-white/5 rounded-md hover:bg-white/10 transition-all duration-200 border border-white/10"
+                  onClick={() => setSelectedTransaction(transaction)}
+                  className="w-full flex items-center justify-between p-2 bg-white/5 rounded-md hover:bg-white/10 transition-all duration-200 border border-white/10 text-left"
                 >
                   <div className="flex items-center gap-2 min-w-0 flex-1">
                     <div className={`p-1.5 rounded-full ${transactionBgColor} flex items-center justify-center relative flex-shrink-0`}>
@@ -135,7 +140,7 @@ const RecentTransactions = () => {
                         {transaction.description || `${formattedType} ${transaction.crypto?.symbol || 'CRYPTO'}`}
                       </p>
                       <span className="text-xs text-gray-400">
-                        {new Date(transaction.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        {format(new Date(transaction.created_at), "MMM d, hh:mm a")}
                       </span>
                     </div>
                   </div>
@@ -156,12 +161,16 @@ const RecentTransactions = () => {
                       </Badge>
                     </div>
                   </div>
-                </div>
+                </button>
               );
             })}
           </div>
         )}
       </CardContent>
+      <TransactionDetailModal 
+        transaction={selectedTransaction}
+        onClose={() => setSelectedTransaction(null)}
+      />
     </div>
   );
 };

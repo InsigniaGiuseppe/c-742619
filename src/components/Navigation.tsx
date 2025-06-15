@@ -1,6 +1,8 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { useAdmin } from '@/hooks/useAdmin';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -23,6 +25,7 @@ const navLinks = [
 
 const Navigation: React.FC = () => {
   const { session, signOut } = useAuth();
+  const { isAdmin } = useAdmin();
   const { toast } = useToast();
 
   const handleSignOut = async () => {
@@ -48,6 +51,13 @@ const Navigation: React.FC = () => {
                 </Link>
               </li>
             ))}
+            {isAdmin && (
+              <li>
+                <Link to="/admin/dashboard" className="text-orange-400 hover:text-orange-300 font-semibold">
+                  Admin
+                </Link>
+              </li>
+            )}
             {session ? (
               <li>
                 <DropdownMenu>
