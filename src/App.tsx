@@ -1,4 +1,3 @@
-
 import { Route, BrowserRouter as Router, Routes } from "react-router-dom";
 import Index from "./pages/Index";
 import { Toaster } from "@/components/ui/sonner";
@@ -18,7 +17,6 @@ import AdminTransactions from "./pages/AdminTransactions";
 import ProfilePage from "./pages/ProfilePage";
 import WalletPage from "./pages/WalletPage";
 import TopUpPage from "./pages/TopUpPage";
-import ReferralsPage from "./pages/ReferralsPage";
 import LendingPage from "./pages/LendingPage";
 import MessagesPage from "./pages/MessagesPage";
 import TradingPage from "./pages/TradingPage";
@@ -40,7 +38,6 @@ function App() {
           <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
           <Route path="/wallet" element={<ProtectedRoute><WalletPage /></ProtectedRoute>} />
           <Route path="/top-up" element={<ProtectedRoute><TopUpPage /></ProtectedRoute>} />
-          <Route path="/referrals" element={<ProtectedRoute><ReferralsPage /></ProtectedRoute>} />
           <Route path="/lending" element={<ProtectedRoute><LendingPage /></ProtectedRoute>} />
           <Route path="/messages" element={<ProtectedRoute><MessagesPage /></ProtectedRoute>} />
           <Route path="/trading" element={<ProtectedRoute><TradingPage /></ProtectedRoute>} />

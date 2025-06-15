@@ -1,8 +1,9 @@
+
 import React from 'react';
 import { CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useTransactionHistory } from '@/hooks/useTransactionHistory';
-import { Settings, ArrowUp, ArrowDown } from 'lucide-react';
+import { Settings, ArrowUp, ArrowDown, PiggyBank } from 'lucide-react';
 import FormattedNumber from './FormattedNumber';
 import CryptoLogo from './CryptoLogo';
 
@@ -26,6 +27,9 @@ const RecentTransactions = () => {
   const recentTransactions = transactions.slice(0, 10);
 
   const getTransactionBgColor = (transactionType: string) => {
+    if (transactionType.includes('lending')) {
+      return 'bg-purple-500/30';
+    }
     if (transactionType.includes('admin')) {
       return 'bg-blue-500/30';
     }
@@ -35,6 +39,11 @@ const RecentTransactions = () => {
   };
 
   const formatTransactionType = (transactionType: string) => {
+    if (transactionType.includes('lending')) {
+      if (transactionType === 'lending_start') return 'LEND';
+      if (transactionType === 'lending_repayment') return 'LEND REPAID';
+      if (transactionType === 'lending_interest') return 'LEND INTEREST';
+    }
     switch (transactionType) {
       case 'trade_buy':
       case 'purchase':
@@ -55,13 +64,16 @@ const RecentTransactions = () => {
       case 'admin_balance_remove':
         return 'ADMIN WITHDRAWAL';
       default:
-        return transactionType.toUpperCase().replace('_', ' ');
+        return transactionType.toUpperCase().replace(/_/g, ' ');
     }
   };
 
   const getTransactionIcon = (transactionType: string) => {
     if (transactionType.includes('admin')) {
       return <Settings className="h-3 w-3 text-blue-500" />;
+    }
+    if (transactionType.includes('lending')) {
+      return <PiggyBank className="h-3 w-3 text-purple-500" />;
     }
     
     const isBuy = transactionType === 'trade_buy' || transactionType === 'purchase' || transactionType === 'buy' || transactionType.includes('buy');
@@ -89,6 +101,7 @@ const RecentTransactions = () => {
               const transactionIcon = getTransactionIcon(transaction.transaction_type);
               
               const isAdminTransaction = transaction.transaction_type.includes('admin');
+              const isLendingTransaction = transaction.transaction_type.includes('lending');
               
               return (
                 <div 
@@ -111,6 +124,8 @@ const RecentTransactions = () => {
                             {transactionIcon}
                           </div>
                         </>
+                      ) : isLendingTransaction ? (
+                        <PiggyBank className="h-4 w-4 text-purple-500" />
                       ) : (
                         <div className="w-5 h-5 rounded-full bg-gray-600 flex items-center justify-center text-xs font-bold">?</div>
                       )}
