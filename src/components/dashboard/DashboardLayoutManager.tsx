@@ -175,121 +175,124 @@ const DashboardLayoutManager: React.FC = () => {
   const inactiveWidgetConfigs = widgetConfigs.filter(w => !activeWidgets.includes(w.id));
 
   return (
-    <div className="space-y-6">
-      {/* Dashboard Controls */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="outline" className="text-green-500 border-green-500">
-            Customizable Dashboard
-          </Badge>
-          <span className="text-sm text-muted-foreground">
-            Drag widgets to rearrange • Resize by dragging corners
-          </span>
+    <>
+      <style>
+        {`
+          .react-grid-item.react-grid-placeholder {
+            background: rgba(59, 130, 246, 0.2) !important;
+            border: 2px dashed #3b82f6 !important;
+            border-radius: 8px !important;
+          }
+          
+          .react-grid-item:hover {
+            z-index: 2;
+          }
+          
+          .react-resizable-handle {
+            background: none !important;
+          }
+          
+          .react-resizable-handle::after {
+            content: '';
+            position: absolute;
+            right: 3px;
+            bottom: 3px;
+            width: 5px;
+            height: 5px;
+            border-right: 2px solid rgba(255, 255, 255, 0.4);
+            border-bottom: 2px solid rgba(255, 255, 255, 0.4);
+          }
+          
+          .react-grid-item.react-draggable-dragging {
+            transition: none !important;
+            z-index: 3;
+          }
+          
+          .react-grid-item.react-resizable-resizing {
+            z-index: 3;
+          }
+          
+          .drag-handle {
+            cursor: move;
+          }
+          
+          .drag-handle:active {
+            cursor: grabbing;
+          }
+        `}
+      </style>
+      <div className="space-y-6">
+        {/* Dashboard Controls */}
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="outline" className="text-green-500 border-green-500">
+              Customizable Dashboard
+            </Badge>
+            <span className="text-sm text-muted-foreground">
+              Drag widgets to rearrange • Resize by dragging corners
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            {inactiveWidgetConfigs.length > 0 && (
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">Add:</span>
+                {inactiveWidgetConfigs.map(widget => (
+                  <Button
+                    key={widget.id}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleAddWidget(widget.id)}
+                    className="h-7 text-xs"
+                  >
+                    <Plus className="h-3 w-3 mr-1" />
+                    {widget.title}
+                  </Button>
+                ))}
+              </div>
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleResetLayout}
+              className="h-7"
+            >
+              <RotateCcw className="h-3 w-3 mr-1" />
+              Reset
+            </Button>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          {inactiveWidgetConfigs.length > 0 && (
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">Add:</span>
-              {inactiveWidgetConfigs.map(widget => (
-                <Button
-                  key={widget.id}
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleAddWidget(widget.id)}
-                  className="h-7 text-xs"
+
+        {/* Responsive Grid Layout */}
+        <ResponsiveGridLayout
+          className="layout"
+          layouts={layouts}
+          onLayoutChange={handleLayoutChange}
+          breakpoints={{ lg: 1200, md: 996, sm: 768 }}
+          cols={{ lg: 12, md: 12, sm: 12 }}
+          rowHeight={60}
+          margin={[16, 16]}
+          containerPadding={[0, 0]}
+          dragHandleClassName="drag-handle"
+          resizeHandles={['se']}
+          useCSSTransforms={true}
+        >
+          {activeWidgetConfigs.map(widget => {
+            const WidgetComponent = widget.component;
+            return (
+              <div key={widget.id}>
+                <DashboardWidget
+                  id={widget.id}
+                  title={widget.title}
+                  onRemove={handleRemoveWidget}
                 >
-                  <Plus className="h-3 w-3 mr-1" />
-                  {widget.title}
-                </Button>
-              ))}
-            </div>
-          )}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleResetLayout}
-            className="h-7"
-          >
-            <RotateCcw className="h-3 w-3 mr-1" />
-            Reset
-          </Button>
-        </div>
+                  <WidgetComponent />
+                </DashboardWidget>
+              </div>
+            );
+          })}
+        </ResponsiveGridLayout>
       </div>
-
-      {/* Responsive Grid Layout */}
-      <ResponsiveGridLayout
-        className="layout"
-        layouts={layouts}
-        onLayoutChange={handleLayoutChange}
-        breakpoints={{ lg: 1200, md: 996, sm: 768 }}
-        cols={{ lg: 12, md: 12, sm: 12 }}
-        rowHeight={60}
-        margin={[16, 16]}
-        containerPadding={[0, 0]}
-        dragHandleClassName="drag-handle"
-        resizeHandles={['se']}
-        useCSSTransforms={true}
-      >
-        {activeWidgetConfigs.map(widget => {
-          const WidgetComponent = widget.component;
-          return (
-            <div key={widget.id}>
-              <DashboardWidget
-                id={widget.id}
-                title={widget.title}
-                onRemove={handleRemoveWidget}
-              >
-                <WidgetComponent />
-              </DashboardWidget>
-            </div>
-          );
-        })}
-      </ResponsiveGridLayout>
-
-      <style jsx global>{`
-        .react-grid-item.react-grid-placeholder {
-          background: rgba(59, 130, 246, 0.2) !important;
-          border: 2px dashed #3b82f6 !important;
-          border-radius: 8px !important;
-        }
-        
-        .react-grid-item:hover {
-          z-index: 2;
-        }
-        
-        .react-resizable-handle {
-          background: none !important;
-        }
-        
-        .react-resizable-handle::after {
-          content: '';
-          position: absolute;
-          right: 3px;
-          bottom: 3px;
-          width: 5px;
-          height: 5px;
-          border-right: 2px solid rgba(255, 255, 255, 0.4);
-          border-bottom: 2px solid rgba(255, 255, 255, 0.4);
-        }
-        
-        .react-grid-item.react-draggable-dragging {
-          transition: none !important;
-          z-index: 3;
-        }
-        
-        .react-grid-item.react-resizable-resizing {
-          z-index: 3;
-        }
-        
-        .drag-handle {
-          cursor: move;
-        }
-        
-        .drag-handle:active {
-          cursor: grabbing;
-        }
-      `}</style>
-    </div>
+    </>
   );
 };
 
