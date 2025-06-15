@@ -11,7 +11,7 @@ const DashboardPage = () => {
   return (
     <div className="min-h-screen bg-black text-foreground flex flex-col">
       <Navigation />
-      <main className="flex-grow container mx-auto px-4 md:px-6 lg:px-8 py-20 pt-24">
+      <main className="flex-grow container mx-auto px-4 md:px-6 lg:px-8 py-20 pt-32">
         <div className="mb-6 md:mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-2">
             <img 
