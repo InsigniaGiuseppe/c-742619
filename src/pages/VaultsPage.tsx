@@ -5,6 +5,8 @@ import IndividualVaultCard from '@/components/vaults/IndividualVaultCard';
 import UserVaultsList from '@/components/vaults/UserVaultsList';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import VaultCryptosGrid from '@/components/vaults/VaultCryptosGrid';
+import { useVaultCreation } from '@/hooks/useVaultCreation';
 
 const VaultsPage: React.FC = () => {
   const { user } = useAuth();
@@ -38,108 +40,8 @@ const VaultsPage: React.FC = () => {
     };
   });
 
-  // Add react-query to get vault configurations if not already available
-  // const { data: vaultConfigs } = useVaults();
-
-  const handleVault = async (cryptoId: string, amount: number, durationDays: number) => {
-    if (!user) {
-      toast.error('Please log in to vault crypto');
-      return;
-    }
-
-    try {
-      // Find the crypto info
-      const cryptoInfo = portfolio?.find(item => item.crypto.id === cryptoId);
-      if (!cryptoInfo) {
-        toast.error('Crypto not found');
-        return;
-      }
-
-      // Check if user has sufficient balance
-      if (amount > cryptoInfo.quantity) {
-        toast.error('Insufficient balance');
-        return;
-      }
-
-      // Find corresponding vault config by cryptoId and duration
-      const { data: vaultConfigRows, error: vaultConfigError } = await supabase
-        .from('vault_configurations')
-        .select('*')
-        .eq('cryptocurrency_id', cryptoId)
-        .eq('duration_days', durationDays)
-        .limit(1);
-
-      if (vaultConfigError || !vaultConfigRows || vaultConfigRows.length === 0) {
-        toast.error('Vault configuration not found.');
-        return;
-      }
-      const vaultConfig = vaultConfigRows[0];
-
-      // Calculate end date
-      const endDate = new Date();
-      endDate.setDate(endDate.getDate() + durationDays);
-
-      // Insert user_vaults entry
-      const { data: vaultData, error: vaultError } = await supabase
-        .from('user_vaults')
-        .insert({
-          user_id: user.id,
-          vault_config_id: vaultConfig.id,
-          amount_vaulted: amount,
-          ends_at: endDate.toISOString(),
-          status: 'active'
-        })
-        .select()
-        .single();
-
-      if (vaultError || !vaultData) {
-        toast.error('Failed to create vault.');
-        console.error('[VaultsPage] Error vaulting:', vaultError);
-        return;
-      }
-
-      // Update portfolio (subtract amount)
-      const { error: portfolioError } = await supabase
-        .from('user_portfolios')
-        .update({ quantity: cryptoInfo.quantity - amount })
-        .eq('user_id', user.id)
-        .eq('cryptocurrency_id', cryptoId);
-
-      if (portfolioError) {
-        toast.error('Failed to update portfolio.');
-        console.error('[VaultsPage] Portfolio update error:', portfolioError);
-        // Optionally, rollback the created vault
-        await supabase.from('user_vaults').delete().eq('id', vaultData.id);
-        return;
-      }
-
-      // Add transaction record
-      const { error: transactionError } = await supabase.from('transaction_history').insert({
-        user_id: user.id,
-        cryptocurrency_id: cryptoId,
-        amount: amount,
-        usd_value: amount * cryptoInfo.crypto.current_price,
-        transaction_type: 'vault_deposit',
-        description: `Vaulted ${amount} ${cryptoInfo.crypto.symbol} for ${durationDays} days.`,
-        status: 'completed'
-      });
-
-      if (transactionError) {
-        // Do not block core operation, just log.
-        console.warn('Transaction log failed.', transactionError);
-      }
-
-      toast.success(`Successfully vaulted ${amount} ${cryptoInfo.crypto.symbol} for ${durationDays} days`);
-
-      // Refresh vaults UI (simulate by reloading, or refetch using query/react-query)
-      if (typeof window !== 'undefined') window.location.reload();
-      // If using react-query: queryClient.invalidateQueries({ queryKey: ['user_vaults', user.id] });
-      
-    } catch (error: any) {
-      console.error('Vault error:', error);
-      toast.error(`Failed to vault crypto: ${error.message}`);
-    }
-  };
+  // Use new custom hook for vault logic
+  const { handleVault } = useVaultCreation(portfolio, user);
 
   if (!user) {
     return (
@@ -166,18 +68,11 @@ const VaultsPage: React.FC = () => {
           </p>
         </div>
 
-        {/* Individual Vault Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-6">
-          {vaultCryptos.map((item, index) => (
-            <IndividualVaultCard
-              key={`${item.crypto.symbol}-${index}`}
-              crypto={item.crypto}
-              availableBalance={item.availableBalance}
-              onVault={handleVault}
-            />
-          ))}
-        </div>
-
+        {/* Refactored grid to new component */}
+        <VaultCryptosGrid
+          vaultCryptos={vaultCryptos}
+          onVault={handleVault}
+        />
         <UserVaultsList />
       </div>
     </div>

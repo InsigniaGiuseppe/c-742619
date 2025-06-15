@@ -60,6 +60,97 @@ const fetchLendingPositions = async (userId: string): Promise<LendingPosition[]>
   }));
 };
 
+const cancelLendingPosition = async (
+  lendingId: string,
+  userId: string | undefined
+): Promise<{ success: boolean }> => {
+  console.log('[useLending] Cancelling lending position:', lendingId);
+
+  // Updated select to include the crypto relationship for correct typing
+  const { data: lendingPosition, error: fetchError } = await supabase
+    .from('user_lending')
+    .select(`
+      *,
+      crypto:cryptocurrencies(
+        id,
+        name,
+        symbol,
+        logo_url,
+        current_price
+      )
+    `)
+    .eq('id', lendingId)
+    .eq('user_id', userId)
+    .single();
+
+  if (fetchError || !lendingPosition) {
+    throw new Error('Lending position not found');
+  }
+
+  if (lendingPosition.status !== 'active') {
+    throw new Error('Can only cancel active lending positions');
+  }
+
+  // Update lending status to cancelled
+  const { error: updateError } = await supabase
+    .from('user_lending')
+    .update({
+      status: 'cancelled',
+      lending_cancelled_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', lendingId)
+    .eq('user_id', userId);
+
+  if (updateError) {
+    console.error('Error updating lending status:', updateError);
+    throw new Error(updateError.message);
+  }
+
+  const totalToReturn = lendingPosition.amount_lent + lendingPosition.total_interest_earned;
+
+  // Use upsert for portfolio record (in case row doesn't exist)
+  const { data: upserted, error: upsertError } = await supabase
+    .from('user_portfolios')
+    .upsert({
+      user_id: userId,
+      cryptocurrency_id: lendingPosition.cryptocurrency_id,
+      quantity: totalToReturn,
+      average_buy_price: 0,
+      total_invested: 0,
+      current_value: totalToReturn * (lendingPosition.crypto?.current_price || 0),
+      profit_loss: 0,
+      profit_loss_percentage: 0
+    }, { onConflict: 'user_id,cryptocurrency_id' })
+    .select();
+
+  if (upsertError) {
+    console.error('Error upserting portfolio:', upsertError);
+    throw new Error(`Failed to update portfolio: ${upsertError.message}`);
+  }
+
+  // Create transaction record for the cancellation
+  const { error: transactionError } = await supabase
+    .from('transaction_history')
+    .insert({
+      user_id: userId,
+      cryptocurrency_id: lendingPosition.cryptocurrency_id,
+      transaction_type: 'lending_cancelled',
+      amount: totalToReturn,
+      usd_value: totalToReturn * (lendingPosition.crypto?.current_price || 0),
+      status: 'completed',
+      description: `Cancelled lending position: ${lendingPosition.amount_lent} + ${lendingPosition.total_interest_earned} interest`
+    });
+
+  if (transactionError) {
+    console.error('Error creating transaction record:', transactionError);
+    // Log but do not throw
+    console.warn('Transaction recording failed but lending cancellation succeeded');
+  }
+
+  return { success: true };
+};
+
 export const useLending = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -71,93 +162,7 @@ export const useLending = () => {
   });
 
   const cancelLendingMutation = useMutation({
-    mutationFn: async (lendingId: string) => {
-      console.log('[useLending] Cancelling lending position:', lendingId);
-
-      // Updated select to include the crypto relationship for correct typing
-      const { data: lendingPosition, error: fetchError } = await supabase
-        .from('user_lending')
-        .select(`
-          *,
-          crypto:cryptocurrencies(
-            id,
-            name,
-            symbol,
-            logo_url,
-            current_price
-          )
-        `)
-        .eq('id', lendingId)
-        .eq('user_id', user!.id)
-        .single();
-
-      if (fetchError || !lendingPosition) {
-        throw new Error('Lending position not found');
-      }
-
-      if (lendingPosition.status !== 'active') {
-        throw new Error('Can only cancel active lending positions');
-      }
-
-      // Update lending status to cancelled
-      const { error: updateError } = await supabase
-        .from('user_lending')
-        .update({
-          status: 'cancelled',
-          lending_cancelled_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', lendingId)
-        .eq('user_id', user!.id);
-
-      if (updateError) {
-        console.error('Error updating lending status:', updateError);
-        throw new Error(updateError.message);
-      }
-
-      const totalToReturn = lendingPosition.amount_lent + lendingPosition.total_interest_earned;
-
-      // Use upsert for portfolio record (in case row doesn't exist)
-      const { data: upserted, error: upsertError } = await supabase
-        .from('user_portfolios')
-        .upsert({
-          user_id: user!.id,
-          cryptocurrency_id: lendingPosition.cryptocurrency_id,
-          quantity: totalToReturn,
-          average_buy_price: 0,
-          total_invested: 0,
-          current_value: totalToReturn * (lendingPosition.crypto?.current_price || 0),
-          profit_loss: 0,
-          profit_loss_percentage: 0
-        }, { onConflict: 'user_id,cryptocurrency_id' })
-        .select();
-
-      if (upsertError) {
-        console.error('Error upserting portfolio:', upsertError);
-        throw new Error(`Failed to update portfolio: ${upsertError.message}`);
-      }
-
-      // Create transaction record for the cancellation
-      const { error: transactionError } = await supabase
-        .from('transaction_history')
-        .insert({
-          user_id: user!.id,
-          cryptocurrency_id: lendingPosition.cryptocurrency_id,
-          transaction_type: 'lending_cancelled',
-          amount: totalToReturn,
-          usd_value: totalToReturn * (lendingPosition.crypto?.current_price || 0),
-          status: 'completed',
-          description: `Cancelled lending position: ${lendingPosition.amount_lent} + ${lendingPosition.total_interest_earned} interest`
-        });
-
-      if (transactionError) {
-        console.error('Error creating transaction record:', transactionError);
-        // Log but do not throw
-        console.warn('Transaction recording failed but lending cancellation succeeded');
-      }
-
-      return { success: true };
-    },
+    mutationFn: (lendingId: string) => cancelLendingPosition(lendingId, user?.id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['lending-positions'] });
       queryClient.invalidateQueries({ queryKey: ['portfolio'] });
