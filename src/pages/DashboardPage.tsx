@@ -7,7 +7,7 @@ const DashboardPage = () => {
   const { user } = useAuth();
 
   return (
-    <main className="flex-grow container mx-auto px-4 md:px-6 lg:px-8 py-20 pt-32">
+    <div>
       <div className="mb-6 md:mb-8">
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-2">
           <img 
@@ -23,7 +23,7 @@ const DashboardPage = () => {
       </div>
 
       <DashboardLayoutManager />
-    </main>
+    </div>
   );
 };
 

@@ -82,12 +82,11 @@ const TradingPage = () => {
   return (
     <>
       <ConnectionStatusIndicator />
-      <motion.main
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -20 }}
         transition={{ duration: 0.5 }}
-        className="flex-grow container mx-auto px-4 py-20 pt-24"
       >
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-3 mb-4">
@@ -196,7 +195,7 @@ const TradingPage = () => {
             </Button>
           </div>
         )}
-      </motion.main>
+      </motion.div>
       <TradeSheet
         crypto={selectedCryptoForTrade}
         open={!!selectedCryptoForTrade}

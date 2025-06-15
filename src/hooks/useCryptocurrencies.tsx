@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -34,7 +33,6 @@ export const CryptocurrenciesProvider: React.FC<{ children: ReactNode }> = ({ ch
   const [isWebSocketConnected, setIsWebSocketConnected] = useState(false);
   const supabaseChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const webSocketRef = useRef<WebSocket | null>(null);
-  const retryTimeoutRef = useRef<number | null>(null);
 
   const fetchCryptocurrencies = async () => {
     try {
@@ -79,12 +77,6 @@ export const CryptocurrenciesProvider: React.FC<{ children: ReactNode }> = ({ ch
       supabase.removeChannel(supabaseChannelRef.current).catch(err => console.error("Failed to remove channel", err));
       supabaseChannelRef.current = null;
     }
-    
-    // Clear any existing retry timeout
-    if (retryTimeoutRef.current) {
-      clearTimeout(retryTimeoutRef.current);
-      retryTimeoutRef.current = null;
-    }
 
     // Create a new channel with a unique name
     const channelName = `cryptocurrencies-changes-${Date.now()}`;
@@ -116,15 +108,6 @@ export const CryptocurrenciesProvider: React.FC<{ children: ReactNode }> = ({ ch
           console.error('Supabase real-time channel error:', status, err);
           setIsSupabaseRealtimeConnected(false);
           setError('Real-time connection failed. Prices may be outdated.');
-          
-          // Only retry if we don't already have a retry scheduled
-          if (!retryTimeoutRef.current) {
-            console.log('Attempting to reconnect Supabase real-time channel in 5 seconds...');
-            retryTimeoutRef.current = window.setTimeout(() => {
-              retryTimeoutRef.current = null;
-              setupSupabaseSubscription();
-            }, 5000);
-          }
         } else if (status === 'CLOSED') {
           console.log('Supabase real-time channel closed.');
           setIsSupabaseRealtimeConnected(false);
@@ -196,9 +179,6 @@ export const CryptocurrenciesProvider: React.FC<{ children: ReactNode }> = ({ ch
       
     return () => {
       clearInterval(syncInterval);
-      if (retryTimeoutRef.current) {
-        clearTimeout(retryTimeoutRef.current);
-      }
       if (supabaseChannelRef.current) {
         supabase.removeChannel(supabaseChannelRef.current).catch(err => console.error("Failed to remove channel on unmount", err));
       }

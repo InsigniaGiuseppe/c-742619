@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
@@ -47,7 +48,7 @@ function App() {
           <TooltipProvider>
             <div className="flex flex-col min-h-screen bg-background text-foreground">
               <Navigation />
-              <main className="flex-grow">
+              <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <Routes>
                   <Route path="/" element={<Index />} />
                   <Route path="/login" element={<LoginPage />} />

@@ -1,11 +1,10 @@
-
 import { Github, Twitter, Shield } from "lucide-react";
 import { Button } from "./ui/button";
 import { Link } from "react-router-dom";
 
 const Footer = () => {
   return (
-    <footer className="w-full py-8 md:py-12 mt-12 md:mt-20">
+    <footer className="w-full py-8 md:py-12">
       <div className="container px-4 md:px-6 lg:px-8">
         <div className="glass glass-hover rounded-xl p-6 md:p-8">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
