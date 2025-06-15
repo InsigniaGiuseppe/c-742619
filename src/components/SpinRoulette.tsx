@@ -58,38 +58,34 @@ const SpinRoulette: React.FC<SpinRouletteProps> = ({
     }
   }, [isSpinning, winningItem, items]);
 
-  const getTierColors = (tier: string) => {
+  const getTierGlow = (tier: string) => {
     switch (tier) {
       case 'common': 
-        return {
-          border: 'border-gray-400',
-          bg: 'bg-gradient-to-br from-gray-700/40 to-gray-900/60',
-          glow: 'shadow-[0_0_20px_rgba(156,163,175,0.4)]',
-          ringColor: 'ring-gray-400/50'
-        };
+        return 'drop-shadow-[0_0_20px_rgba(156,163,175,0.8)]';
       case 'rare': 
-        return {
-          border: 'border-blue-400',
-          bg: 'bg-gradient-to-br from-blue-600/30 to-blue-900/60',
-          glow: 'shadow-[0_0_25px_rgba(59,130,246,0.6)]',
-          ringColor: 'ring-blue-400/60'
-        };
+        return 'drop-shadow-[0_0_25px_rgba(59,130,246,0.9)]';
       case 'epic': 
-        return {
-          border: 'border-purple-400',
-          bg: 'bg-gradient-to-br from-purple-600/30 to-purple-900/60',
-          glow: 'shadow-[0_0_30px_rgba(147,51,234,0.8)]',
-          ringColor: 'ring-purple-400/70'
-        };
+        return 'drop-shadow-[0_0_30px_rgba(147,51,234,1)]';
       default: 
-        return {
-          border: 'border-gray-400',
-          bg: 'bg-gradient-to-br from-gray-700/40 to-gray-900/60',
-          glow: 'shadow-[0_0_20px_rgba(156,163,175,0.4)]',
-          ringColor: 'ring-gray-400/50'
-        };
+        return 'drop-shadow-[0_0_20px_rgba(156,163,175,0.8)]';
     }
   };
+
+  const getTierRingColor = (tier: string) => {
+    switch (tier) {
+      case 'common': 
+        return 'ring-gray-400/60';
+      case 'rare': 
+        return 'ring-blue-400/80';
+      case 'epic': 
+        return 'ring-purple-400/90';
+      default: 
+        return 'ring-gray-400/60';
+    }
+  };
+
+  const cardWidth = 80; // Width of each crypto logo + spacing
+  const gap = 16; // Gap between items
 
   return (
     <div className="relative w-full h-40 overflow-hidden bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 rounded-xl border border-white/10">
@@ -109,124 +105,112 @@ const SpinRoulette: React.FC<SpinRouletteProps> = ({
               className="flex items-center gap-4 pl-8"
               initial={{ x: '100%' }}
               animate={{ 
-                x: `calc(-85% - ${currentItems.length * 140}px)` 
+                x: `calc(-50% - ${(cardWidth + gap) * 42}px)` // Calculate exact position for winner
               }}
               transition={{
-                duration: 5,
-                ease: [0.25, 0.1, 0.25, 1],
+                duration: 4,
+                ease: [0.25, 0.1, 0.0, 1], // Custom cubic-bezier for realistic deceleration
                 type: "tween"
               }}
               onAnimationComplete={() => {
                 setTimeout(() => {
                   onSpinComplete?.();
-                }, 800);
+                }, 500);
               }}
             >
               {currentItems.map((item, index) => {
-                const colors = getTierColors(item.tier);
+                const glowClass = getTierGlow(item.tier);
+                const ringClass = getTierRingColor(item.tier);
                 const isWinner = item.id.startsWith('winner-');
                 
                 return (
                   <motion.div
                     key={`${item.id}-${index}`}
-                    className={`
-                      relative flex flex-col items-center justify-center w-36 h-32 rounded-xl border-2 p-3
-                      ${colors.border} ${colors.bg} ${colors.glow}
-                      ${isWinner ? `ring-4 ${colors.ringColor} ring-opacity-80` : ''}
-                      backdrop-blur-sm
-                    `}
+                    className="relative flex flex-col items-center justify-center"
+                    style={{ width: cardWidth }}
                     initial={{ 
-                      y: Math.random() * 10 - 5,
-                      rotateZ: Math.random() * 6 - 3
+                      y: Math.random() * 8 - 4,
+                      rotateZ: Math.random() * 4 - 2
                     }}
                     animate={{
-                      y: [0, -8, 0],
-                      rotateZ: [0, 2, -2, 0],
-                      scale: isWinner ? [1, 1.08, 1] : [1, 1.02, 1]
+                      y: [0, -6, 0],
+                      rotateZ: [0, 1, -1, 0],
+                      scale: isWinner ? [1, 1.15, 1] : [1, 1.05, 1]
                     }}
                     transition={{
-                      duration: 2 + Math.random(),
+                      duration: 1.5 + Math.random(),
                       repeat: Infinity,
                       ease: "easeInOut",
-                      delay: index * 0.1
+                      delay: index * 0.05
                     }}
                   >
-                    {/* Tier indicator */}
-                    <div className={`absolute top-2 right-2 text-xs font-bold px-2 py-1 rounded-full ${
-                      item.tier === 'epic' ? 'bg-purple-500 text-white shadow-[0_0_10px_rgba(147,51,234,0.6)]' :
-                      item.tier === 'rare' ? 'bg-blue-500 text-white shadow-[0_0_10px_rgba(59,130,246,0.6)]' :
-                      'bg-gray-500 text-white shadow-[0_0_10px_rgba(156,163,175,0.4)]'
-                    }`}>
-                      {item.tier.charAt(0).toUpperCase()}
-                    </div>
-
-                    {/* Crypto logo with enhanced ring */}
-                    <div className={`relative ring-2 ${colors.ringColor} rounded-full p-1 mb-2`}>
+                    {/* Crypto logo with tier-based glow and ring */}
+                    <div className={`relative ring-3 ${ringClass} rounded-full p-2 mb-2 ${glowClass}`}>
                       <CryptoLogo
                         symbol={item.crypto?.symbol || 'UNK'}
                         logo_url={item.crypto?.logo_url}
                         name={item.crypto?.name || 'Unknown'}
-                        size="md"
+                        size="lg"
                         className="drop-shadow-lg"
                       />
+                      
+                      {/* Enhanced tier-based particle effects */}
+                      {item.tier === 'epic' && (
+                        <motion.div
+                          className="absolute inset-0 rounded-full bg-purple-400/30 pointer-events-none"
+                          animate={{
+                            opacity: [0.3, 0.8, 0.3],
+                            scale: [1, 1.2, 1]
+                          }}
+                          transition={{
+                            duration: 1,
+                            repeat: Infinity,
+                            ease: "easeInOut"
+                          }}
+                        />
+                      )}
+
+                      {item.tier === 'rare' && (
+                        <motion.div
+                          className="absolute inset-0 rounded-full bg-blue-400/25 pointer-events-none"
+                          animate={{
+                            opacity: [0.2, 0.6, 0.2],
+                            scale: [1, 1.15, 1]
+                          }}
+                          transition={{
+                            duration: 1.5,
+                            repeat: Infinity,
+                            ease: "easeInOut"
+                          }}
+                        />
+                      )}
+
+                      {/* Winner highlight effect */}
+                      {isWinner && (
+                        <motion.div
+                          className="absolute inset-0 rounded-full bg-gradient-to-t from-yellow-400/40 via-transparent to-yellow-400/40 pointer-events-none"
+                          animate={{
+                            opacity: [0.4, 0.8, 0.4],
+                            scale: [1, 1.3, 1]
+                          }}
+                          transition={{
+                            duration: 0.6,
+                            repeat: Infinity,
+                            ease: "easeInOut"
+                          }}
+                        />
+                      )}
                     </div>
 
-                    {/* Amount and symbol */}
+                    {/* Amount and symbol below the logo */}
                     <div className="text-center">
-                      <div className="text-sm font-bold text-white drop-shadow-md">
-                        {item.amount.toFixed(6)}
+                      <div className="text-xs font-bold text-white drop-shadow-md">
+                        {item.amount.toFixed(4)}
                       </div>
                       <div className="text-xs text-gray-200 font-medium">
                         {(item.crypto?.symbol || 'UNK').toUpperCase()}
                       </div>
                     </div>
-
-                    {/* Enhanced tier-based glow effects */}
-                    {item.tier === 'epic' && (
-                      <motion.div
-                        className="absolute inset-0 rounded-xl bg-purple-400/20 pointer-events-none"
-                        animate={{
-                          opacity: [0.2, 0.8, 0.2],
-                          scale: [1, 1.05, 1]
-                        }}
-                        transition={{
-                          duration: 1.5,
-                          repeat: Infinity,
-                          ease: "easeInOut"
-                        }}
-                      />
-                    )}
-
-                    {item.tier === 'rare' && (
-                      <motion.div
-                        className="absolute inset-0 rounded-xl bg-blue-400/15 pointer-events-none"
-                        animate={{
-                          opacity: [0.1, 0.5, 0.1],
-                          scale: [1, 1.03, 1]
-                        }}
-                        transition={{
-                          duration: 2,
-                          repeat: Infinity,
-                          ease: "easeInOut"
-                        }}
-                      />
-                    )}
-
-                    {/* Winner highlight effect */}
-                    {isWinner && (
-                      <motion.div
-                        className="absolute inset-0 rounded-xl bg-gradient-to-t from-yellow-400/30 via-transparent to-yellow-400/30 pointer-events-none"
-                        animate={{
-                          opacity: [0.3, 0.7, 0.3],
-                          scale: [1, 1.1, 1]
-                        }}
-                        transition={{
-                          duration: 0.8,
-                          repeat: Infinity,
-                          ease: "easeInOut"
-                        }}
-                      />
-                    )}
                   </motion.div>
                 );
               })}
@@ -234,50 +218,41 @@ const SpinRoulette: React.FC<SpinRouletteProps> = ({
           )}
         </AnimatePresence>
 
-        {/* Static display when not spinning */}
+        {/* Static display when not spinning - simplified */}
         {!isSpinning && (
           <div className="flex items-center justify-center w-full h-full">
-            <div className="text-center text-muted-foreground">
-              <motion.div 
-                className="text-xl font-bold mb-3 text-white"
-                animate={{ opacity: [0.7, 1, 0.7] }}
-                transition={{ duration: 2, repeat: Infinity }}
-              >
-                🎰 Ready to Spin!
-              </motion.div>
-              <div className="text-sm mb-4 text-gray-300">Place your bet and spin to win crypto rewards</div>
-              
-              {/* Enhanced preview items */}
-              <div className="flex justify-center gap-3">
-                {items.slice(0, 3).map((item, index) => {
-                  const colors = getTierColors(item.tier);
-                  return (
-                    <motion.div 
-                      key={item.id} 
-                      className={`relative w-20 h-20 rounded-lg border-2 ${colors.border} ${colors.bg} ${colors.glow} flex flex-col items-center justify-center p-2`}
-                      animate={{ 
-                        y: [0, -5, 0],
-                        rotateY: [0, 5, 0]
-                      }}
-                      transition={{ 
-                        duration: 2 + index * 0.5, 
-                        repeat: Infinity,
-                        delay: index * 0.3
-                      }}
-                    >
-                      <div className={`ring-1 ${colors.ringColor} rounded-full p-1 mb-1`}>
-                        <CryptoLogo
-                          symbol={item.crypto?.symbol || 'UNK'}
-                          logo_url={item.crypto?.logo_url}
-                          name={item.crypto?.name || 'Unknown'}
-                          size="sm"
-                        />
-                      </div>
-                      <div className="text-xs text-white font-medium">{item.crypto?.symbol || 'UNK'}</div>
-                    </motion.div>
-                  );
-                })}
-              </div>
+            <div className="flex justify-center gap-6">
+              {items.slice(0, 5).map((item, index) => {
+                const glowClass = getTierGlow(item.tier);
+                const ringClass = getTierRingColor(item.tier);
+                return (
+                  <motion.div 
+                    key={item.id} 
+                    className="relative flex flex-col items-center"
+                    animate={{ 
+                      y: [0, -8, 0],
+                      rotateY: [0, 10, 0]
+                    }}
+                    transition={{ 
+                      duration: 2 + index * 0.3, 
+                      repeat: Infinity,
+                      delay: index * 0.2
+                    }}
+                  >
+                    <div className={`ring-2 ${ringClass} rounded-full p-2 mb-2 ${glowClass}`}>
+                      <CryptoLogo
+                        symbol={item.crypto?.symbol || 'UNK'}
+                        logo_url={item.crypto?.logo_url}
+                        name={item.crypto?.name || 'Unknown'}
+                        size="md"
+                      />
+                    </div>
+                    <div className="text-xs text-white font-medium text-center">
+                      {item.crypto?.symbol || 'UNK'}
+                    </div>
+                  </motion.div>
+                );
+              })}
             </div>
           </div>
         )}
