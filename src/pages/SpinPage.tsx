@@ -45,7 +45,7 @@ const SpinPage: React.FC = () => {
     },
   });
   
-  const [betAmount, setBetAmount] = useState([0.0001]);
+  const [betAmount, setBetAmount] = useState([0.001]);
   const [lastSpinResult, setLastSpinResult] = useState<any>(null);
   const [canSpin, setCanSpin] = useState(true);
   const [cooldownTime, setCooldownTime] = useState(0);
@@ -250,14 +250,14 @@ const SpinPage: React.FC = () => {
               <Slider
                 value={betAmount}
                 onValueChange={setBetAmount}
-                min={0.00005}
-                max={Math.min(0.005, btcBalance)}
-                step={0.00001}
+                min={0.0001}
+                max={Math.min(0.1, btcBalance)}
+                step={0.0001}
                 className="w-full"
               />
               <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                <span>0.00005 BTC</span>
-                <span>{Math.min(0.005, btcBalance).toFixed(6)} BTC</span>
+                <span>0.0001 BTC</span>
+                <span>{Math.min(0.1, btcBalance).toFixed(4)} BTC</span>
               </div>
             </div>
             <div className="text-center">
@@ -335,7 +335,7 @@ const SpinPage: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Reward Tiers - Card-based design with crypto icons */}
+      {/* Reward Tiers - Simplified Card Design */}
       <Card className="glass glass-hover">
         <CardHeader>
           <CardTitle>Reward Tiers</CardTitle>
@@ -344,29 +344,15 @@ const SpinPage: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             {Object.entries(groupedConfigurations).map(([symbol, configs]) => (
               <div key={symbol} className="space-y-3">
-                {/* Crypto Header */}
-                <div className="text-center">
-                  <div className="flex items-center justify-center gap-2 mb-3">
-                    <CryptoLogo
-                      symbol={symbol}
-                      logo_url={configs[0]?.cryptocurrencies?.logo_url}
-                      name={configs[0]?.cryptocurrencies?.name || symbol}
-                      size="md"
-                      className="w-8 h-8"
-                    />
-                    <span className="font-bold text-lg">{symbol}</span>
-                  </div>
-                </div>
-                
                 {/* Tier Cards */}
                 {configs.map((config) => (
-                  <div key={config.id} className={`p-4 rounded-xl glass glass-hover ${getTierGlow(config.reward_tier)} transition-all duration-300`}>
+                  <div key={config.id} className={`p-4 rounded-xl glass glass-hover ${getTierGlow(config.reward_tier)} transition-all duration-300 relative`}>
                     <div className="flex items-center justify-between mb-3">
                       <Badge className={getTierBadgeStyle(config.reward_tier)}>
                         {config.reward_tier.toUpperCase()}
                       </Badge>
-                      <span className="text-xs text-muted-foreground">
-                        {(config.probability * 100).toFixed(1)}%
+                      <span className={`text-xs ${config.reward_tier === 'legendary' ? 'text-yellow-400 font-bold' : 'text-muted-foreground'}`}>
+                        {(config.probability * 100).toFixed(2)}%
                       </span>
                     </div>
                     

@@ -35,8 +35,8 @@ const SpinRoulette: React.FC<SpinRouletteProps> = ({
   const CARD_WIDTH = 120;
   const CARD_MARGIN = 8;
   const TOTAL_CARD_WIDTH = CARD_WIDTH + CARD_MARGIN;
-  const TOTAL_CARDS = 80; // More cards for longer spin
-  const WINNING_CARD_INDEX = 60; // Position winning card towards the end
+  const TOTAL_CARDS = 100; // More cards for longer spin
+  const WINNING_CARD_INDEX = 75; // Position winning card towards the end
 
   useEffect(() => {
     if (isSpinning && winningItem && items.length > 0) {
@@ -99,7 +99,7 @@ const SpinRoulette: React.FC<SpinRouletteProps> = ({
     }
   };
 
-  const calculateTranslation = () => {
+  const calculateFinalPosition = () => {
     if (!containerRef.current) return 0;
     
     const containerWidth = containerRef.current.offsetWidth;
@@ -130,20 +130,23 @@ const SpinRoulette: React.FC<SpinRouletteProps> = ({
           <motion.div
             key={animationKey}
             className="flex items-center h-full"
-            initial={{ x: window.innerWidth * 1.5 }} // Start further to the right
+            initial={{ x: containerRef.current ? containerRef.current.offsetWidth + 500 : 1000 }}
             animate={{ 
-              x: calculateTranslation()
+              x: calculateFinalPosition()
             }}
             transition={{
-              duration: 6, // Longer duration for more excitement
-              ease: [0.25, 0.1, 0.1, 1], // Custom easing: fast start, very slow end
+              duration: 8, // Longer duration for more excitement
+              ease: [0.1, 0.05, 0.01, 1], // Very dramatic slow ending
               type: "tween"
             }}
             onAnimationComplete={() => {
               // Add extra delay after animation for dramatic effect
               setTimeout(() => {
                 onSpinComplete?.();
-              }, 800);
+              }, 1000);
+            }}
+            style={{
+              willChange: 'transform'
             }}
           >
             {rouletteCards.map((card, index) => {
