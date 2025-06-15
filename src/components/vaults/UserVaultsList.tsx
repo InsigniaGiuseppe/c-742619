@@ -12,6 +12,8 @@ import { Badge } from '@/components/ui/badge';
 const UserVaultsList: React.FC = () => {
   const { data: userVaults, isLoading, error } = useUserVaults();
 
+  console.log('[UserVaultsList] Rendering with data:', { userVaults, isLoading, error });
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'active':
@@ -70,7 +72,11 @@ const UserVaultsList: React.FC = () => {
                   </TableCell>
                   <TableCell className="text-right">{vault.amount_vaulted.toLocaleString()}</TableCell>
                   <TableCell className="text-right text-green-500">{vault.accrued_yield.toFixed(8)}</TableCell>
-                  <TableCell>{format(new Date(vault.ends_at), 'MMM dd, yyyy')} ({formatDistanceToNow(new Date(vault.ends_at), { addSuffix: true })})</TableCell>
+                  <TableCell>
+                    {format(new Date(vault.ends_at), 'MMM dd, yyyy')} 
+                    {' '}
+                    ({formatDistanceToNow(new Date(vault.ends_at), { addSuffix: true })})
+                  </TableCell>
                   <TableCell>{getStatusBadge(vault.status)}</TableCell>
                 </TableRow>
               ))}

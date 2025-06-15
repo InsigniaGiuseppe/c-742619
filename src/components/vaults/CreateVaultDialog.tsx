@@ -39,10 +39,14 @@ export const CreateVaultDialog: React.FC<CreateVaultDialogProps> = ({ isOpen, on
 
       const ends_at = add(new Date(), { days: vaultConfig.duration_days }).toISOString();
 
-      // This should ideally be a single atomic transaction in a db function.
-      // Doing it client-side has risks, but it's the best we can do for now.
-      
-      // 1. Create the vault entry
+      console.log('[CreateVaultDialog] Creating vault with:', {
+        user_id: session.user.id,
+        vault_config_id: vaultConfig.id,
+        amount_vaulted: vaultAmount,
+        ends_at: ends_at
+      });
+
+      // Create the vault entry
       const { data: vaultData, error: vaultError } = await supabase.from('user_vaults').insert({
         user_id: session.user.id,
         vault_config_id: vaultConfig.id,
@@ -50,44 +54,70 @@ export const CreateVaultDialog: React.FC<CreateVaultDialogProps> = ({ isOpen, on
         ends_at: ends_at,
       }).select().single();
       
-      if (vaultError) throw vaultError;
+      if (vaultError) {
+        console.error('[CreateVaultDialog] Error creating vault:', vaultError);
+        throw vaultError;
+      }
 
-      // 2. Update the portfolio
+      console.log('[CreateVaultDialog] Vault created successfully:', vaultData);
+
+      // Update the portfolio
       try {
         const newQuantity = assetInPortfolio.quantity - vaultAmount;
+        console.log('[CreateVaultDialog] Updating portfolio quantity from', assetInPortfolio.quantity, 'to', newQuantity);
+        
         const { error: portfolioError } = await supabase
             .from('user_portfolios')
             .update({ quantity: newQuantity })
             .eq('id', assetInPortfolio.id);
 
-        if (portfolioError) throw portfolioError;
+        if (portfolioError) {
+          console.error('[CreateVaultDialog] Error updating portfolio:', portfolioError);
+          throw portfolioError;
+        }
       } catch (error) {
           // Attempt to roll back vault creation
+          console.error('[CreateVaultDialog] Rolling back vault creation due to portfolio error:', error);
           await supabase.from('user_vaults').delete().eq('id', vaultData.id);
           throw error;
       }
       
-      // 3. Add to transaction history (non-critical)
-      await supabase.from('transaction_history').insert({
+      // Add to transaction history
+      try {
+        const { error: transactionError } = await supabase.from('transaction_history').insert({
           user_id: session.user.id,
           cryptocurrency_id: vaultConfig.cryptocurrencies.id,
           transaction_type: 'vault_deposit',
           amount: vaultAmount,
           usd_value: vaultAmount * assetInPortfolio.crypto.current_price,
           description: `Vaulted ${vaultAmount} ${vaultConfig.cryptocurrencies.symbol} for ${vaultConfig.duration_days} days.`
-      });
+        });
+
+        if (transactionError) {
+          console.error('[CreateVaultDialog] Error creating transaction record:', transactionError);
+          // Don't fail the whole operation for transaction history
+        }
+      } catch (error) {
+        console.error('[CreateVaultDialog] Error with transaction history:', error);
+        // Don't fail the whole operation for transaction history
+      }
 
       return vaultData;
     },
     onSuccess: () => {
+      console.log('[CreateVaultDialog] Vault creation successful, refreshing queries');
       toast.success('Successfully created vault!');
-      queryClient.invalidateQueries({ queryKey: ['user_vaults', session?.user.id] });
-      queryClient.invalidateQueries({ queryKey: ['portfolio', session?.user.id] });
-      queryClient.invalidateQueries({ queryKey: ['transaction_history', session?.user.id] });
+      
+      // Invalidate and refetch all related queries
+      queryClient.invalidateQueries({ queryKey: ['user_vaults'] });
+      queryClient.invalidateQueries({ queryKey: ['portfolio'] });
+      queryClient.invalidateQueries({ queryKey: ['transaction_history'] });
+      
       onOpenChange(false);
       setAmount('');
     },
     onError: (error: Error) => {
+      console.error('[CreateVaultDialog] Vault creation failed:', error);
       toast.error(`Failed to create vault: ${error.message}`);
     },
   });
@@ -118,7 +148,6 @@ export const CreateVaultDialog: React.FC<CreateVaultDialogProps> = ({ isOpen, on
     const dailyRate = vaultConfig.apy / 365;
     return numAmount * dailyRate * vaultConfig.duration_days;
   }, [amount, vaultConfig.apy, vaultConfig.duration_days]);
-
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>

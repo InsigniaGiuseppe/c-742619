@@ -1,304 +1,229 @@
 
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { usePortfolio } from '@/hooks/usePortfolio';
+import { useCryptocurrencies } from '@/hooks/useCryptocurrencies';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-interface SpinConfiguration {
-  id: string;
-  reward_tier: string;
-  cryptocurrency_id: string;
-  min_multiplier: number;
-  max_multiplier: number;
-  probability: number;
-  crypto?: {
-    name: string;
-    symbol: string;
-    current_price: number;
-    logo_url?: string;
-  };
-}
-
 interface SpinResult {
-  reward_amount: number;
-  reward_cryptocurrency_id: string;
-  reward_usd_value: number;
   multiplier: number;
-  crypto: {
-    name: string;
-    symbol: string;
-    logo_url?: string;
-  };
+  rewardCrypto: string;
+  rewardAmount: number;
+  rewardValue: number;
 }
 
 export const useSpinGame = () => {
-  const { user } = useAuth();
+  const [isSpinning, setIsSpinning] = useState(false);
+  const [currentSpin, setCurrentSpin] = useState<SpinResult | null>(null);
+  const { session } = useAuth();
   const { portfolio, refetch: refetchPortfolio } = usePortfolio();
-  const [loading, setLoading] = useState(false);
-  const [spinning, setSpinning] = useState(false);
-  const [configurations, setConfigurations] = useState<SpinConfiguration[]>([]);
+  const { cryptocurrencies } = useCryptocurrencies();
 
-  const fetchConfigurations = async () => {
-    console.log('[useSpinGame] Fetching spin configurations');
+  const spin = async (betAmount: number): Promise<SpinResult | null> => {
+    if (!session) {
+      toast.error('Please log in to play');
+      return null;
+    }
+
+    if (isSpinning) {
+      toast.error('Please wait for current spin to complete');
+      return null;
+    }
+
+    const btcPortfolio = portfolio?.find(p => p.crypto.symbol === 'BTC');
+    if (!btcPortfolio || btcPortfolio.quantity < betAmount) {
+      toast.error('Insufficient BTC balance');
+      return null;
+    }
+
+    setIsSpinning(true);
+
     try {
-      const { data, error } = await supabase
+      console.log('[useSpinGame] Starting spin with bet amount:', betAmount);
+
+      // Get spin configurations
+      const { data: spinConfigs, error: configError } = await supabase
         .from('spin_configurations')
         .select(`
           *,
-          crypto:cryptocurrencies(
-            name,
-            symbol,
-            current_price,
-            logo_url
-          )
+          cryptocurrencies(symbol, name, current_price)
         `)
-        .eq('is_active', true)
-        .order('reward_tier');
+        .eq('is_active', true);
 
-      console.log('[useSpinGame] Configurations query result:', { data, error });
+      if (configError) {
+        console.error('[useSpinGame] Error fetching spin configs:', configError);
+        throw new Error('Failed to load spin configurations');
+      }
+
+      if (!spinConfigs || spinConfigs.length === 0) {
+        throw new Error('No active spin configurations found');
+      }
+
+      // Calculate weighted random selection
+      const totalProbability = spinConfigs.reduce((sum, config) => sum + Number(config.probability), 0);
+      const random = Math.random() * totalProbability;
       
-      if (error) throw error;
-      setConfigurations(data || []);
-    } catch (error: any) {
-      console.error('[useSpinGame] Error fetching spin configurations:', error);
-      toast.error('Failed to load game configurations');
-    }
-  };
-
-  const generateSpinResult = (betAmountBtc: number): SpinResult | null => {
-    console.log('[useSpinGame] Generating spin result with configurations:', configurations.length);
-    
-    if (configurations.length === 0) return null;
-
-    // Generate random number to determine tier
-    const random = Math.random();
-    let cumulativeProbability = 0;
-    let selectedConfig: SpinConfiguration | null = null;
-
-    for (const config of configurations) {
-      cumulativeProbability += config.probability;
-      if (random <= cumulativeProbability) {
-        selectedConfig = config;
-        break;
-      }
-    }
-
-    console.log('[useSpinGame] Selected configuration:', selectedConfig);
-
-    if (!selectedConfig || !selectedConfig.crypto) return null;
-
-    // Generate multiplier within tier range
-    const multiplier = selectedConfig.min_multiplier + 
-      Math.random() * (selectedConfig.max_multiplier - selectedConfig.min_multiplier);
-
-    // Calculate reward based on bet amount and multiplier
-    const btcPrice = portfolio?.find(p => p.crypto.symbol === 'BTC')?.crypto.current_price || 50000;
-    const betAmountUsd = betAmountBtc * btcPrice;
-    const rewardUsdValue = betAmountUsd * multiplier;
-    const rewardAmount = rewardUsdValue / selectedConfig.crypto.current_price;
-
-    const result = {
-      reward_amount: rewardAmount,
-      reward_cryptocurrency_id: selectedConfig.cryptocurrency_id,
-      reward_usd_value: rewardUsdValue,
-      multiplier,
-      crypto: selectedConfig.crypto
-    };
-
-    console.log('[useSpinGame] Generated spin result:', result);
-    return result;
-  };
-
-  const executeSpin = async (betAmountBtc: number): Promise<SpinResult | null> => {
-    console.log('[useSpinGame] Executing spin with bet amount:', betAmountBtc);
-    
-    if (!user) {
-      console.error('[useSpinGame] User not authenticated');
-      toast.error('User not authenticated');
-      return null;
-    }
-
-    setLoading(true);
-    setSpinning(true);
-
-    try {
-      // Check if user has enough BTC
-      const btcHolding = portfolio?.find(p => p.crypto.symbol === 'BTC');
-      console.log('[useSpinGame] BTC holding:', btcHolding);
+      let cumulativeProbability = 0;
+      let selectedConfig = spinConfigs[0];
       
-      if (!btcHolding || btcHolding.quantity < betAmountBtc) {
-        toast.error('Insufficient BTC balance');
-        return null;
+      for (const config of spinConfigs) {
+        cumulativeProbability += Number(config.probability);
+        if (random <= cumulativeProbability) {
+          selectedConfig = config;
+          break;
+        }
       }
 
-      const spinResult = generateSpinResult(betAmountBtc);
-      if (!spinResult) {
-        toast.error('Failed to generate spin result');
-        return null;
-      }
+      // Generate random multiplier within the config's range
+      const multiplier = Number(selectedConfig.min_multiplier) + 
+        Math.random() * (Number(selectedConfig.max_multiplier) - Number(selectedConfig.min_multiplier));
 
-      const btcPrice = btcHolding.crypto.current_price || 50000;
-      const betAmountUsd = betAmountBtc * btcPrice;
+      const btcPrice = btcPortfolio.crypto.current_price;
+      const betValueUsd = betAmount * btcPrice;
+      const rewardValueUsd = betValueUsd * multiplier;
+      const rewardAmount = rewardValueUsd / Number(selectedConfig.cryptocurrencies.current_price);
 
-      console.log('[useSpinGame] Creating transactions...');
+      const spinResult: SpinResult = {
+        multiplier,
+        rewardCrypto: selectedConfig.cryptocurrencies.symbol,
+        rewardAmount,
+        rewardValue: rewardValueUsd
+      };
 
-      // Start database transaction
-      const { data: btcCrypto } = await supabase
-        .from('cryptocurrencies')
-        .select('id')
-        .eq('symbol', 'BTC')
-        .single();
+      console.log('[useSpinGame] Spin result calculated:', spinResult);
 
-      if (!btcCrypto) {
-        throw new Error('BTC cryptocurrency not found');
-      }
-
-      // Create debit transaction for BTC bet
+      // Create debit transaction (bet)
       const { data: debitTransaction, error: debitError } = await supabase
         .from('transaction_history')
         .insert({
-          user_id: user.id,
-          cryptocurrency_id: btcCrypto.id,
+          user_id: session.user.id,
+          cryptocurrency_id: btcPortfolio.cryptocurrency_id,
           transaction_type: 'spin_bet',
-          amount: betAmountBtc,
-          usd_value: betAmountUsd,
-          status: 'completed',
-          description: `VaultSpin bet of ${betAmountBtc} BTC`
+          amount: -betAmount,
+          usd_value: -betValueUsd,
+          description: `Spin bet: ${betAmount} BTC`
         })
         .select()
         .single();
 
-      console.log('[useSpinGame] Debit transaction result:', { debitTransaction, debitError });
-      if (debitError) throw debitError;
+      if (debitError) {
+        console.error('[useSpinGame] Error creating debit transaction:', debitError);
+        throw new Error('Failed to process bet transaction');
+      }
 
-      // Create credit transaction for reward
+      // Create credit transaction (reward)
       const { data: creditTransaction, error: creditError } = await supabase
         .from('transaction_history')
         .insert({
-          user_id: user.id,
-          cryptocurrency_id: spinResult.reward_cryptocurrency_id,
+          user_id: session.user.id,
+          cryptocurrency_id: selectedConfig.cryptocurrency_id,
           transaction_type: 'spin_reward',
-          amount: spinResult.reward_amount,
-          usd_value: spinResult.reward_usd_value,
-          status: 'completed',
-          description: `VaultSpin reward of ${spinResult.reward_amount} ${spinResult.crypto.symbol}`
+          amount: rewardAmount,
+          usd_value: rewardValueUsd,
+          description: `Spin reward: ${rewardAmount.toFixed(8)} ${selectedConfig.cryptocurrencies.symbol}`
         })
         .select()
         .single();
 
-      console.log('[useSpinGame] Credit transaction result:', { creditTransaction, creditError });
-      if (creditError) throw creditError;
+      if (creditError) {
+        console.error('[useSpinGame] Error creating credit transaction:', creditError);
+        throw new Error('Failed to process reward transaction');
+      }
 
       // Record the spin game
-      const { error: spinError } = await supabase
+      const { error: spinGameError } = await supabase
         .from('spin_games')
         .insert({
-          user_id: user.id,
-          bet_amount_btc: betAmountBtc,
-          bet_amount_usd: betAmountUsd,
-          reward_cryptocurrency_id: spinResult.reward_cryptocurrency_id,
-          reward_amount: spinResult.reward_amount,
-          reward_usd_value: spinResult.reward_usd_value,
-          multiplier: spinResult.multiplier,
-          transaction_debit_id: debitTransaction.id,
-          transaction_credit_id: creditTransaction.id,
+          user_id: session.user.id,
+          bet_amount_btc: betAmount,
+          bet_amount_usd: betValueUsd,
+          reward_cryptocurrency_id: selectedConfig.cryptocurrency_id,
+          reward_amount: rewardAmount,
+          reward_usd_value: rewardValueUsd,
+          multiplier,
           spin_result_data: {
-            tier: 'calculated_from_multiplier',
-            random_seed: Math.random()
-          }
+            selected_config: selectedConfig,
+            random_value: random,
+            total_probability: totalProbability
+          },
+          transaction_debit_id: debitTransaction.id,
+          transaction_credit_id: creditTransaction.id
         });
 
-      console.log('[useSpinGame] Spin game record result:', { spinError });
-      if (spinError) throw spinError;
-
-      console.log('[useSpinGame] Updating portfolios...');
-
-      // Update BTC portfolio (deduct bet)
-      const newBtcQuantity = btcHolding.quantity - betAmountBtc;
-      const newBtcValue = newBtcQuantity * btcPrice;
-
-      if (newBtcQuantity > 0) {
-        await supabase
-          .from('user_portfolios')
-          .update({
-            quantity: newBtcQuantity,
-            current_value: newBtcValue,
-            profit_loss: newBtcValue - btcHolding.total_invested,
-            profit_loss_percentage: btcHolding.total_invested > 0 
-              ? ((newBtcValue - btcHolding.total_invested) / btcHolding.total_invested) * 100 
-              : 0
-          })
-          .eq('user_id', user.id)
-          .eq('cryptocurrency_id', btcCrypto.id);
-      } else {
-        await supabase
-          .from('user_portfolios')
-          .delete()
-          .eq('user_id', user.id)
-          .eq('cryptocurrency_id', btcCrypto.id);
+      if (spinGameError) {
+        console.error('[useSpinGame] Error recording spin game:', spinGameError);
+        // Don't throw here as the transactions are already processed
       }
 
-      // Update reward cryptocurrency portfolio (add reward)
-      const existingRewardHolding = portfolio?.find(p => p.crypto.id === spinResult.reward_cryptocurrency_id);
-      
-      if (existingRewardHolding) {
-        const newQuantity = existingRewardHolding.quantity + spinResult.reward_amount;
-        const newValue = newQuantity * (existingRewardHolding.crypto.current_price || 0);
-        
-        await supabase
+      // Update BTC portfolio (subtract bet)
+      const newBtcQuantity = btcPortfolio.quantity - betAmount;
+      const { error: btcUpdateError } = await supabase
+        .from('user_portfolios')
+        .update({ quantity: newBtcQuantity })
+        .eq('id', btcPortfolio.id);
+
+      if (btcUpdateError) {
+        console.error('[useSpinGame] Error updating BTC portfolio:', btcUpdateError);
+        throw new Error('Failed to update BTC balance');
+      }
+
+      // Update or create reward crypto portfolio
+      const rewardCryptoPortfolio = portfolio?.find(p => p.cryptocurrency_id === selectedConfig.cryptocurrency_id);
+
+      if (rewardCryptoPortfolio) {
+        // Update existing portfolio
+        const newQuantity = rewardCryptoPortfolio.quantity + rewardAmount;
+        const { error: updateError } = await supabase
           .from('user_portfolios')
-          .update({
-            quantity: newQuantity,
-            current_value: newValue,
-            profit_loss: newValue - existingRewardHolding.total_invested,
-            profit_loss_percentage: existingRewardHolding.total_invested > 0 
-              ? ((newValue - existingRewardHolding.total_invested) / existingRewardHolding.total_invested) * 100 
-              : 0
-          })
-          .eq('user_id', user.id)
-          .eq('cryptocurrency_id', spinResult.reward_cryptocurrency_id);
+          .update({ quantity: newQuantity })
+          .eq('id', rewardCryptoPortfolio.id);
+
+        if (updateError) {
+          console.error('[useSpinGame] Error updating reward portfolio:', updateError);
+          throw new Error('Failed to update reward balance');
+        }
       } else {
-        // Create new portfolio entry for reward cryptocurrency
-        const rewardCryptoPrice = configurations.find(c => c.cryptocurrency_id === spinResult.reward_cryptocurrency_id)?.crypto?.current_price || 0;
-        await supabase
+        // Create new portfolio entry
+        const { error: createError } = await supabase
           .from('user_portfolios')
           .insert({
-            user_id: user.id,
-            cryptocurrency_id: spinResult.reward_cryptocurrency_id,
-            quantity: spinResult.reward_amount,
-            average_buy_price: rewardCryptoPrice,
-            total_invested: 0, // This is a reward, not an investment
-            current_value: spinResult.reward_usd_value,
-            profit_loss: spinResult.reward_usd_value,
+            user_id: session.user.id,
+            cryptocurrency_id: selectedConfig.cryptocurrency_id,
+            quantity: rewardAmount,
+            average_buy_price: Number(selectedConfig.cryptocurrencies.current_price),
+            total_invested: rewardValueUsd,
+            current_value: rewardValueUsd,
+            profit_loss: 0,
             profit_loss_percentage: 0
           });
+
+        if (createError) {
+          console.error('[useSpinGame] Error creating reward portfolio:', createError);
+          throw new Error('Failed to create reward balance');
+        }
       }
 
-      // Simulate spin animation time
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      setCurrentSpin(spinResult);
+      await refetchPortfolio();
 
-      refetchPortfolio();
-      toast.success(`You won ${spinResult.reward_amount.toFixed(6)} ${spinResult.crypto.symbol}!`);
+      toast.success(`Spin complete! Won ${rewardAmount.toFixed(8)} ${selectedConfig.cryptocurrencies.symbol}`);
       
-      console.log('[useSpinGame] Spin execution completed successfully');
       return spinResult;
 
-    } catch (error: any) {
-      console.error('[useSpinGame] Spin execution error:', error);
-      toast.error(`Spin failed: ${error.message}`);
+    } catch (error) {
+      console.error('[useSpinGame] Spin failed:', error);
+      toast.error(`Spin failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
       return null;
     } finally {
-      setLoading(false);
-      setSpinning(false);
+      setIsSpinning(false);
     }
   };
 
   return {
-    configurations,
-    loading,
-    spinning,
-    fetchConfigurations,
-    executeSpin
+    spin,
+    isSpinning,
+    currentSpin,
+    setCurrentSpin
   };
 };

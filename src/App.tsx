@@ -22,6 +22,7 @@ import SpinPage from '@/pages/SpinPage';
 import AdminDashboard from '@/pages/AdminDashboard';
 import EnhancedTransactionManagement from '@/components/admin/EnhancedTransactionManagement';
 import AdminUsers from '@/pages/AdminUsers';
+import AdminUserDetailPage from '@/pages/AdminUserDetailPage';
 import AdminTransactions from '@/pages/AdminTransactions';
 import AdminKyc from '@/pages/AdminKyc';
 import AdminWallets from '@/pages/AdminWallets';
@@ -119,6 +120,11 @@ function App() {
                   <Route path="/admin/users" element={
                     <ProtectedRoute>
                       <AdminUsers />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/admin/users/:userId" element={
+                    <ProtectedRoute>
+                      <AdminUserDetailPage />
                     </ProtectedRoute>
                   } />
                   <Route path="/admin/kyc" element={
