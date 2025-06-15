@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import SpinRoulette from '@/components/SpinRoulette';
 import SpinResultModal from '@/components/SpinResultModal';
+import CryptoLogo from '@/components/CryptoLogo';
 import FormattedNumber from '@/components/FormattedNumber';
 import { Dice6, Clock } from 'lucide-react';
 import { toast } from 'sonner';
@@ -98,6 +99,21 @@ const SpinPage: React.FC = () => {
         return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
       default:
         return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
+    }
+  };
+
+  const getTierGlow = (tier: string) => {
+    switch (tier) {
+      case 'legendary':
+        return 'shadow-[0_0_20px_rgba(255,215,0,0.6)] ring-2 ring-yellow-400/30';
+      case 'epic':
+        return 'shadow-[0_0_16px_rgba(168,85,247,0.6)] ring-2 ring-purple-400/30';
+      case 'rare':
+        return 'shadow-[0_0_12px_rgba(59,130,246,0.6)] ring-2 ring-blue-400/30';
+      case 'common':
+        return 'shadow-[0_0_8px_rgba(156,163,175,0.4)] ring-1 ring-gray-400/20';
+      default:
+        return '';
     }
   };
 
@@ -319,44 +335,57 @@ const SpinPage: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Reward Tiers - Organized by crypto vertically */}
+      {/* Reward Tiers - Card-based design with crypto icons */}
       <Card className="glass glass-hover">
         <CardHeader>
           <CardTitle>Reward Tiers</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             {Object.entries(groupedConfigurations).map(([symbol, configs]) => (
               <div key={symbol} className="space-y-3">
+                {/* Crypto Header */}
                 <div className="text-center">
-                  <div className="flex items-center justify-center gap-2 mb-2">
-                    {configs[0]?.cryptocurrencies && (
-                      <img 
-                        src={configs[0].cryptocurrencies.logo_url} 
-                        alt={symbol}
-                        className="w-6 h-6 rounded-full"
-                      />
-                    )}
+                  <div className="flex items-center justify-center gap-2 mb-3">
+                    <CryptoLogo
+                      symbol={symbol}
+                      logo_url={configs[0]?.cryptocurrencies?.logo_url}
+                      name={configs[0]?.cryptocurrencies?.name || symbol}
+                      size="md"
+                      className="w-8 h-8"
+                    />
                     <span className="font-bold text-lg">{symbol}</span>
                   </div>
                 </div>
                 
+                {/* Tier Cards */}
                 {configs.map((config) => (
-                  <div key={config.id} className="p-3 rounded-lg glass glass-hover">
-                    <div className="flex items-center justify-between mb-2">
+                  <div key={config.id} className={`p-4 rounded-xl glass glass-hover ${getTierGlow(config.reward_tier)} transition-all duration-300`}>
+                    <div className="flex items-center justify-between mb-3">
                       <Badge className={getTierBadgeStyle(config.reward_tier)}>
                         {config.reward_tier.toUpperCase()}
                       </Badge>
                       <span className="text-xs text-muted-foreground">
-                        {(config.probability * 100).toFixed(3)}%
+                        {(config.probability * 100).toFixed(1)}%
                       </span>
                     </div>
-                    <div className="text-sm">
-                      <div className={`font-semibold ${getMultiplierColor(config.min_multiplier)}`}>
-                        {config.min_multiplier}x - {config.max_multiplier}x
-                      </div>
-                      <div className="text-muted-foreground">
-                        {(betAmountBtc * config.min_multiplier).toFixed(6)} - {(betAmountBtc * config.max_multiplier).toFixed(6)} {symbol}
+                    
+                    <div className="text-center space-y-2">
+                      <CryptoLogo
+                        symbol={symbol}
+                        logo_url={config.cryptocurrencies?.logo_url}
+                        name={config.cryptocurrencies?.name || symbol}
+                        size="lg"
+                        className="w-12 h-12 mx-auto"
+                      />
+                      
+                      <div>
+                        <div className={`font-bold text-lg ${getMultiplierColor(config.min_multiplier)}`}>
+                          {config.min_multiplier}x - {config.max_multiplier}x
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          {(betAmountBtc * config.min_multiplier).toFixed(6)} - {(betAmountBtc * config.max_multiplier).toFixed(6)} {symbol}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -365,8 +394,9 @@ const SpinPage: React.FC = () => {
             ))}
           </div>
           
-          <div className="mt-4 p-3 rounded-lg bg-red-900/20 border border-red-500/30">
-            <div className="flex items-center justify-between mb-1">
+          {/* Loss Card */}
+          <div className="mt-6 p-4 rounded-xl bg-red-900/20 border border-red-500/30 shadow-[0_0_10px_rgba(239,68,68,0.4)]">
+            <div className="flex items-center justify-between mb-3">
               <Badge className="bg-red-500/20 text-red-400 border-red-500/30">
                 LOSE
               </Badge>
@@ -374,8 +404,14 @@ const SpinPage: React.FC = () => {
                 30%
               </span>
             </div>
-            <div className="text-sm text-red-400">
-              0x multiplier - You lose your BTC bet (goes to platform reserves)
+            <div className="flex items-center justify-center gap-3">
+              <div className="w-12 h-12 rounded-full bg-red-500 flex items-center justify-center text-white font-bold text-2xl">
+                ✗
+              </div>
+              <div className="text-center">
+                <div className="text-lg font-bold text-red-400">0x multiplier</div>
+                <div className="text-sm text-red-400">You lose your BTC bet</div>
+              </div>
             </div>
           </div>
         </CardContent>

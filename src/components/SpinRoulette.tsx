@@ -35,8 +35,8 @@ const SpinRoulette: React.FC<SpinRouletteProps> = ({
   const CARD_WIDTH = 120;
   const CARD_MARGIN = 8;
   const TOTAL_CARD_WIDTH = CARD_WIDTH + CARD_MARGIN;
-  const TOTAL_CARDS = 60;
-  const WINNING_CARD_INDEX = 45;
+  const TOTAL_CARDS = 80; // More cards for longer spin
+  const WINNING_CARD_INDEX = 60; // Position winning card towards the end
 
   useEffect(() => {
     if (isSpinning && winningItem && items.length > 0) {
@@ -114,12 +114,14 @@ const SpinRoulette: React.FC<SpinRouletteProps> = ({
       ref={containerRef}
       className="relative w-full h-40 overflow-hidden bg-gradient-to-r from-gray-900 via-black to-gray-900 rounded-xl border border-white/10"
     >
-      {/* Center selection marker */}
+      {/* Center selection marker with enhanced design */}
       <div className="absolute top-0 left-1/2 transform -translate-x-1/2 z-30 pointer-events-none">
         <div className="w-1 h-40 bg-gradient-to-b from-red-400 via-red-500 to-red-600 shadow-[0_0_15px_rgba(239,68,68,0.8)]">
           <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-8 border-l-transparent border-r-transparent border-b-red-500"></div>
           <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-8 border-l-transparent border-r-transparent border-t-red-500"></div>
         </div>
+        {/* Pulsing glow effect */}
+        <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-2 h-40 bg-red-500/30 animate-pulse -z-10"></div>
       </div>
 
       {/* Roulette track */}
@@ -128,19 +130,20 @@ const SpinRoulette: React.FC<SpinRouletteProps> = ({
           <motion.div
             key={animationKey}
             className="flex items-center h-full"
-            initial={{ x: window.innerWidth }}
+            initial={{ x: window.innerWidth * 1.5 }} // Start further to the right
             animate={{ 
               x: calculateTranslation()
             }}
             transition={{
-              duration: 4,
-              ease: [0.25, 0.1, 0.25, 1],
+              duration: 6, // Longer duration for more excitement
+              ease: [0.25, 0.1, 0.1, 1], // Custom easing: fast start, very slow end
               type: "tween"
             }}
             onAnimationComplete={() => {
+              // Add extra delay after animation for dramatic effect
               setTimeout(() => {
                 onSpinComplete?.();
-              }, 500);
+              }, 800);
             }}
           >
             {rouletteCards.map((card, index) => {
@@ -173,10 +176,15 @@ const SpinRoulette: React.FC<SpinRouletteProps> = ({
                       />
                     )}
                     
+                    {/* Enhanced winner effects */}
                     {isWinner && (
-                      <div className="absolute inset-0 rounded-xl bg-gradient-to-t from-yellow-400/40 via-transparent to-yellow-400/40 pointer-events-none animate-pulse"></div>
+                      <>
+                        <div className="absolute inset-0 rounded-xl bg-gradient-to-t from-yellow-400/50 via-transparent to-yellow-400/50 pointer-events-none animate-pulse"></div>
+                        <div className="absolute -inset-1 rounded-xl bg-yellow-400/20 pointer-events-none animate-ping"></div>
+                      </>
                     )}
 
+                    {/* Tier-specific effects */}
                     {card.tier === 'legendary' && (
                       <div className="absolute inset-0 rounded-xl bg-yellow-400/20 pointer-events-none animate-pulse"></div>
                     )}
@@ -201,6 +209,7 @@ const SpinRoulette: React.FC<SpinRouletteProps> = ({
             })}
           </motion.div>
         ) : (
+          // Static preview showing available items
           <div className="flex items-center justify-center w-full h-full">
             <div className="flex justify-center gap-6">
               {items.slice(0, 5).map((item, index) => {
@@ -246,9 +255,9 @@ const SpinRoulette: React.FC<SpinRouletteProps> = ({
         )}
       </div>
 
-      {/* Gradient overlays for depth */}
-      <div className="absolute left-0 top-0 w-24 h-full bg-gradient-to-r from-black via-black/80 to-transparent pointer-events-none z-20"></div>
-      <div className="absolute right-0 top-0 w-24 h-full bg-gradient-to-l from-black via-black/80 to-transparent pointer-events-none z-20"></div>
+      {/* Enhanced gradient overlays for depth */}
+      <div className="absolute left-0 top-0 w-32 h-full bg-gradient-to-r from-black via-black/90 to-transparent pointer-events-none z-20"></div>
+      <div className="absolute right-0 top-0 w-32 h-full bg-gradient-to-l from-black via-black/90 to-transparent pointer-events-none z-20"></div>
     </div>
   );
 };
