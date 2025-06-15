@@ -28,7 +28,6 @@ const SpinRoulette: React.FC<SpinRouletteProps> = ({
   onSpinComplete
 }) => {
   const [rouletteCards, setRouletteCards] = useState<SpinItem[]>([]);
-  const [winningIndex, setWinningIndex] = useState<number>(0);
   const [animationKey, setAnimationKey] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -36,36 +35,32 @@ const SpinRoulette: React.FC<SpinRouletteProps> = ({
   const CARD_WIDTH = 120;
   const CARD_MARGIN = 8;
   const TOTAL_CARD_WIDTH = CARD_WIDTH + CARD_MARGIN;
-  const TOTAL_CARDS = 60; // Enough cards for smooth animation
-  const WINNING_CARD_INDEX = 45; // Position winner near the end for dramatic effect
+  const TOTAL_CARDS = 60;
+  const WINNING_CARD_INDEX = 45;
 
   useEffect(() => {
     if (isSpinning && winningItem && items.length > 0) {
       console.log('[SpinRoulette] Generating cards for spin animation');
       
-      // Generate cards with the winning item at a specific index
       const cards: SpinItem[] = [];
       
       for (let i = 0; i < TOTAL_CARDS; i++) {
         if (i === WINNING_CARD_INDEX) {
-          // Place the winning item at the predetermined index
           cards.push({
             ...winningItem,
             id: `winner-${i}`,
           });
         } else {
-          // Fill other positions with random items from the available items
           const randomItem = items[Math.floor(Math.random() * items.length)];
           cards.push({
             ...randomItem,
             id: `card-${i}`,
-            amount: randomItem.amount * (0.5 + Math.random() * 1.5) // Add some variation
+            amount: randomItem.amount * (0.5 + Math.random() * 1.5)
           });
         }
       }
 
       setRouletteCards(cards);
-      setWinningIndex(WINNING_CARD_INDEX);
       setAnimationKey(prev => prev + 1);
     }
   }, [isSpinning, winningItem, items]);
@@ -104,18 +99,14 @@ const SpinRoulette: React.FC<SpinRouletteProps> = ({
     }
   };
 
-  // Calculate the translation needed to center the winning card
   const calculateTranslation = () => {
     if (!containerRef.current) return 0;
     
     const containerWidth = containerRef.current.offsetWidth;
     const containerCenter = containerWidth / 2;
+    const winningCardCenter = WINNING_CARD_INDEX * TOTAL_CARD_WIDTH + (CARD_WIDTH / 2);
     
-    // Calculate how far the winning card needs to move to be centered
-    const winningCardPosition = winningIndex * TOTAL_CARD_WIDTH + (CARD_WIDTH / 2);
-    
-    // The translation needed to center the winning card
-    return -(winningCardPosition - containerCenter);
+    return containerCenter - winningCardCenter;
   };
 
   return (
@@ -136,15 +127,14 @@ const SpinRoulette: React.FC<SpinRouletteProps> = ({
         {isSpinning && rouletteCards.length > 0 ? (
           <motion.div
             key={animationKey}
-            className="flex items-center"
-            style={{ paddingLeft: '50vw' }} // Start cards from off-screen right
-            initial={{ x: 0 }}
+            className="flex items-center h-full"
+            initial={{ x: window.innerWidth }}
             animate={{ 
               x: calculateTranslation()
             }}
             transition={{
               duration: 4,
-              ease: [0.25, 0.1, 0.25, 1], // Custom cubic-bezier for smooth deceleration
+              ease: [0.25, 0.1, 0.25, 1],
               type: "tween"
             }}
             onAnimationComplete={() => {
@@ -156,21 +146,19 @@ const SpinRoulette: React.FC<SpinRouletteProps> = ({
             {rouletteCards.map((card, index) => {
               const glowClass = getTierGlow(card.tier);
               const bgGlowClass = getTierBgGlow(card.tier);
-              const isWinner = index === winningIndex;
+              const isWinner = index === WINNING_CARD_INDEX;
               
               return (
                 <div
                   key={card.id}
-                  className="flex flex-col items-center justify-center"
+                  className="flex flex-col items-center justify-center flex-shrink-0"
                   style={{ 
                     width: CARD_WIDTH,
                     marginRight: CARD_MARGIN,
-                    minWidth: CARD_WIDTH // Ensure consistent width
+                    minWidth: CARD_WIDTH
                   }}
                 >
-                  {/* Card container */}
                   <div className={`relative rounded-xl p-3 ${bgGlowClass} ${glowClass} transition-all duration-300`}>
-                    {/* Crypto logo */}
                     {card.crypto.symbol === 'LOSS' ? (
                       <div className="w-12 h-12 rounded-full bg-red-500 flex items-center justify-center text-white font-bold text-lg">
                         ✗
@@ -185,12 +173,10 @@ const SpinRoulette: React.FC<SpinRouletteProps> = ({
                       />
                     )}
                     
-                    {/* Winner highlight effect */}
                     {isWinner && (
                       <div className="absolute inset-0 rounded-xl bg-gradient-to-t from-yellow-400/40 via-transparent to-yellow-400/40 pointer-events-none animate-pulse"></div>
                     )}
 
-                    {/* Tier-specific glow effects */}
                     {card.tier === 'legendary' && (
                       <div className="absolute inset-0 rounded-xl bg-yellow-400/20 pointer-events-none animate-pulse"></div>
                     )}
@@ -202,7 +188,6 @@ const SpinRoulette: React.FC<SpinRouletteProps> = ({
                     )}
                   </div>
 
-                  {/* Card info */}
                   <div className="text-center mt-2">
                     <div className="text-xs font-bold text-white">
                       {card.crypto.symbol === 'LOSS' ? '0.00' : card.amount.toFixed(4)}
@@ -216,7 +201,6 @@ const SpinRoulette: React.FC<SpinRouletteProps> = ({
             })}
           </motion.div>
         ) : (
-          // Static display when not spinning
           <div className="flex items-center justify-center w-full h-full">
             <div className="flex justify-center gap-6">
               {items.slice(0, 5).map((item, index) => {

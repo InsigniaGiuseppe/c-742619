@@ -10,8 +10,9 @@ import { Slider } from '@/components/ui/slider';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import SpinRoulette from '@/components/SpinRoulette';
+import SpinResultModal from '@/components/SpinResultModal';
 import FormattedNumber from '@/components/FormattedNumber';
-import { Dice6, TrendingUp, Clock } from 'lucide-react';
+import { Dice6, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 
 const SpinPage: React.FC = () => {
@@ -21,7 +22,6 @@ const SpinPage: React.FC = () => {
   const { portfolio } = usePortfolio();
   const { spin, isSpinning, currentSpin, setCurrentSpin } = useSpinGame();
   
-  // Fetch spin configurations separately
   const { data: configurations = [], isLoading: loading } = useQuery({
     queryKey: ['spin_configurations'],
     queryFn: async () => {
@@ -44,32 +44,17 @@ const SpinPage: React.FC = () => {
     },
   });
   
-  console.log('[SpinPage] Hooks data:', {
-    user: !!user,
-    portfolioCount: portfolio?.length || 0,
-    configurationsCount: configurations?.length || 0,
-    loading,
-    isSpinning
-  });
-  
   const [betAmount, setBetAmount] = useState([0.0001]);
   const [lastSpinResult, setLastSpinResult] = useState<any>(null);
   const [canSpin, setCanSpin] = useState(true);
   const [cooldownTime, setCooldownTime] = useState(0);
+  const [showResultModal, setShowResultModal] = useState(false);
 
   const betAmountBtc = betAmount[0];
   const btcHolding = portfolio?.find(p => p.crypto.symbol === 'BTC');
   const btcBalance = btcHolding?.quantity || 0;
   const btcPrice = btcHolding?.crypto.current_price || 50000;
   const betAmountUsd = betAmountBtc * btcPrice;
-
-  console.log('[SpinPage] BTC data:', {
-    btcHolding: !!btcHolding,
-    btcBalance,
-    btcPrice,
-    betAmountBtc,
-    betAmountUsd
-  });
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -87,11 +72,20 @@ const SpinPage: React.FC = () => {
     return () => clearInterval(interval);
   }, [cooldownTime]);
 
+  // Show result modal when spin completes
+  useEffect(() => {
+    if (lastSpinResult && !isSpinning) {
+      setTimeout(() => {
+        setShowResultModal(true);
+      }, 1000); // Small delay after animation completes
+    }
+  }, [lastSpinResult, isSpinning]);
+
   const getMultiplierColor = (multiplier: number) => {
-    if (multiplier >= 8) return 'text-yellow-400'; // Legendary
-    if (multiplier >= 3) return 'text-purple-400'; // Epic
-    if (multiplier >= 1.5) return 'text-blue-400'; // Rare
-    return 'text-gray-400'; // Common
+    if (multiplier >= 8) return 'text-yellow-400';
+    if (multiplier >= 3) return 'text-purple-400';
+    if (multiplier >= 1.5) return 'text-blue-400';
+    return 'text-gray-400';
   };
 
   const getTierBadgeStyle = (tier: string) => {
@@ -108,9 +102,6 @@ const SpinPage: React.FC = () => {
   };
 
   const generateRouletteItems = () => {
-    console.log('[SpinPage] Generating roulette items with configurations:', configurations?.length);
-    
-    // Create items for all tiers including legendary
     const allTierItems = configurations.map((config, index) => ({
       id: config.id,
       crypto: {
@@ -122,7 +113,6 @@ const SpinPage: React.FC = () => {
       tier: config.reward_tier
     }));
 
-    // Add loss item
     allTierItems.push({
       id: 'loss',
       crypto: {
@@ -138,13 +128,6 @@ const SpinPage: React.FC = () => {
   };
 
   const handleSpin = async () => {
-    console.log('[SpinPage] Spin button clicked', {
-      canSpin,
-      btcBalance,
-      betAmountBtc,
-      hasConfigurations: configurations?.length > 0
-    });
-    
     if (!canSpin) {
       toast.error('Please wait for cooldown to finish');
       return;
@@ -156,16 +139,32 @@ const SpinPage: React.FC = () => {
     }
 
     setCanSpin(false);
-    setCooldownTime(10); // 10-second cooldown
+    setCooldownTime(10);
 
-    console.log('[SpinPage] Executing spin...');
     const result = await spin(betAmountBtc);
-    console.log('[SpinPage] Spin result:', result);
     
     if (result) {
       setLastSpinResult(result);
     }
   };
+
+  // Group configurations by cryptocurrency and tier
+  const groupedConfigurations = configurations.reduce((acc, config) => {
+    const symbol = config.cryptocurrencies?.symbol || 'UNK';
+    if (!acc[symbol]) {
+      acc[symbol] = [];
+    }
+    acc[symbol].push(config);
+    return acc;
+  }, {} as Record<string, typeof configurations>);
+
+  // Sort tiers within each crypto group
+  Object.keys(groupedConfigurations).forEach(symbol => {
+    groupedConfigurations[symbol].sort((a, b) => {
+      const tierOrder = { 'common': 0, 'rare': 1, 'epic': 2, 'legendary': 3 };
+      return tierOrder[a.reward_tier] - tierOrder[b.reward_tier];
+    });
+  });
 
   if (!user) {
     return (
@@ -281,13 +280,7 @@ const SpinPage: React.FC = () => {
               )
             } : undefined}
             onSpinComplete={() => {
-              if (lastSpinResult) {
-                if (lastSpinResult.isWin) {
-                  toast.success(`🎉 You won ${lastSpinResult.rewardAmount.toFixed(6)} ${lastSpinResult.rewardCrypto}!`);
-                } else {
-                  toast.error(`😢 You lost! Better luck next time.`);
-                }
-              }
+              // Animation complete, modal will show automatically via useEffect
             }}
           />
 
@@ -326,46 +319,52 @@ const SpinPage: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Reward Tiers */}
+      {/* Reward Tiers - Organized by crypto vertically */}
       <Card className="glass glass-hover">
         <CardHeader>
           <CardTitle>Reward Tiers</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {configurations.map((config) => (
-              <div key={config.id} className="p-4 rounded-lg glass glass-hover">
-                <div className="flex items-center justify-between mb-2">
-                  <Badge className={getTierBadgeStyle(config.reward_tier)}>
-                    {config.reward_tier.toUpperCase()}
-                  </Badge>
-                  <span className="text-sm text-muted-foreground">
-                    {(config.probability * 100).toFixed(3)}%
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 mb-2">
-                  {config.cryptocurrencies && (
-                    <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+            {Object.entries(groupedConfigurations).map(([symbol, configs]) => (
+              <div key={symbol} className="space-y-3">
+                <div className="text-center">
+                  <div className="flex items-center justify-center gap-2 mb-2">
+                    {configs[0]?.cryptocurrencies && (
                       <img 
-                        src={config.cryptocurrencies.logo_url} 
-                        alt={config.cryptocurrencies.symbol}
+                        src={configs[0].cryptocurrencies.logo_url} 
+                        alt={symbol}
                         className="w-6 h-6 rounded-full"
                       />
-                      <span className="font-semibold">{config.cryptocurrencies.symbol}</span>
-                    </>
-                  )}
-                </div>
-                <div className="text-sm">
-                  <div className={`font-semibold ${getMultiplierColor(config.min_multiplier)}`}>
-                    {config.min_multiplier}x - {config.max_multiplier}x
-                  </div>
-                  <div className="text-muted-foreground">
-                    {(betAmountBtc * config.min_multiplier).toFixed(6)} - {(betAmountBtc * config.max_multiplier).toFixed(6)} {config.cryptocurrencies?.symbol}
+                    )}
+                    <span className="font-bold text-lg">{symbol}</span>
                   </div>
                 </div>
+                
+                {configs.map((config) => (
+                  <div key={config.id} className="p-3 rounded-lg glass glass-hover">
+                    <div className="flex items-center justify-between mb-2">
+                      <Badge className={getTierBadgeStyle(config.reward_tier)}>
+                        {config.reward_tier.toUpperCase()}
+                      </Badge>
+                      <span className="text-xs text-muted-foreground">
+                        {(config.probability * 100).toFixed(3)}%
+                      </span>
+                    </div>
+                    <div className="text-sm">
+                      <div className={`font-semibold ${getMultiplierColor(config.min_multiplier)}`}>
+                        {config.min_multiplier}x - {config.max_multiplier}x
+                      </div>
+                      <div className="text-muted-foreground">
+                        {(betAmountBtc * config.min_multiplier).toFixed(6)} - {(betAmountBtc * config.max_multiplier).toFixed(6)} {symbol}
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             ))}
           </div>
+          
           <div className="mt-4 p-3 rounded-lg bg-red-900/20 border border-red-500/30">
             <div className="flex items-center justify-between mb-1">
               <Badge className="bg-red-500/20 text-red-400 border-red-500/30">
@@ -381,6 +380,16 @@ const SpinPage: React.FC = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Result Modal */}
+      <SpinResultModal
+        isOpen={showResultModal}
+        onClose={() => {
+          setShowResultModal(false);
+          setLastSpinResult(null);
+        }}
+        result={lastSpinResult}
+      />
     </div>
   );
 };
