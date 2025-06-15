@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,10 +6,29 @@ import { Label } from '@/components/ui/label';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useQuery } from '@tanstack/react-query';
 
 const PersonalInfoSection = () => {
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
+
+  // Fetch profile data
+  const { data: profile } = useQuery({
+    queryKey: ['profile', user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
   const [formData, setFormData] = useState({
     full_name: profile?.full_name || '',
     email: profile?.email || user?.email || '',
@@ -21,6 +39,22 @@ const PersonalInfoSection = () => {
     postal_code: profile?.postal_code || '',
     country: profile?.country || '',
   });
+
+  // Update form data when profile data changes
+  React.useEffect(() => {
+    if (profile) {
+      setFormData({
+        full_name: profile.full_name || '',
+        email: profile.email || user?.email || '',
+        phone: profile.phone || '',
+        date_of_birth: profile.date_of_birth || '',
+        address: profile.address || '',
+        city: profile.city || '',
+        postal_code: profile.postal_code || '',
+        country: profile.country || '',
+      });
+    }
+  }, [profile, user?.email]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;

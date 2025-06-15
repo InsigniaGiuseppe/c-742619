@@ -37,7 +37,7 @@ const ProfilePage = () => {
           </TabsList>
           
           <TabsContent value="personal" className="mt-6">
-            <PersonalInfoSection user={user} />
+            <PersonalInfoSection />
           </TabsContent>
           
           <TabsContent value="portfolio" className="mt-6">

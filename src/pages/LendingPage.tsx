@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRealtimePortfolio } from '@/hooks/useRealtimePortfolio';
@@ -169,13 +168,45 @@ const LendingPage: React.FC = () => {
     potential_daily_earnings: item.quantity * item.crypto.current_price * 0.05 / 365
   })) || [];
 
-  // Calculate lending stats
-  const totalLent = lendingPositions?.reduce((sum, pos) => sum + (pos.amount_lent * pos.crypto.current_price), 0) || 0;
-  const totalEarnings = lendingPositions?.reduce((sum, pos) => sum + (pos.total_interest_earned * pos.crypto.current_price), 0) || 0;
-  const dailyEarnings = lendingPositions?.reduce((sum, pos) => {
+  // Calculate lending stats for the stats card
+  const totalLentValue = lendingPositions?.reduce((sum, pos) => sum + (pos.amount_lent * pos.crypto.current_price), 0) || 0;
+  const totalEarnedInterest = lendingPositions?.reduce((sum, pos) => sum + (pos.total_interest_earned * pos.crypto.current_price), 0) || 0;
+  const estimatedDailyReturn = lendingPositions?.reduce((sum, pos) => {
     const dailyRate = pos.annual_interest_rate / 365;
     return sum + (pos.amount_lent * dailyRate * pos.crypto.current_price);
   }, 0) || 0;
+  const estimatedMonthlyReturn = estimatedDailyReturn * 30;
+  const averageYield = lendingPositions && lendingPositions.length > 0 
+    ? (lendingPositions.reduce((sum, pos) => sum + pos.annual_interest_rate, 0) / lendingPositions.length) * 100 
+    : 0;
+
+  // Calculate next payout time
+  const now = new Date();
+  const tomorrow9AM = new Date();
+  tomorrow9AM.setDate(tomorrow9AM.getDate() + 1);
+  tomorrow9AM.setHours(9, 0, 0, 0);
+  
+  let nextPayoutIn: string;
+  if (now.getHours() < 9) {
+    const today9AM = new Date();
+    today9AM.setHours(9, 0, 0, 0);
+    const hoursUntil = Math.ceil((today9AM.getTime() - now.getTime()) / (1000 * 60 * 60));
+    nextPayoutIn = hoursUntil <= 1 ? 'In less than 1 hour' : `In ${hoursUntil} hours`;
+  } else {
+    const hoursUntil = Math.ceil((tomorrow9AM.getTime() - now.getTime()) / (1000 * 60 * 60));
+    nextPayoutIn = `In ${hoursUntil} hours`;
+  }
+
+  const stats = {
+    totalLentValue,
+    totalEarnedInterest,
+    averageYield,
+    activeLendingCount: lendingPositions?.length || 0,
+    estimatedDailyReturn,
+    estimatedMonthlyReturn,
+    daysSinceLastPayout: 0,
+    nextPayoutIn
+  };
 
   const handleCancelLending = async (positionId: string, symbol: string) => {
     if (!user) return;
@@ -273,10 +304,8 @@ const LendingPage: React.FC = () => {
 
         {/* Lending Stats */}
         <LendingStatsCard 
-          totalLent={totalLent}
-          totalEarnings={totalEarnings}
-          dailyEarnings={dailyEarnings}
-          activePositions={lendingPositions?.length || 0}
+          stats={stats}
+          loading={false}
         />
 
         {/* Active Lending Positions */}
@@ -289,7 +318,7 @@ const LendingPage: React.FC = () => {
                   <p className="text-lg font-semibold text-muted-foreground">
                     {lendingPositions.length} active position{lendingPositions.length !== 1 ? 's' : ''} • Earning{' '}
                     <FormattedNumber 
-                      value={dailyEarnings} 
+                      value={estimatedDailyReturn} 
                       type="currency" 
                       showTooltip={false} 
                       className="text-green-400 font-bold" 
