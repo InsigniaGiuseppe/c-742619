@@ -111,43 +111,22 @@ const cancelLendingPosition = async (
   const totalToReturn = lendingPosition.amount_lent + lendingPosition.total_interest_earned;
   const currentPrice = lendingPosition.crypto?.current_price || 0;
 
-  // Use atomic UPSERT with proper conflict resolution
-  // This eliminates the race condition by using a single database operation
-  const { error: portfolioError } = await supabase
+  // Use a simple approach: try to get existing portfolio, then either insert or update
+  const { data: existingPortfolio, error: selectError } = await supabase
     .from('user_portfolios')
-    .upsert({
-      user_id: userId,
-      cryptocurrency_id: lendingPosition.cryptocurrency_id,
-      quantity: totalToReturn,
-      average_buy_price: 0,
-      total_invested: 0,
-      current_value: totalToReturn * currentPrice,
-      profit_loss: 0,
-      profit_loss_percentage: 0,
-      updated_at: new Date().toISOString()
-    }, {
-      onConflict: 'user_id,cryptocurrency_id',
-      // For existing entries, add the returned amount to the existing quantity
-      ignoreDuplicates: false
-    });
+    .select('id, quantity')
+    .eq('user_id', userId)
+    .eq('cryptocurrency_id', lendingPosition.cryptocurrency_id)
+    .maybeSingle();
 
-  // Since upsert with onConflict doesn't support custom update logic,
-  // we need to handle the addition manually for existing entries
-  if (portfolioError && portfolioError.code === '23505') {
-    // Unique constraint violation means entry exists, so we update it
-    const { data: existingEntry, error: selectError } = await supabase
-      .from('user_portfolios')
-      .select('quantity')
-      .eq('user_id', userId)
-      .eq('cryptocurrency_id', lendingPosition.cryptocurrency_id)
-      .single();
+  if (selectError) {
+    console.error('Error checking existing portfolio:', selectError);
+    throw new Error(`Failed to check existing portfolio: ${selectError.message}`);
+  }
 
-    if (selectError) {
-      console.error('Error fetching existing portfolio:', selectError);
-      throw new Error(`Failed to fetch existing portfolio: ${selectError.message}`);
-    }
-
-    const newQuantity = existingEntry.quantity + totalToReturn;
+  if (existingPortfolio) {
+    // Update existing portfolio entry
+    const newQuantity = existingPortfolio.quantity + totalToReturn;
     const { error: updatePortfolioError } = await supabase
       .from('user_portfolios')
       .update({
@@ -155,16 +134,32 @@ const cancelLendingPosition = async (
         current_value: newQuantity * currentPrice,
         updated_at: new Date().toISOString()
       })
-      .eq('user_id', userId)
-      .eq('cryptocurrency_id', lendingPosition.cryptocurrency_id);
+      .eq('id', existingPortfolio.id);
 
     if (updatePortfolioError) {
       console.error('Error updating existing portfolio:', updatePortfolioError);
       throw new Error(`Failed to update portfolio: ${updatePortfolioError.message}`);
     }
-  } else if (portfolioError) {
-    console.error('Error with portfolio upsert:', portfolioError);
-    throw new Error(`Failed to update portfolio: ${portfolioError.message}`);
+  } else {
+    // Create new portfolio entry
+    const { error: insertPortfolioError } = await supabase
+      .from('user_portfolios')
+      .insert({
+        user_id: userId,
+        cryptocurrency_id: lendingPosition.cryptocurrency_id,
+        quantity: totalToReturn,
+        average_buy_price: 0,
+        total_invested: 0,
+        current_value: totalToReturn * currentPrice,
+        profit_loss: 0,
+        profit_loss_percentage: 0,
+        updated_at: new Date().toISOString()
+      });
+
+    if (insertPortfolioError) {
+      console.error('Error creating portfolio entry:', insertPortfolioError);
+      throw new Error(`Failed to create portfolio entry: ${insertPortfolioError.message}`);
+    }
   }
 
   // Create transaction record for the cancellation
