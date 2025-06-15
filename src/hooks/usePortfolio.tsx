@@ -29,6 +29,7 @@ const fetchPortfolio = async (userId: string): Promise<{
   totalValue: number;
   totalProfitLoss: number;
   totalProfitLossPercentage: number;
+  totalInvested: number;
 }> => {
   console.log('[usePortfolio] Fetching portfolio for user:', userId);
   
@@ -135,6 +136,7 @@ const fetchPortfolio = async (userId: string): Promise<{
     totalValue: totalValue,
     totalProfitLoss: totalPL,
     totalProfitLossPercentage: totalPLPercentage,
+    totalInvested: totalInvested,
   };
 };
 
@@ -172,6 +174,7 @@ export const usePortfolio = () => {
     loading: query.isLoading,
     error: query.error?.message || null,
     totalValue: convertUsdToEur(query.data?.totalValue || 0, exchangeRate),
+    totalInvested: convertUsdToEur(query.data?.totalInvested || 0, exchangeRate),
     totalProfitLoss: convertUsdToEur(query.data?.totalProfitLoss || 0, exchangeRate),
     totalProfitLossPercentage: query.data?.totalProfitLossPercentage || 0,
     refetch: query.refetch,

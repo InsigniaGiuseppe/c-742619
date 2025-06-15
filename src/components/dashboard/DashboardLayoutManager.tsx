@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from 'react';
 import { Responsive, WidthProvider, Layout } from 'react-grid-layout';
 import DashboardWidget from './DashboardWidget';
@@ -6,7 +5,7 @@ import BalanceWidget from './widgets/BalanceWidget';
 import PortfolioValueWidget from './widgets/PortfolioValueWidget';
 import ProfitLossWidget from './widgets/ProfitLossWidget';
 import HoldingsWidget from './widgets/HoldingsWidget';
-import LivePortfolioMetricsWidget from './widgets/LivePortfolioMetricsWidget';
+import TotalInvestedWidget from './widgets/TotalInvestedWidget';
 import PortfolioGrowthChartWidget from './widgets/PortfolioGrowthChartWidget';
 import PortfolioDistributionWidget from './widgets/PortfolioDistributionWidget';
 import PortfolioHoldingsTableWidget from './widgets/PortfolioHoldingsTableWidget';
@@ -66,9 +65,9 @@ const DashboardLayoutManager: React.FC = () => {
       minH: 3
     },
     {
-      id: 'profit-loss',
-      title: 'Profit/Loss',
-      component: ProfitLossWidget,
+      id: 'total-invested',
+      title: 'Total Invested',
+      component: TotalInvestedWidget,
       category: 'metrics',
       defaultLayout: {
         lg: { x: 6, y: 0, w: 3, h: 3 },
@@ -79,9 +78,9 @@ const DashboardLayoutManager: React.FC = () => {
       minH: 3
     },
     {
-      id: 'holdings',
-      title: 'Holdings Count',
-      component: HoldingsWidget,
+      id: 'profit-loss',
+      title: 'Profit/Loss',
+      component: ProfitLossWidget,
       category: 'metrics',
       defaultLayout: {
         lg: { x: 9, y: 0, w: 3, h: 3 },
@@ -92,27 +91,14 @@ const DashboardLayoutManager: React.FC = () => {
       minH: 3
     },
     {
-      id: 'live-portfolio-metrics',
-      title: 'Portfolio Metrics',
-      component: LivePortfolioMetricsWidget,
-      category: 'analytics',
-      defaultLayout: {
-        lg: { x: 0, y: 3, w: 12, h: 6 },
-        md: { x: 0, y: 6, w: 12, h: 6 },
-        sm: { x: 0, y: 12, w: 12, h: 8 }
-      },
-      minW: 8,
-      minH: 5
-    },
-    {
       id: 'portfolio-growth-chart',
       title: 'Portfolio Growth',
       component: PortfolioGrowthChartWidget,
       category: 'charts',
       defaultLayout: {
-        lg: { x: 0, y: 9, w: 8, h: 8 },
-        md: { x: 0, y: 12, w: 12, h: 8 },
-        sm: { x: 0, y: 20, w: 12, h: 8 }
+        lg: { x: 0, y: 3, w: 8, h: 8 },
+        md: { x: 0, y: 6, w: 12, h: 8 },
+        sm: { x: 0, y: 12, w: 12, h: 8 }
       },
       minW: 6,
       minH: 6
@@ -123,9 +109,9 @@ const DashboardLayoutManager: React.FC = () => {
       component: PortfolioDistributionWidget,
       category: 'charts',
       defaultLayout: {
-        lg: { x: 8, y: 9, w: 4, h: 8 },
-        md: { x: 0, y: 20, w: 12, h: 8 },
-        sm: { x: 0, y: 28, w: 12, h: 8 }
+        lg: { x: 8, y: 3, w: 4, h: 8 },
+        md: { x: 0, y: 14, w: 12, h: 8 },
+        sm: { x: 0, y: 20, w: 12, h: 8 }
       },
       minW: 4,
       minH: 6
@@ -136,9 +122,9 @@ const DashboardLayoutManager: React.FC = () => {
       component: PortfolioHoldingsTableWidget,
       category: 'data',
       defaultLayout: {
-        lg: { x: 0, y: 17, w: 8, h: 6 },
-        md: { x: 0, y: 28, w: 12, h: 6 },
-        sm: { x: 0, y: 36, w: 12, h: 8 }
+        lg: { x: 0, y: 11, w: 8, h: 6 },
+        md: { x: 0, y: 22, w: 12, h: 6 },
+        sm: { x: 0, y: 28, w: 12, h: 8 }
       },
       minW: 6,
       minH: 4
@@ -149,12 +135,25 @@ const DashboardLayoutManager: React.FC = () => {
       component: RecentTransactionsWidget,
       category: 'data',
       defaultLayout: {
-        lg: { x: 8, y: 17, w: 4, h: 6 },
-        md: { x: 0, y: 34, w: 12, h: 6 },
-        sm: { x: 0, y: 44, w: 12, h: 6 }
+        lg: { x: 8, y: 11, w: 4, h: 6 },
+        md: { x: 0, y: 28, w: 12, h: 6 },
+        sm: { x: 0, y: 36, w: 12, h: 6 }
       },
       minW: 3,
       minH: 4
+    },
+    {
+      id: 'holdings',
+      title: 'Holdings Count',
+      component: HoldingsWidget,
+      category: 'metrics',
+      defaultLayout: {
+        lg: { x: 0, y: 17, w: 4, h: 3 },
+        md: { x: 0, y: 34, w: 6, h: 3 },
+        sm: { x: 0, y: 42, w: 12, h: 3 }
+      },
+      minW: 2,
+      minH: 3
     }
   ];
 
@@ -491,4 +490,3 @@ const DashboardLayoutManager: React.FC = () => {
 };
 
 export default DashboardLayoutManager;
-

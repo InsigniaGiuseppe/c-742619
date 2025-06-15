@@ -10,12 +10,12 @@ const ProfitLossWidget: React.FC = () => {
   const Icon = totalProfitLoss >= 0 ? TrendingUp : TrendingDown;
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col justify-center h-full">
       <div className="flex items-center gap-2">
         <Icon className={`h-5 w-5 ${totalProfitLoss >= 0 ? 'text-green-500' : 'text-red-500'}`} />
         <span className="text-sm text-muted-foreground">Total Profit/Loss</span>
       </div>
-      <div className={`text-2xl font-bold ${totalProfitLoss >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+      <div className={`text-2xl font-bold mt-2 ${totalProfitLoss >= 0 ? 'text-green-500' : 'text-red-500'}`}>
         {loading ? (
           <div className="h-8 w-24 bg-gray-700 animate-pulse rounded"></div>
         ) : (
@@ -28,7 +28,7 @@ const ProfitLossWidget: React.FC = () => {
         )}
       </div>
       {!loading && (
-        <div className={`text-sm ${totalProfitLoss >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+        <div className={`text-sm mt-1 ${totalProfitLoss >= 0 ? 'text-green-500' : 'text-red-500'}`}>
           {totalProfitLoss >= 0 ? '+' : ''}{totalProfitLossPercentage.toFixed(2)}%
         </div>
       )}

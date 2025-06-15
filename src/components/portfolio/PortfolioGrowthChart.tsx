@@ -1,8 +1,6 @@
 
 import React from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Badge } from '@/components/ui/badge';
-import { TrendingUp, TrendingDown, Activity } from 'lucide-react';
 import FormattedNumber from '@/components/FormattedNumber';
 import { useRealtimePortfolio } from '@/hooks/useRealtimePortfolio';
 
@@ -10,8 +8,6 @@ const PortfolioGrowthChart = () => {
   const { 
     totalValue, 
     totalProfitLoss, 
-    totalProfitLossPercentage,
-    isRealtime 
   } = useRealtimePortfolio();
 
   // Generate mock historical data for the growth chart
@@ -65,41 +61,8 @@ const PortfolioGrowthChart = () => {
   };
 
   return (
-    <div className="h-full w-full flex flex-col p-2 space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-            {isRealtime && (
-              <Badge variant="outline" className="text-green-500 border-green-500">
-                <Activity className="w-3 h-3 mr-1" />
-                LIVE
-              </Badge>
-            )}
-        </div>
-        <div className="space-y-1 text-right">
-            <div className="flex items-center justify-end gap-2">
-                <span className="text-sm text-muted-foreground">Value:</span>
-                <FormattedNumber value={totalValue} type="currency" showTooltip={false} className="font-semibold text-base" />
-            </div>
-            <div className="flex items-center justify-end gap-2">
-                <span className="text-sm text-muted-foreground">Return:</span>
-                <div className={`flex items-center gap-1 font-semibold text-base ${
-                isProfit ? 'text-green-500' : 'text-red-500'
-                }`}>
-                {isProfit ? (
-                    <TrendingUp className="w-4 h-4" />
-                ) : (
-                    <TrendingDown className="w-4 h-4" />
-                )}
-                <FormattedNumber value={Math.abs(totalProfitLoss)} type="currency" showTooltip={false} />
-                <span className="text-xs">
-                    ({isProfit ? '+' : ''}{totalProfitLossPercentage.toFixed(2)}%)
-                </span>
-                </div>
-            </div>
-        </div>
-      </div>
-      
-      <div className="flex-1 min-h-[200px]">
+    <div className="h-full w-full flex flex-col">
+      <div className="flex-1 min-h-[150px]">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={growthData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.1)" />
@@ -129,38 +92,8 @@ const PortfolioGrowthChart = () => {
           </LineChart>
         </ResponsiveContainer>
       </div>
-      
-      <div className="grid grid-cols-3 gap-4 text-center">
-        <div>
-          <div className="text-xs text-muted-foreground">30D High</div>
-          <div className="font-medium text-sm">
-            <FormattedNumber 
-              value={Math.max(...growthData.map(d => d.value))} 
-              type="currency" 
-              showTooltip={false} 
-            />
-          </div>
-        </div>
-        <div>
-          <div className="text-xs text-muted-foreground">30D Low</div>
-          <div className="font-medium text-sm">
-            <FormattedNumber 
-              value={Math.min(...growthData.map(d => d.value))} 
-              type="currency" 
-              showTooltip={false} 
-            />
-          </div>
-        </div>
-        <div>
-          <div className="text-xs text-muted-foreground">30D Change</div>
-          <div className={`font-medium text-sm ${isProfit ? 'text-green-500' : 'text-red-500'}`}>
-            {isProfit ? '+' : ''}{totalProfitLossPercentage.toFixed(1)}%
-          </div>
-        </div>
-      </div>
     </div>
   );
 };
 
 export default PortfolioGrowthChart;
-

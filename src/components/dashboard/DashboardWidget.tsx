@@ -42,8 +42,8 @@ const DashboardWidget: React.FC<DashboardWidgetProps> = ({
           )}
         </div>
       </CardHeader>
-      <CardContent className="flex-1 overflow-visible p-4 card-content">
-        <div className="h-full w-full overflow-visible">
+      <CardContent className="flex-1 overflow-auto p-4 card-content">
+        <div className="h-full w-full">
           {children}
         </div>
       </CardContent>

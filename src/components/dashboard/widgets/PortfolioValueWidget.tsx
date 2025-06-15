@@ -8,12 +8,12 @@ const PortfolioValueWidget: React.FC = () => {
   const { totalValue, totalProfitLoss, totalProfitLossPercentage, loading } = usePortfolio();
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col justify-center h-full">
       <div className="flex items-center gap-2">
         <Wallet className="h-5 w-5 text-muted-foreground" />
         <span className="text-sm text-muted-foreground">Portfolio Value</span>
       </div>
-      <div className="text-2xl font-bold">
+      <div className="text-2xl font-bold mt-2">
         {loading ? (
           <div className="h-8 w-24 bg-gray-700 animate-pulse rounded"></div>
         ) : (
@@ -26,7 +26,7 @@ const PortfolioValueWidget: React.FC = () => {
         )}
       </div>
       {!loading && (
-        <div className={`flex items-center gap-1 text-sm ${
+        <div className={`flex items-center gap-1 text-sm mt-1 ${
           totalProfitLoss >= 0 ? 'text-green-500' : 'text-red-500'
         }`}>
           {totalProfitLoss >= 0 ? (

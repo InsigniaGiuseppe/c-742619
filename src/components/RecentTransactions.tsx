@@ -1,6 +1,5 @@
-
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useTransactionHistory } from '@/hooks/useTransactionHistory';
 import { Settings, ArrowUp, ArrowDown } from 'lucide-react';
@@ -12,20 +11,15 @@ const RecentTransactions = () => {
 
   if (loading) {
     return (
-      <Card className="glass glass-hover">
-        <CardHeader>
-          <CardTitle className="text-lg md:text-xl">Recent Transactions</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className="animate-pulse">
-                <div className="h-12 md:h-16 bg-gray-800 rounded-lg"></div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      <div className="p-4">
+        <div className="space-y-2">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="animate-pulse">
+              <div className="h-12 bg-gray-800 rounded-lg"></div>
+            </div>
+          ))}
+        </div>
+      </div>
     );
   }
 
@@ -77,99 +71,71 @@ const RecentTransactions = () => {
   };
 
   return (
-    <Card className="glass glass-hover">
-      <CardHeader>
-        <CardTitle className="text-lg md:text-xl">Recent Transactions</CardTitle>
-        <p className="text-sm text-muted-foreground">
-          {recentTransactions.length} recent activities
-        </p>
+    <div className="h-full flex flex-col">
+      <CardHeader className="py-2 px-4 shrink-0">
+        <CardTitle className="text-base">Recent Transactions</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-grow p-0 overflow-y-auto">
         {recentTransactions.length === 0 ? (
-          <div className="text-gray-400 text-center py-8 md:py-12 space-y-2">
-            <div className="text-base md:text-lg">No transactions yet</div>
+          <div className="text-gray-400 text-center py-8 space-y-2">
+            <div className="text-base">No transactions yet</div>
             <div className="text-sm">Start trading to see your activity here</div>
           </div>
         ) : (
-          <div className="space-y-3">
-            {recentTransactions.map((transaction, index) => {
+          <div className="space-y-2 p-2">
+            {recentTransactions.map((transaction) => {
               const transactionBgColor = getTransactionBgColor(transaction.transaction_type);
               const formattedType = formatTransactionType(transaction.transaction_type);
               const transactionIcon = getTransactionIcon(transaction.transaction_type);
               
               const isAdminTransaction = transaction.transaction_type.includes('admin');
-              const isBuyTransaction = transaction.transaction_type === 'trade_buy' || transaction.transaction_type === 'purchase' || transaction.transaction_type === 'buy' || transaction.transaction_type.includes('buy');
               
               return (
                 <div 
                   key={transaction.id} 
-                  className="flex items-center justify-between p-3 md:p-4 bg-white/5 rounded-lg hover:bg-white/10 transition-all duration-200 border border-white/10"
+                  className="flex items-center justify-between p-2 bg-white/5 rounded-md hover:bg-white/10 transition-all duration-200 border border-white/10"
                 >
-                  <div className="flex items-center gap-3 md:gap-4 min-w-0 flex-1">
-                    <div className={`p-2 md:p-3 rounded-full ${transactionBgColor} flex items-center justify-center relative flex-shrink-0`}>
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <div className={`p-1.5 rounded-full ${transactionBgColor} flex items-center justify-center relative flex-shrink-0`}>
                       {isAdminTransaction ? (
-                        <Settings className="h-4 w-4 md:h-5 md:w-5 text-blue-500" />
+                        <Settings className="h-4 w-4 text-blue-500" />
                       ) : transaction.crypto ? (
                         <>
                           <CryptoLogo 
                             logo_url={transaction.crypto.logo_url}
                             name={transaction.crypto.name}
                             symbol={transaction.crypto.symbol}
-                            size="sm"
+                            size="xs"
                           />
-                          <div className="absolute -top-1 -right-1 bg-gray-900 rounded-full p-1 border border-gray-600">
+                          <div className="absolute -top-1 -right-1 bg-gray-900 rounded-full p-0.5 border border-gray-600">
                             {transactionIcon}
                           </div>
                         </>
                       ) : (
-                        <div className="w-5 h-5 md:w-6 md:h-6 rounded-full bg-gray-600 flex items-center justify-center text-xs font-bold">
-                          ?
-                        </div>
+                        <div className="w-5 h-5 rounded-full bg-gray-600 flex items-center justify-center text-xs font-bold">?</div>
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-                        <p className="font-medium truncate text-sm md:text-base">
-                          {transaction.description || `${formattedType} ${transaction.crypto?.symbol || 'CRYPTO'}`}
-                        </p>
-                        {!isAdminTransaction && (
-                          <Badge 
-                            variant={isBuyTransaction ? 'default' : 'destructive'}
-                            className="text-xs px-2 py-0.5 self-start sm:self-auto"
-                          >
-                            {isBuyTransaction ? 'BUY' : 'SELL'}
-                          </Badge>
-                        )}
-                      </div>
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-xs md:text-sm text-gray-400">
-                        <span>
-                          {new Date(transaction.created_at).toLocaleDateString('en-US', {
-                            month: 'short',
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
-                        </span>
-                        {transaction.amount && transaction.crypto && (
-                          <span className="text-gray-500 truncate">
-                            • {transaction.amount.toFixed(6)} {transaction.crypto?.symbol}
-                          </span>
-                        )}
-                      </div>
+                      <p className="font-medium truncate text-xs">
+                        {transaction.description || `${formattedType} ${transaction.crypto?.symbol || 'CRYPTO'}`}
+                      </p>
+                      <span className="text-xs text-gray-400">
+                        {new Date(transaction.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      </span>
                     </div>
                   </div>
-                  <div className="text-right space-y-1 flex-shrink-0 ml-2">
+                  <div className="text-right space-y-0.5 flex-shrink-0 ml-1">
                     <FormattedNumber
                       value={transaction.eur_value || 0}
                       type="currency"
                       currency="EUR"
                       showTooltip={false}
-                      className="font-semibold text-sm md:text-base"
+                      className="font-semibold text-xs"
                     />
                     <div>
                       <Badge 
                         variant={transaction.status === 'completed' ? 'default' : 'secondary'}
-                        className="text-xs"
+                        className="text-[10px] h-4 px-1.5"
                       >
                         {transaction.status}
                       </Badge>
@@ -181,7 +147,7 @@ const RecentTransactions = () => {
           </div>
         )}
       </CardContent>
-    </Card>
+    </div>
   );
 };
 
