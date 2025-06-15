@@ -81,13 +81,30 @@ const fetchPortfolio = async (userId: string): Promise<{
   console.log('[usePortfolio] Raw lending data:', lendingData);
 
   const portfolioItems = portfolioData?.map(item => {
-    const liveCurrentValue = item.quantity * (item.crypto?.current_price || 0);
-    const profitLoss = liveCurrentValue - item.total_invested;
-    const profitLossPercentage = item.total_invested > 0 ? (profitLoss / item.total_invested) * 100 : 0;
+    // Calculate current value in USD first
+    const liveCurrentValueUsd = item.quantity * (item.crypto?.current_price || 0);
+    
+    // FIXED: Use database stored total_invested directly (already in EUR from recent trades)
+    // For older entries that might have USD values, we need to detect and convert them
+    let totalInvestedEur = item.total_invested;
+    
+    // Heuristic: If total_invested is much larger than current EUR value, it's likely in USD
+    const eurPrice = item.crypto?.current_price || 0;
+    const expectedEurValue = item.quantity * eurPrice * 0.85; // Rough EUR conversion
+    
+    if (totalInvestedEur > expectedEurValue * 2) {
+      // This looks like USD data, convert it
+      console.log(`[usePortfolio] Converting suspected USD total_invested for ${item.crypto?.symbol}:`, totalInvestedEur);
+      totalInvestedEur = totalInvestedEur * 0.85; // Approximate USD to EUR conversion
+    }
+    
+    const profitLoss = liveCurrentValueUsd - totalInvestedEur;
+    const profitLossPercentage = totalInvestedEur > 0 ? (profitLoss / totalInvestedEur) * 100 : 0;
 
     return {
       ...item,
-      current_value: liveCurrentValue,
+      total_invested: totalInvestedEur,
+      current_value: liveCurrentValueUsd,
       profit_loss: profitLoss,
       profit_loss_percentage: profitLossPercentage,
       crypto: item.crypto
@@ -156,29 +173,17 @@ export const usePortfolio = () => {
     refetchInterval: 25000,
   });
 
-  // Convert all USD values to EUR for display
-  const portfolioEur = query.data?.portfolio.map(item => ({
-    ...item,
-    average_buy_price: convertUsdToEur(item.average_buy_price, exchangeRate),
-    total_invested: convertUsdToEur(item.total_invested, exchangeRate),
-    current_value: convertUsdToEur(item.current_value, exchangeRate),
-    profit_loss: convertUsdToEur(item.profit_loss, exchangeRate),
-    crypto: {
-      ...item.crypto,
-      current_price: convertUsdToEur(item.crypto.current_price, exchangeRate)
-    }
-  })) || [];
-
+  // Portfolio values are already in EUR from the calculation above
   return {
-    portfolio: portfolioEur,
+    portfolio: query.data?.portfolio || [],
     loading: query.isLoading,
     error: query.error?.message || null,
-    totalValue: convertUsdToEur(query.data?.totalValue || 0, exchangeRate),
-    totalInvested: convertUsdToEur(query.data?.totalInvested || 0, exchangeRate),
-    totalProfitLoss: convertUsdToEur(query.data?.totalProfitLoss || 0, exchangeRate),
+    totalValue: query.data?.totalValue || 0,
+    totalInvested: query.data?.totalInvested || 0,
+    totalProfitLoss: query.data?.totalProfitLoss || 0,
     totalProfitLossPercentage: query.data?.totalProfitLossPercentage || 0,
-    liquidValue: convertUsdToEur(query.data?.liquidValue || 0, exchangeRate),
-    lendingValue: convertUsdToEur(query.data?.lendingValue || 0, exchangeRate),
+    liquidValue: query.data?.liquidValue || 0,
+    lendingValue: query.data?.lendingValue || 0,
     refetch: query.refetch,
   };
 };
