@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
@@ -25,18 +26,18 @@ import TopUpPage from './pages/TopUpPage';
 import WalletVerificationPage from './pages/WalletVerificationPage';
 
 // Admin pages
-import AdminDashboardPage from './pages/admin/AdminDashboardPage';
-import AdminUsersPage from './pages/admin/AdminUsersPage';
-import AdminTransactionsPage from './pages/admin/AdminTransactionsPage';
-import AdminKYCDocumentsPage from './pages/admin/AdminKYCDocumentsPage';
-import AdminExternalWalletsPage from './pages/admin/AdminExternalWalletsPage';
-import AdminTradingOrdersPage from './pages/admin/AdminTradingOrdersPage';
-import AdminVaultConfigurationsPage from './pages/admin/AdminVaultConfigurationsPage';
+// import AdminDashboardPage from './pages/admin/AdminDashboardPage';
+// import AdminUsersPage from './pages/admin/AdminUsersPage';
+// import AdminTransactionsPage from './pages/admin/AdminTransactionsPage';
+// import AdminKYCDocumentsPage from './pages/admin/AdminKYCDocumentsPage';
+// import AdminExternalWalletsPage from './pages/admin/AdminExternalWalletsPage';
+// import AdminTradingOrdersPage from './pages/admin/AdminTradingOrdersPage';
+// import AdminVaultConfigurationsPage from './pages/admin/AdminVaultConfigurationsPage';
 
 // Dev test pages
-import DevPlaygroundPage from './pages/dev/DevPlaygroundPage';
-import DevCronTestPage from './pages/dev/DevCronTestPage';
-import DevStyleguidePage from './pages/dev/DevStyleguidePage';
+// import DevPlaygroundPage from './pages/dev/DevPlaygroundPage';
+// import DevCronTestPage from './pages/dev/DevCronTestPage';
+// import DevStyleguidePage from './pages/dev/DevStyleguidePage';
 
 function App() {
   return (
@@ -62,19 +63,19 @@ function App() {
                 <Route path="/top-up" element={<ProtectedRoute><TopUpPage /></ProtectedRoute>} />
                 <Route path="/wallet-verification" element={<ProtectedRoute><WalletVerificationPage /></ProtectedRoute>} />
 
-                {/* Admin Routes */}
-                <Route path="/admin/dashboard" element={<AdminRoute><AdminDashboardPage /></AdminRoute>} />
-                <Route path="/admin/users" element={<AdminRoute><AdminUsersPage /></AdminRoute>} />
-                <Route path="/admin/transactions" element={<AdminRoute><AdminTransactionsPage /></AdminRoute>} />
-                <Route path="/admin/kyc-documents" element={<AdminRoute><AdminKYCDocumentsPage /></AdminRoute>} />
-                <Route path="/admin/external-wallets" element={<AdminRoute><AdminExternalWalletsPage /></AdminRoute>} />
-                <Route path="/admin/trading-orders" element={<AdminRoute><AdminTradingOrdersPage /></AdminRoute>} />
-                <Route path="/admin/vault-configurations" element={<AdminRoute><AdminVaultConfigurationsPage /></AdminRoute>} />
+                {/* Admin Routes - Temporarily commented out */}
+                {/* <Route path="/admin/dashboard" element={<AdminRoute><AdminDashboardPage /></AdminRoute>} /> */}
+                {/* <Route path="/admin/users" element={<AdminRoute><AdminUsersPage /></AdminRoute>} /> */}
+                {/* <Route path="/admin/transactions" element={<AdminRoute><AdminTransactionsPage /></AdminRoute>} /> */}
+                {/* <Route path="/admin/kyc-documents" element={<AdminRoute><AdminKYCDocumentsPage /></AdminRoute>} /> */}
+                {/* <Route path="/admin/external-wallets" element={<AdminRoute><AdminExternalWalletsPage /></AdminRoute>} /> */}
+                {/* <Route path="/admin/trading-orders" element={<AdminRoute><AdminTradingOrdersPage /></AdminRoute>} /> */}
+                {/* <Route path="/admin/vault-configurations" element={<AdminRoute><AdminVaultConfigurationsPage /></AdminRoute>} /> */}
 
-                {/* Dev Test Routes */}
-                <Route path="/dev/playground" element={<DevRoute><DevPlaygroundPage /></DevRoute>} />
-                <Route path="/dev/cron-test" element={<DevRoute><DevCronTestPage /></DevRoute>} />
-                <Route path="/dev/styleguide" element={<DevRoute><DevStyleguidePage /></DevRoute>} />
+                {/* Dev Test Routes - Temporarily commented out */}
+                {/* <Route path="/dev/playground" element={<DevRoute><DevPlaygroundPage /></DevRoute>} /> */}
+                {/* <Route path="/dev/cron-test" element={<DevRoute><DevCronTestPage /></DevRoute>} /> */}
+                {/* <Route path="/dev/styleguide" element={<DevRoute><DevStyleguidePage /></DevRoute>} /> */}
 
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>

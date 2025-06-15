@@ -15,7 +15,7 @@ interface VaultCardProps {
 export const VaultCard: React.FC<VaultCardProps> = ({ vault }) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { session } = useAuth();
-  const { data: portfolio } = usePortfolio(session?.user.id);
+  const { portfolio } = usePortfolio();
 
   const assetInPortfolio = portfolio?.find(p => p.cryptocurrency_id === vault.cryptocurrencies.id);
 
@@ -24,7 +24,7 @@ export const VaultCard: React.FC<VaultCardProps> = ({ vault }) => {
       <Card className="bg-background/50 flex flex-col">
         <CardHeader className="flex-row items-center gap-4">
           <CryptoLogo
-            src={vault.cryptocurrencies.logo_url}
+            logoUrl={vault.cryptocurrencies.logo_url}
             alt={vault.cryptocurrencies.name}
             className="w-10 h-10"
           />
@@ -44,7 +44,7 @@ export const VaultCard: React.FC<VaultCardProps> = ({ vault }) => {
               <span className="font-semibold text-green-500">{(vault.apy * 100).toFixed(2)}%</span>
             </div>
           </div>
-          <Button className="w-full" onClick={() => setIsDialogOpen(true)} disabled={!assetInPortfolio || assetInPortfolio.quantity <= 0}>
+          <Button className="w-full" onClick={() => setIsDialogOpen(true)} disabled={!session || !assetInPortfolio || assetInPortfolio.quantity <= 0}>
             Vault Now
           </Button>
         </CardContent>

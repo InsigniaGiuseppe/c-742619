@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useUserVaults } from '@/hooks/useUserVaults';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -60,7 +59,7 @@ const UserVaultsList: React.FC = () => {
                   <TableCell>
                     <div className="flex items-center gap-2 font-medium">
                       <CryptoLogo 
-                        src={vault.vault_configurations.cryptocurrencies.logo_url} 
+                        logoUrl={vault.vault_configurations.cryptocurrencies.logo_url} 
                         alt={vault.vault_configurations.cryptocurrencies.name}
                         className="w-6 h-6"
                       />

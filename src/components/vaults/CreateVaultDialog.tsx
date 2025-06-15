@@ -10,7 +10,16 @@ import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { add } from 'date-fns';
-import { PortfolioEntry } from '@/hooks/usePortfolio';
+
+// Defining PortfolioEntry locally to fix build error as it's not exported from usePortfolio
+type PortfolioEntry = {
+    id: string;
+    quantity: number;
+    cryptocurrency_id: string;
+    cryptocurrencies: {
+        current_price: number;
+    };
+};
 
 interface CreateVaultDialogProps {
   isOpen: boolean;

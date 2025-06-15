@@ -1,84 +1,95 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { Session, User } from '@supabase/supabase-js';
 
-export const useAuth = () => {
-  const [user, setUser] = useState<any>(null);
+type AuthContextType = {
+  session: Session | null;
+  user: User | null;
+  loading: boolean;
+  signOut: () => Promise<void>;
+  signIn: (email: string, password: string) => Promise<any>;
+  signUp: (email: string, password: string, metadata?: any) => Promise<any>;
+};
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchUser = useCallback(async () => {
-    setLoading(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    setUser(user);
-    setLoading(false);
+  useEffect(() => {
+    const getSession = async () => {
+      setLoading(true);
+      const { data: { session } } = await supabase.auth.getSession();
+      setSession(session);
+      setUser(session?.user ?? null);
+      setLoading(false);
+    };
+
+    getSession();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      if (_event === 'INITIAL_SESSION') {
+          setLoading(false);
+      }
+    });
+
+    return () => {
+      authListener?.subscription.unsubscribe();
+    };
   }, []);
 
-  useEffect(() => {
-    fetchUser();
-
-    supabase.auth.onAuthStateChange(() => {
-      fetchUser();
-    });
-  }, [fetchUser]);
-
   const signIn = async (email: string, password: string) => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      if (error) throw error;
-      return { data, error: null };
-    } catch (error: any) {
-      console.error('Signin error:', error);
-      return { data: null, error };
-    } finally {
-      setLoading(false);
-    }
+    setLoading(true);
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    setLoading(false);
+    if (error) throw error;
+    return { data, error: null };
   };
 
   const signOut = async () => {
-    try {
-      setLoading(true);
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-    } catch (error: any) {
-      console.error('Signout error:', error);
-    } finally {
-      setLoading(false);
-    }
+    setLoading(true);
+    await supabase.auth.signOut();
+    setLoading(false);
   };
 
   const signUp = async (email: string, password: string, metadata?: any) => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: metadata || {}
-        }
-      });
-
-      if (error) throw error;
-
-      return { data, error: null };
-    } catch (error: any) {
-      console.error('Signup error:', error);
-      return { data: null, error };
-    } finally {
-      setLoading(false);
-    }
+    setLoading(true);
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: metadata || {}
+      }
+    });
+    setLoading(false);
+    if (error) throw error;
+    return { data, error: null };
   };
 
-  return {
+  const value = {
+    session,
     user,
     loading,
-    signUp,
     signIn,
-    signOut
+    signOut,
+    signUp,
   };
+
+  return <AuthContext.Provider value={value}>{!loading && children}</AuthContext.Provider>;
 };
 
-export default useAuth;
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};

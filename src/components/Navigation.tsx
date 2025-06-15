@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { useToast } from '@/hooks/useToast';
+import { useToast } from '@/components/ui/use-toast';
 
 const navLinks = [
   { href: '/dashboard', label: 'Dashboard' },
