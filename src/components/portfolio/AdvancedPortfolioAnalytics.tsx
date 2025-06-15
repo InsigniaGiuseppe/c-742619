@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import LivePortfolioMetrics from './LivePortfolioMetrics';
 import PortfolioGrowthChart from './PortfolioGrowthChart';
 import EnhancedPortfolioChart from '@/components/EnhancedPortfolioChart';
+import EnhancedPortfolioAllocation from './EnhancedPortfolioAllocation';
 
 const AdvancedPortfolioAnalytics = () => {
   return (
@@ -21,6 +22,9 @@ const AdvancedPortfolioAnalytics = () => {
         <PortfolioGrowthChart />
         <EnhancedPortfolioChart />
       </div>
+
+      {/* Enhanced Portfolio Allocation with Lending */}
+      <EnhancedPortfolioAllocation />
     </motion.div>
   );
 };
