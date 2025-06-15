@@ -1,382 +1,249 @@
-import React, { useState } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+
+import React, { useState, useEffect } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { ArrowUp, Euro, Bitcoin } from 'lucide-react';
-import { toast } from 'sonner';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertTriangle, Euro, TrendingDown } from 'lucide-react';
+import { useUserBalance } from '@/hooks/useUserBalance';
 import { usePortfolio } from '@/hooks/usePortfolio';
-import { supabase } from '@/integrations/supabase/client';
+import { useLending } from '@/hooks/useLending';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
+import FormattedNumber from '@/components/FormattedNumber';
+import { toast } from 'sonner';
 
 interface WithdrawModalProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  isOpen: boolean;
+  onClose: () => void;
+  onSuccess?: () => void;
 }
 
-type WithdrawType = 'selection' | 'eur' | 'crypto';
-
-const WithdrawModal: React.FC<WithdrawModalProps> = ({ open, onOpenChange }) => {
-  const { user } = useAuth();
-  const { portfolio, refetch: refetchPortfolio } = usePortfolio();
-  const [withdrawType, setWithdrawType] = useState<WithdrawType>('selection');
+const WithdrawModal: React.FC<WithdrawModalProps> = ({ isOpen, onClose, onSuccess }) => {
   const [amount, setAmount] = useState('');
-  const [selectedCrypto, setSelectedCrypto] = useState('');
-  const [selectedWallet, setSelectedWallet] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState('');
+  
+  const { user } = useAuth();
+  const { balance, totalAssets, refetch: refetchBalance } = useUserBalance();
+  const { liquidValue, lendingValue } = usePortfolio();
+  const { lendingPositions } = useLending();
+  
+  const hasActiveLending = lendingPositions.length > 0;
+  const hasLiquidAssets = liquidValue > 0;
+  const maxWithdrawable = balance; // Only liquid EUR balance can be withdrawn
 
-  // Mock verified wallets - in real app, fetch from useExternalWallets
-  const verifiedWallets = [
-    { id: '1', label: 'My BTC Wallet', address: '1A1zP1eP5Q...', coin: 'BTC' },
-    { id: '2', label: 'Personal ETH', address: '0x742d35Cc...', coin: 'ETH' },
-  ];
+  useEffect(() => {
+    if (isOpen) {
+      setAmount('');
+      setError('');
+    }
+  }, [isOpen]);
 
-  const handleEurWithdraw = async () => {
-    if (!amount || parseFloat(amount) <= 0 || !user) {
-      toast.error('Please enter a valid amount');
+  const handleWithdraw = async () => {
+    if (!user) {
+      setError('Authentication required');
       return;
     }
 
-    setLoading(true);
+    const withdrawAmount = parseFloat(amount);
+    
+    if (isNaN(withdrawAmount) || withdrawAmount <= 0) {
+      setError('Please enter a valid amount');
+      return;
+    }
+
+    if (withdrawAmount > maxWithdrawable) {
+      setError(`Insufficient liquid balance. Maximum withdrawable: €${maxWithdrawable.toFixed(2)}`);
+      return;
+    }
+
+    setIsProcessing(true);
+    setError('');
+
     try {
-      const withdrawAmount = parseFloat(amount);
-      
-      // Get current balance
-      const { data: currentProfile, error: fetchError } = await supabase
+      console.log('[WithdrawModal] Processing withdrawal:', {
+        userId: user.id,
+        amount: withdrawAmount,
+        currentBalance: balance,
+        maxWithdrawable
+      });
+
+      // Get current balance to ensure we have the latest data
+      const { data: currentProfile, error: profileError } = await supabase
         .from('profiles')
         .select('demo_balance_usd')
         .eq('id', user.id)
         .single();
 
-      if (fetchError) {
-        throw fetchError;
+      if (profileError) {
+        throw new Error('Failed to fetch current balance');
       }
 
-      const currentBalance = currentProfile.demo_balance_usd || 0;
-      
-      if (currentBalance < withdrawAmount) {
-        toast.error('Insufficient balance');
-        return;
+      const currentBalanceUsd = currentProfile.demo_balance_usd || 0;
+      const withdrawAmountUsd = withdrawAmount * 1.1; // Approximate USD conversion
+      const newBalanceUsd = currentBalanceUsd - withdrawAmountUsd;
+
+      if (newBalanceUsd < 0) {
+        throw new Error('Insufficient funds for withdrawal');
       }
 
-      const newBalance = currentBalance - withdrawAmount;
-
-      // Update user balance
+      // Update the user's balance
       const { error: updateError } = await supabase
         .from('profiles')
-        .update({ demo_balance_usd: newBalance })
+        .update({ demo_balance_usd: newBalanceUsd })
         .eq('id', user.id);
 
       if (updateError) {
-        throw updateError;
+        throw new Error('Failed to update balance');
       }
 
-      // Create transaction history entry
+      // Record the withdrawal transaction
       const { error: transactionError } = await supabase
         .from('transaction_history')
         .insert({
           user_id: user.id,
           transaction_type: 'withdrawal_eur',
-          usd_value: withdrawAmount,
-          status: 'completed',
-          description: `EUR withdrawal of €${amount} to verified bank account`
-        });
-
-      if (transactionError) {
-        console.error('Transaction history error:', transactionError);
-      }
-
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      toast.success(`EUR withdrawal of €${amount} initiated to your verified bank account`);
-      resetModal();
-    } catch (error: any) {
-      console.error('EUR withdrawal error:', error);
-      toast.error(`Withdrawal failed: ${error.message}`);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleCryptoWithdraw = async () => {
-    if (!amount || parseFloat(amount) <= 0 || !selectedCrypto || !selectedWallet || !user) {
-      toast.error('Please fill in all required fields');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const withdrawAmount = parseFloat(amount);
-      const portfolioItem = portfolio?.find(p => p.crypto.id === selectedCrypto);
-      
-      if (!portfolioItem) {
-        toast.error('Selected cryptocurrency not found in portfolio');
-        return;
-      }
-
-      if (portfolioItem.quantity < withdrawAmount) {
-        toast.error('Insufficient cryptocurrency balance');
-        return;
-      }
-
-      // Update portfolio
-      const newQuantity = portfolioItem.quantity - withdrawAmount;
-      const newCurrentValue = newQuantity * (portfolioItem.crypto.current_price || 0);
-
-      if (newQuantity > 0) {
-        // Update existing portfolio entry
-        const { error: portfolioError } = await supabase
-          .from('user_portfolios')
-          .update({
-            quantity: newQuantity,
-            current_value: newCurrentValue,
-            profit_loss: newCurrentValue - portfolioItem.total_invested,
-            profit_loss_percentage: portfolioItem.total_invested > 0 
-              ? ((newCurrentValue - portfolioItem.total_invested) / portfolioItem.total_invested) * 100 
-              : 0
-          })
-          .eq('user_id', user.id)
-          .eq('cryptocurrency_id', selectedCrypto);
-
-        if (portfolioError) {
-          throw portfolioError;
-        }
-      } else {
-        // Remove portfolio entry if quantity becomes 0
-        const { error: portfolioError } = await supabase
-          .from('user_portfolios')
-          .delete()
-          .eq('user_id', user.id)
-          .eq('cryptocurrency_id', selectedCrypto);
-
-        if (portfolioError) {
-          throw portfolioError;
-        }
-      }
-
-      // Create transaction history entry
-      const { error: transactionError } = await supabase
-        .from('transaction_history')
-        .insert({
-          user_id: user.id,
-          cryptocurrency_id: selectedCrypto,
-          transaction_type: 'withdrawal_crypto',
           amount: withdrawAmount,
-          usd_value: withdrawAmount * (portfolioItem.crypto.current_price || 0),
+          usd_value: withdrawAmountUsd,
           status: 'completed',
-          description: `${portfolioItem.crypto.symbol} withdrawal of ${withdrawAmount} to verified wallet`
+          description: `EUR withdrawal: €${withdrawAmount.toFixed(2)}`
         });
 
       if (transactionError) {
-        console.error('Transaction history error:', transactionError);
+        console.error('[WithdrawModal] Transaction recording failed:', transactionError);
+        // Don't throw here as the main operation succeeded
       }
 
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      toast.success(`${portfolioItem.crypto.symbol} withdrawal of ${amount} initiated to your verified wallet`);
-      refetchPortfolio();
-      resetModal();
+      toast.success(`Successfully withdrew €${withdrawAmount.toFixed(2)}`);
+      
+      // Refresh balance data
+      await refetchBalance();
+      
+      if (onSuccess) {
+        onSuccess();
+      }
+      
+      onClose();
+
     } catch (error: any) {
-      console.error('Crypto withdrawal error:', error);
+      console.error('[WithdrawModal] Withdrawal failed:', error);
+      setError(error.message || 'Withdrawal failed');
       toast.error(`Withdrawal failed: ${error.message}`);
     } finally {
-      setLoading(false);
+      setIsProcessing(false);
     }
   };
-
-  const handleWithdraw = async () => {
-    if (withdrawType === 'eur') {
-      await handleEurWithdraw();
-    } else if (withdrawType === 'crypto') {
-      await handleCryptoWithdraw();
-    }
-  };
-
-  const resetModal = () => {
-    setWithdrawType('selection');
-    setAmount('');
-    setSelectedCrypto('');
-    setSelectedWallet('');
-    onOpenChange(false);
-  };
-
-  const renderSelectionStep = () => (
-    <div className="space-y-4">
-      <p className="text-center text-muted-foreground mb-6">
-        What would you like to withdraw?
-      </p>
-      
-      <div className="grid gap-3">
-        <Button
-          variant="outline"
-          onClick={() => setWithdrawType('eur')}
-          className="h-20 flex flex-col gap-2 hover:bg-blue-50/10 hover:border-blue-500/30"
-        >
-          <Euro className="w-8 h-8 text-blue-400" />
-          <span className="font-medium">EUR</span>
-          <span className="text-xs text-muted-foreground">To bank account</span>
-        </Button>
-        
-        <Button
-          variant="outline"
-          onClick={() => setWithdrawType('crypto')}
-          className="h-20 flex flex-col gap-2 hover:bg-orange-50/10 hover:border-orange-500/30"
-        >
-          <Bitcoin className="w-8 h-8 text-orange-400" />
-          <span className="font-medium">Crypto</span>
-          <span className="text-xs text-muted-foreground">To external wallet</span>
-        </Button>
-      </div>
-    </div>
-  );
-
-  const renderEurWithdraw = () => (
-    <div className="space-y-4">
-      <div className="p-4 bg-blue-50/10 border border-blue-500/30 rounded-lg">
-        <p className="text-sm text-blue-400 mb-2">
-          Funds will be sent to your verified bank account.
-        </p>
-        <p className="text-sm text-muted-foreground font-mono">
-          IBAN: NL91 ABNA 0417 1643 00
-        </p>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="eur-amount">Amount (EUR)</Label>
-        <Input
-          id="eur-amount"
-          type="number"
-          placeholder="0.00"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          min="1"
-          step="0.01"
-        />
-      </div>
-
-      <div className="flex gap-3">
-        <Button 
-          variant="outline" 
-          onClick={() => setWithdrawType('selection')}
-          className="flex-1"
-        >
-          Back
-        </Button>
-        <Button 
-          onClick={handleWithdraw}
-          disabled={loading || !amount}
-          className="flex-1"
-        >
-          {loading ? 'Processing...' : 'Confirm Withdrawal'}
-        </Button>
-      </div>
-    </div>
-  );
-
-  const renderCryptoWithdraw = () => (
-    <div className="space-y-4">
-      <div className="space-y-2">
-        <Label>Select Cryptocurrency</Label>
-        <Select value={selectedCrypto} onValueChange={setSelectedCrypto}>
-          <SelectTrigger>
-            <SelectValue placeholder="Choose crypto to withdraw" />
-          </SelectTrigger>
-          <SelectContent>
-            {portfolio?.map((item) => (
-              <SelectItem key={item.crypto.id} value={item.crypto.id}>
-                <div className="flex items-center gap-2">
-                  <span className="font-medium">{item.crypto.symbol}</span>
-                  <span className="text-muted-foreground">
-                    ({item.quantity.toFixed(6)} available)
-                  </span>
-                </div>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="space-y-2">
-        <Label>Select Verified Wallet</Label>
-        <Select value={selectedWallet} onValueChange={setSelectedWallet}>
-          <SelectTrigger>
-            <SelectValue placeholder="Choose wallet address" />
-          </SelectTrigger>
-          <SelectContent>
-            {verifiedWallets
-              .filter(wallet => !selectedCrypto || wallet.coin === portfolio?.find(p => p.crypto.id === selectedCrypto)?.crypto.symbol)
-              .map((wallet) => (
-                <SelectItem key={wallet.id} value={wallet.id}>
-                  <div className="flex flex-col">
-                    <span className="font-medium">{wallet.label}</span>
-                    <span className="text-xs text-muted-foreground">{wallet.address}</span>
-                  </div>
-                </SelectItem>
-              ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="crypto-amount">Amount</Label>
-        <Input
-          id="crypto-amount"
-          type="number"
-          placeholder="0.00000000"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          min="0.00000001"
-          step="0.00000001"
-        />
-        {selectedCrypto && (
-          <p className="text-xs text-muted-foreground">
-            Network: {portfolio?.find(p => p.crypto.id === selectedCrypto)?.crypto.symbol === 'BTC' ? 'Bitcoin' : 'Ethereum'}
-          </p>
-        )}
-      </div>
-
-      <div className="flex gap-3">
-        <Button 
-          variant="outline" 
-          onClick={() => setWithdrawType('selection')}
-          className="flex-1"
-        >
-          Back
-        </Button>
-        <Button 
-          onClick={handleWithdraw}
-          disabled={loading || !amount || !selectedCrypto || !selectedWallet}
-          className="flex-1"
-        >
-          {loading ? 'Processing...' : 'Confirm Withdrawal'}
-        </Button>
-      </div>
-    </div>
-  );
 
   return (
-    <Dialog open={open} onOpenChange={(open) => !open && resetModal()}>
+    <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <ArrowUp className="w-5 h-5 text-red-400" />
-            Withdraw Funds
+            <Euro className="w-5 h-5" />
+            Withdraw EUR
           </DialogTitle>
         </DialogHeader>
-        
-        {withdrawType === 'selection' && renderSelectionStep()}
-        {withdrawType === 'eur' && renderEurWithdraw()}
-        {withdrawType === 'crypto' && renderCryptoWithdraw()}
+
+        <div className="space-y-4">
+          {/* Balance Overview */}
+          <div className="bg-slate-900 p-4 rounded-lg space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Liquid Balance:</span>
+              <FormattedNumber value={balance} type="currency" currency="EUR" />
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Total Assets:</span>
+              <FormattedNumber value={totalAssets} type="currency" currency="EUR" />
+            </div>
+            {hasActiveLending && (
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">In Lending:</span>
+                <FormattedNumber value={lendingValue} type="currency" currency="EUR" className="text-purple-400" />
+              </div>
+            )}
+            {hasLiquidAssets && (
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">In Crypto:</span>
+                <FormattedNumber value={liquidValue} type="currency" currency="EUR" className="text-blue-400" />
+              </div>
+            )}
+          </div>
+
+          {/* Warnings */}
+          {(hasActiveLending || hasLiquidAssets) && (
+            <Alert>
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                {hasActiveLending && hasLiquidAssets && (
+                  <>You have assets in lending positions and cryptocurrency. Only your liquid EUR balance can be withdrawn directly.</>
+                )}
+                {hasActiveLending && !hasLiquidAssets && (
+                  <>You have active lending positions. Cancel lending positions first to access those funds.</>
+                )}
+                {!hasActiveLending && hasLiquidAssets && (
+                  <>You have cryptocurrency holdings. Sell your crypto first to convert to EUR before withdrawing.</>
+                )}
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Withdrawal Form */}
+          <div className="space-y-2">
+            <Label htmlFor="amount">Withdrawal Amount (EUR)</Label>
+            <Input
+              id="amount"
+              type="number"
+              step="0.01"
+              min="0"
+              max={maxWithdrawable}
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="Enter amount in EUR"
+              disabled={isProcessing}
+            />
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>Min: €0.01</span>
+              <span>Max: <FormattedNumber value={maxWithdrawable} type="currency" currency="EUR" /></span>
+            </div>
+          </div>
+
+          {error && (
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={onClose}
+              disabled={isProcessing}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleWithdraw}
+              disabled={isProcessing || !amount || parseFloat(amount) <= 0 || parseFloat(amount) > maxWithdrawable}
+              className="flex-1"
+            >
+              {isProcessing ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <TrendingDown className="w-4 h-4 mr-2" />
+                  Withdraw €{amount || '0'}
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   );

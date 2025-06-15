@@ -30,8 +30,10 @@ const fetchPortfolio = async (userId: string): Promise<{
   totalProfitLoss: number;
   totalProfitLossPercentage: number;
   totalInvested: number;
+  liquidValue: number;
+  lendingValue: number;
 }> => {
-  console.log('[usePortfolio] Fetching portfolio for user:', userId);
+  console.log('[usePortfolio] Fetching complete portfolio for user:', userId);
   
   // Fetch trading portfolio
   const { data: portfolioData, error: portfolioError } = await supabase
@@ -55,7 +57,7 @@ const fetchPortfolio = async (userId: string): Promise<{
     throw new Error(portfolioError.message);
   }
 
-  // Fetch lending positions for P&L calculation
+  // Fetch lending positions
   const { data: lendingData, error: lendingError } = await supabase
     .from('user_lending')
     .select(`
@@ -73,35 +75,31 @@ const fetchPortfolio = async (userId: string): Promise<{
 
   if (lendingError) {
     console.error('[usePortfolio] Error fetching lending data:', lendingError);
-    // Don't throw error for lending data, just log it
   }
 
   console.log('[usePortfolio] Raw portfolio data:', portfolioData);
   console.log('[usePortfolio] Raw lending data:', lendingData);
 
   const portfolioItems = portfolioData?.map(item => {
-    // Calculate live current value using current market price
     const liveCurrentValue = item.quantity * (item.crypto?.current_price || 0);
-    
-    // Calculate profit/loss based on live current value vs total invested
     const profitLoss = liveCurrentValue - item.total_invested;
     const profitLossPercentage = item.total_invested > 0 ? (profitLoss / item.total_invested) * 100 : 0;
 
     return {
       ...item,
-      current_value: liveCurrentValue, // Override with live calculated value
+      current_value: liveCurrentValue,
       profit_loss: profitLoss,
       profit_loss_percentage: profitLossPercentage,
       crypto: item.crypto
     };
   }) || [];
 
-  // Calculate totals using live values
-  const tradingTotalValue = portfolioItems.reduce((sum, item) => sum + item.current_value, 0);
-  const tradingTotalPL = portfolioItems.reduce((sum, item) => sum + item.profit_loss, 0);
-  const tradingTotalInvested = portfolioItems.reduce((sum, item) => sum + item.total_invested, 0);
+  // Calculate liquid trading values
+  const liquidTotalValue = portfolioItems.reduce((sum, item) => sum + item.current_value, 0);
+  const liquidTotalPL = portfolioItems.reduce((sum, item) => sum + item.profit_loss, 0);
+  const liquidTotalInvested = portfolioItems.reduce((sum, item) => sum + item.total_invested, 0);
 
-  // Calculate lending values for P&L
+  // Calculate lending values
   let lendingTotalValue = 0;
   let lendingTotalInvested = 0;
   let lendingTotalInterestEarned = 0;
@@ -119,14 +117,14 @@ const fetchPortfolio = async (userId: string): Promise<{
     });
   }
 
-  // Combine trading and lending for total portfolio metrics
-  const totalValue = tradingTotalValue + lendingTotalValue;
-  const totalInvested = tradingTotalInvested + lendingTotalInvested;
-  const totalPL = tradingTotalPL + lendingTotalInterestEarned; // Trading P&L + Lending interest earned
+  // Total portfolio includes both liquid and lending assets
+  const totalValue = liquidTotalValue + lendingTotalValue;
+  const totalInvested = liquidTotalInvested + lendingTotalInvested;
+  const totalPL = liquidTotalPL + lendingTotalInterestEarned;
   const totalPLPercentage = totalInvested > 0 ? (totalPL / totalInvested) * 100 : 0;
 
-  console.log('[usePortfolio] Portfolio calculations:', {
-    trading: { value: tradingTotalValue, invested: tradingTotalInvested, pl: tradingTotalPL },
+  console.log('[usePortfolio] Complete portfolio calculations:', {
+    liquid: { value: liquidTotalValue, invested: liquidTotalInvested, pl: liquidTotalPL },
     lending: { value: lendingTotalValue, invested: lendingTotalInvested, interest: lendingTotalInterestEarned },
     combined: { totalValue, totalInvested, totalPL, totalPLPercentage }
   });
@@ -137,6 +135,8 @@ const fetchPortfolio = async (userId: string): Promise<{
     totalProfitLoss: totalPL,
     totalProfitLossPercentage: totalPLPercentage,
     totalInvested: totalInvested,
+    liquidValue: liquidTotalValue,
+    lendingValue: lendingTotalValue,
   };
 };
 
@@ -152,8 +152,8 @@ export const usePortfolio = () => {
       return fetchPortfolio(user!.id);
     },
     enabled: !!user,
-    staleTime: 5000, // Consider data stale after 5 seconds for more frequent updates
-    refetchInterval: 25000, // Refetch every 25 seconds for live pricing
+    staleTime: 5000,
+    refetchInterval: 25000,
   });
 
   // Convert all USD values to EUR for display
@@ -177,6 +177,8 @@ export const usePortfolio = () => {
     totalInvested: convertUsdToEur(query.data?.totalInvested || 0, exchangeRate),
     totalProfitLoss: convertUsdToEur(query.data?.totalProfitLoss || 0, exchangeRate),
     totalProfitLossPercentage: query.data?.totalProfitLossPercentage || 0,
+    liquidValue: convertUsdToEur(query.data?.liquidValue || 0, exchangeRate),
+    lendingValue: convertUsdToEur(query.data?.lendingValue || 0, exchangeRate),
     refetch: query.refetch,
   };
 };

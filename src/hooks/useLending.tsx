@@ -75,7 +75,6 @@ export const useLending = () => {
     mutationFn: async (lendingId: string) => {
       console.log('[useLending] Cancelling lending position:', lendingId);
       
-      // Get the lending position details first
       const { data: lendingPosition, error: fetchError } = await supabase
         .from('user_lending')
         .select('*')
@@ -96,6 +95,7 @@ export const useLending = () => {
         .from('user_lending')
         .update({ 
           status: 'cancelled',
+          lending_cancelled_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         })
         .eq('id', lendingId)
@@ -119,8 +119,9 @@ export const useLending = () => {
         throw new Error(portfolioError.message);
       }
 
-      // Calculate new quantity (restore the lent amount)
-      const newQuantity = (currentPortfolio?.quantity || 0) + lendingPosition.amount_lent;
+      // Calculate new quantity (restore the lent amount + interest)
+      const totalToReturn = lendingPosition.amount_lent + lendingPosition.total_interest_earned;
+      const newQuantity = (currentPortfolio?.quantity || 0) + totalToReturn;
 
       // Update or insert portfolio record
       const { error: portfolioUpdateError } = await supabase
@@ -137,31 +138,31 @@ export const useLending = () => {
         throw new Error(portfolioUpdateError.message);
       }
 
-      // Create transaction record for the cancellation
+      // Create transaction record for the cancellation (this should now work with fixed constraint)
       const { error: transactionError } = await supabase
         .from('transaction_history')
         .insert({
           user_id: user!.id,
           cryptocurrency_id: lendingPosition.cryptocurrency_id,
           transaction_type: 'lending_cancelled',
-          amount: lendingPosition.amount_lent,
+          amount: totalToReturn,
           status: 'completed',
-          description: `Cancelled lending position of ${lendingPosition.amount_lent} tokens`,
-          created_at: new Date().toISOString()
+          description: `Cancelled lending position: ${lendingPosition.amount_lent} + ${lendingPosition.total_interest_earned} interest`
         });
 
       if (transactionError) {
         console.error('Error creating transaction record:', transactionError);
-        // Don't throw here as the main operation succeeded
+        // Log the error but don't throw since the main operation succeeded
+        console.warn('Transaction recording failed but lending cancellation succeeded');
       }
 
       return { success: true };
     },
     onSuccess: () => {
-      // Invalidate both lending and portfolio queries to refresh data
       queryClient.invalidateQueries({ queryKey: ['lending-positions'] });
       queryClient.invalidateQueries({ queryKey: ['portfolio'] });
       queryClient.invalidateQueries({ queryKey: ['user-portfolios'] });
+      queryClient.invalidateQueries({ queryKey: ['transaction-history'] });
       toast.success('Lending position cancelled successfully');
     },
     onError: (error: any) => {

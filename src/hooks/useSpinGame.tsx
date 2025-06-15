@@ -42,7 +42,6 @@ export const useSpinGame = () => {
     try {
       console.log('[useSpinGame] Starting spin with bet amount:', betAmount);
 
-      // Get spin configurations
       const { data: spinConfigs, error: configError } = await supabase
         .from('spin_configurations')
         .select(`
@@ -75,7 +74,6 @@ export const useSpinGame = () => {
         }
       }
 
-      // Generate random multiplier within the config's range
       const multiplier = Number(selectedConfig.min_multiplier) + 
         Math.random() * (Number(selectedConfig.max_multiplier) - Number(selectedConfig.min_multiplier));
 
@@ -93,7 +91,7 @@ export const useSpinGame = () => {
 
       console.log('[useSpinGame] Spin result calculated:', spinResult);
 
-      // Create debit transaction (bet)
+      // Create debit transaction (bet) - now works with fixed constraint
       const { data: debitTransaction, error: debitError } = await supabase
         .from('transaction_history')
         .insert({
@@ -102,17 +100,18 @@ export const useSpinGame = () => {
           transaction_type: 'spin_bet',
           amount: -betAmount,
           usd_value: -betValueUsd,
-          description: `Spin bet: ${betAmount} BTC`
+          description: `Spin bet: ${betAmount} BTC`,
+          status: 'completed'
         })
         .select()
         .single();
 
       if (debitError) {
         console.error('[useSpinGame] Error creating debit transaction:', debitError);
-        throw new Error('Failed to process bet transaction');
+        throw new Error(`Failed to process bet transaction: ${debitError.message}`);
       }
 
-      // Create credit transaction (reward)
+      // Create credit transaction (reward) - now works with fixed constraint
       const { data: creditTransaction, error: creditError } = await supabase
         .from('transaction_history')
         .insert({
@@ -121,7 +120,8 @@ export const useSpinGame = () => {
           transaction_type: 'spin_reward',
           amount: rewardAmount,
           usd_value: rewardValueUsd,
-          description: `Spin reward: ${rewardAmount.toFixed(8)} ${selectedConfig.cryptocurrencies.symbol}`
+          description: `Spin reward: ${rewardAmount.toFixed(8)} ${selectedConfig.cryptocurrencies.symbol}`,
+          status: 'completed'
         })
         .select()
         .single();
@@ -153,7 +153,6 @@ export const useSpinGame = () => {
 
       if (spinGameError) {
         console.error('[useSpinGame] Error recording spin game:', spinGameError);
-        // Don't throw here as the transactions are already processed
       }
 
       // Update BTC portfolio (subtract bet)
@@ -172,7 +171,6 @@ export const useSpinGame = () => {
       const rewardCryptoPortfolio = portfolio?.find(p => p.cryptocurrency_id === selectedConfig.cryptocurrency_id);
 
       if (rewardCryptoPortfolio) {
-        // Update existing portfolio
         const newQuantity = rewardCryptoPortfolio.quantity + rewardAmount;
         const { error: updateError } = await supabase
           .from('user_portfolios')
@@ -184,7 +182,6 @@ export const useSpinGame = () => {
           throw new Error('Failed to update reward balance');
         }
       } else {
-        // Create new portfolio entry
         const { error: createError } = await supabase
           .from('user_portfolios')
           .insert({
