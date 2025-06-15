@@ -33,7 +33,7 @@ const fetchReserves = async (exchangeRate: number): Promise<{
     { symbol: 'USDT', name: 'Tether', amount: 500000 },
   ];
 
-  // Fetch crypto prices
+  // Fetch crypto prices and info
   const { data: cryptoData, error: cryptoError } = await supabase
     .from('cryptocurrencies')
     .select('symbol, name, current_price, logo_url')
@@ -77,13 +77,15 @@ const fetchReserves = async (exchangeRate: number): Promise<{
   const reserves: ReserveAsset[] = [];
   let totalCryptoValue = 0;
 
-  // Add crypto reserves
+  // Add crypto reserves with proper EUR value calculation
   defaultReserves.forEach(reserve => {
     const cryptoInfo = cryptoData?.find(c => c.symbol.toLowerCase() === reserve.symbol.toLowerCase());
     const userHolding = userHoldings[reserve.symbol] || 0;
     const actualReserve = Math.max(0, reserve.amount - userHolding);
-    const priceEur = cryptoInfo ? convertUsdToEur(cryptoInfo.current_price, exchangeRate) : 0;
-    const eurValue = actualReserve * priceEur;
+    
+    // Calculate EUR value: crypto amount * USD price * EUR exchange rate
+    const priceUsd = cryptoInfo?.current_price || 0;
+    const eurValue = actualReserve * convertUsdToEur(priceUsd, exchangeRate);
 
     totalCryptoValue += eurValue;
 
