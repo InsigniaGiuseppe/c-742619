@@ -27,6 +27,8 @@ interface PortfolioItem {
 }
 
 const fetchUserPortfolio = async (userId: string): Promise<PortfolioItem[]> => {
+  console.log('[AdminPortfolioOverview] Fetching portfolio for user:', userId);
+  
   const { data, error } = await supabase
     .from('user_portfolios')
     .select(`
@@ -42,8 +44,10 @@ const fetchUserPortfolio = async (userId: string): Promise<PortfolioItem[]> => {
     .eq('user_id', userId)
     .gt('quantity', 0);
 
+  console.log('[AdminPortfolioOverview] Portfolio query result:', { data, error });
+
   if (error) {
-    console.error('Error fetching user portfolio:', error);
+    console.error('[AdminPortfolioOverview] Error fetching user portfolio:', error);
     throw new Error(error.message);
   }
 
@@ -60,13 +64,17 @@ const fetchUserPortfolio = async (userId: string): Promise<PortfolioItem[]> => {
 };
 
 const AdminPortfolioOverview: React.FC<AdminPortfolioProps> = ({ userId }) => {
+  console.log('[AdminPortfolioOverview] Rendering with userId:', userId);
+  
   const { data: portfolio, isLoading, error } = useQuery({
     queryKey: ['admin-portfolio', userId],
     queryFn: () => fetchUserPortfolio(userId),
     enabled: !!userId,
+    retry: 1,
   });
 
   if (isLoading) {
+    console.log('[AdminPortfolioOverview] Showing loading state');
     return (
       <div className="space-y-6">
         <Card className="glass glass-hover">
@@ -98,6 +106,7 @@ const AdminPortfolioOverview: React.FC<AdminPortfolioProps> = ({ userId }) => {
   }
 
   if (error) {
+    console.log('[AdminPortfolioOverview] Showing error state:', error);
     return (
       <Card className="glass glass-hover">
         <CardHeader>
@@ -105,12 +114,14 @@ const AdminPortfolioOverview: React.FC<AdminPortfolioProps> = ({ userId }) => {
         </CardHeader>
         <CardContent>
           <p className="text-red-400">Error loading portfolio: {error.message}</p>
+          <p className="text-sm text-muted-foreground mt-2">User ID: {userId}</p>
         </CardContent>
       </Card>
     );
   }
 
   if (!portfolio || portfolio.length === 0) {
+    console.log('[AdminPortfolioOverview] No portfolio data found');
     return (
       <Card className="glass glass-hover">
         <CardHeader>
@@ -118,10 +129,13 @@ const AdminPortfolioOverview: React.FC<AdminPortfolioProps> = ({ userId }) => {
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground">No portfolio holdings found for this user.</p>
+          <p className="text-sm text-muted-foreground mt-2">User ID: {userId}</p>
         </CardContent>
       </Card>
     );
   }
+
+  console.log('[AdminPortfolioOverview] Rendering portfolio with', portfolio.length, 'items');
 
   const totalValue = portfolio.reduce((sum, item) => sum + item.current_value, 0);
   const totalProfitLoss = portfolio.reduce((sum, item) => sum + item.profit_loss, 0);

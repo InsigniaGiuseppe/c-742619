@@ -22,7 +22,8 @@ WHERE transaction_type NOT IN (
     'vault_deposit', 'vault_withdrawal', 'vault_payout',
     'spin_bet', 'spin_reward',
     'deposit_ideal', 'withdrawal_eur', 'withdrawal_crypto',
-    'trade', 'lending_interest', 'transfer', 'bonus', 'refund'
+    'trade', 'lending_interest', 'transfer', 'bonus', 'refund',
+    'admin_add', 'admin_remove', 'admin_balance_add', 'admin_balance_remove'
 );
 
 -- Now drop and recreate the constraint
@@ -37,5 +38,6 @@ CHECK (transaction_type IN (
     'vault_deposit', 'vault_withdrawal', 'vault_payout',
     'spin_bet', 'spin_reward',
     'deposit_ideal', 'withdrawal_eur', 'withdrawal_crypto',
-    'trade', 'lending_interest', 'transfer', 'bonus', 'refund'
+    'trade', 'lending_interest', 'transfer', 'bonus', 'refund',
+    'admin_add', 'admin_remove', 'admin_balance_add', 'admin_balance_remove'
 ));

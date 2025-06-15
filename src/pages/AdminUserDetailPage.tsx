@@ -17,9 +17,15 @@ import { Skeleton } from '@/components/ui/skeleton';
 const AdminUserDetailPage = () => {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
+  
+  console.log('[AdminUserDetailPage] Rendering with userId:', userId);
+  
   const { data: user, isLoading, error } = useAdminUser(userId);
 
+  console.log('[AdminUserDetailPage] Hook state:', { user, isLoading, error });
+
   if (isLoading) {
+    console.log('[AdminUserDetailPage] Showing loading state');
     return (
       <div className="min-h-screen bg-black text-foreground flex flex-col">
         <Navigation />
@@ -40,12 +46,19 @@ const AdminUserDetailPage = () => {
   }
 
   if (error || !user) {
+    console.log('[AdminUserDetailPage] Showing error state:', { error, user });
     return (
       <div className="min-h-screen bg-black text-foreground flex flex-col">
         <Navigation />
         <main className="flex-grow container mx-auto px-4 py-20 pt-24">
           <div className="text-center">
             <h1 className="text-2xl font-bold text-red-400 mb-4">User Not Found</h1>
+            <p className="text-muted-foreground mb-4">
+              Could not load user with ID: {userId}
+            </p>
+            <p className="text-sm text-red-300 mb-4">
+              Error: {error?.message || 'Unknown error'}
+            </p>
             <Button onClick={() => navigate('/admin/users')} variant="outline">
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Users
@@ -56,6 +69,8 @@ const AdminUserDetailPage = () => {
       </div>
     );
   }
+
+  console.log('[AdminUserDetailPage] Rendering main content for user:', user);
 
   return (
     <div className="min-h-screen bg-black text-foreground flex flex-col">
@@ -134,11 +149,11 @@ const AdminUserDetailPage = () => {
           </TabsList>
           
           <TabsContent value="portfolio" className="mt-6">
-            <AdminPortfolioOverview userId={userId!} />
+            {userId && <AdminPortfolioOverview userId={userId} />}
           </TabsContent>
           
           <TabsContent value="financial" className="mt-6">
-            <UserFinancialControls userId={userId!} />
+            {userId && <UserFinancialControls userId={userId} />}
           </TabsContent>
           
           <TabsContent value="actions" className="mt-6">
@@ -146,7 +161,7 @@ const AdminUserDetailPage = () => {
           </TabsContent>
           
           <TabsContent value="activity" className="mt-6">
-            <UserActivityLog userId={userId!} />
+            {userId && <UserActivityLog userId={userId} />}
           </TabsContent>
         </Tabs>
       </main>
