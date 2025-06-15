@@ -109,64 +109,51 @@ export const useLending = () => {
       // Calculate total to return (lent amount + interest earned)
       const totalToReturn = lendingPosition.amount_lent + lendingPosition.total_interest_earned;
 
-      // Use UPSERT to handle potential duplicate key constraint
-      const { error: portfolioUpdateError } = await supabase
+      // Check if portfolio entry already exists
+      const { data: existingPortfolio, error: getError } = await supabase
         .from('user_portfolios')
-        .upsert({
-          user_id: user!.id,
-          cryptocurrency_id: lendingPosition.cryptocurrency_id,
-          quantity: totalToReturn,
-          updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'user_id,cryptocurrency_id',
-          ignoreDuplicates: false
-        });
+        .select('*')
+        .eq('user_id', user!.id)
+        .eq('cryptocurrency_id', lendingPosition.cryptocurrency_id)
+        .single();
 
-      if (portfolioUpdateError) {
-        console.error('Error updating portfolio:', portfolioUpdateError);
-        
-        // If UPSERT failed, try to get current portfolio and update manually
-        const { data: currentPortfolio, error: getError } = await supabase
+      if (existingPortfolio) {
+        // Update existing portfolio entry
+        const newQuantity = existingPortfolio.quantity + totalToReturn;
+        const { error: updatePortfolioError } = await supabase
           .from('user_portfolios')
-          .select('quantity')
-          .eq('user_id', user!.id)
-          .eq('cryptocurrency_id', lendingPosition.cryptocurrency_id)
-          .single();
+          .update({
+            quantity: newQuantity,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existingPortfolio.id);
 
-        if (!getError && currentPortfolio) {
-          // Update existing record
-          const newQuantity = currentPortfolio.quantity + totalToReturn;
-          const { error: manualUpdateError } = await supabase
-            .from('user_portfolios')
-            .update({
-              quantity: newQuantity,
-              updated_at: new Date().toISOString()
-            })
-            .eq('user_id', user!.id)
-            .eq('cryptocurrency_id', lendingPosition.cryptocurrency_id);
+        if (updatePortfolioError) {
+          console.error('Error updating existing portfolio:', updatePortfolioError);
+          throw new Error(`Failed to update portfolio: ${updatePortfolioError.message}`);
+        }
+      } else if (getError && getError.code !== 'PGRST116') {
+        // PGRST116 means no rows found, which is fine
+        console.error('Error checking portfolio:', getError);
+        throw new Error(`Failed to check portfolio: ${getError.message}`);
+      } else {
+        // Create new portfolio entry
+        const { error: insertError } = await supabase
+          .from('user_portfolios')
+          .insert({
+            user_id: user!.id,
+            cryptocurrency_id: lendingPosition.cryptocurrency_id,
+            quantity: totalToReturn,
+            average_buy_price: 0,
+            total_invested: 0,
+            current_value: totalToReturn * (lendingPosition.crypto?.current_price || 0),
+            profit_loss: 0,
+            profit_loss_percentage: 0
+          });
 
-          if (manualUpdateError) {
-            throw new Error(`Failed to update portfolio: ${manualUpdateError.message}`);
-          }
-        } else {
-          // Create new record
-          const { error: insertError } = await supabase
-            .from('user_portfolios')
-            .insert({
-              user_id: user!.id,
-              cryptocurrency_id: lendingPosition.cryptocurrency_id,
-              quantity: totalToReturn,
-              average_buy_price: 0,
-              total_invested: 0,
-              current_value: 0,
-              profit_loss: 0,
-              profit_loss_percentage: 0,
-              updated_at: new Date().toISOString()
-            });
-
-          if (insertError) {
-            throw new Error(`Failed to create portfolio record: ${insertError.message}`);
-          }
+        if (insertError) {
+          console.error('Error creating portfolio entry:', insertError);
+          throw new Error(`Failed to create portfolio record: ${insertError.message}`);
         }
       }
 
@@ -178,6 +165,7 @@ export const useLending = () => {
           cryptocurrency_id: lendingPosition.cryptocurrency_id,
           transaction_type: 'lending_cancelled',
           amount: totalToReturn,
+          usd_value: totalToReturn * (lendingPosition.crypto?.current_price || 0),
           status: 'completed',
           description: `Cancelled lending position: ${lendingPosition.amount_lent} + ${lendingPosition.total_interest_earned} interest`
         });
