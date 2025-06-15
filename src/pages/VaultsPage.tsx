@@ -1,10 +1,8 @@
+
 import React from 'react';
 import { useRealtimePortfolio } from '@/hooks/useRealtimePortfolio';
 import { useAuth } from '@/hooks/useAuth';
-import IndividualVaultCard from '@/components/vaults/IndividualVaultCard';
 import UserVaultsList from '@/components/vaults/UserVaultsList';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
 import VaultCryptosGrid from '@/components/vaults/VaultCryptosGrid';
 import { useVaultCreation } from '@/hooks/useVaultCreation';
 
@@ -15,11 +13,6 @@ const VaultsPage: React.FC = () => {
   // Define the main cryptocurrencies for vaulting
   const mainCryptos = ['BTC', 'ETH', 'SOL', 'USDT'];
   
-  // Filter portfolio to show only main cryptos and their available balances
-  const availableForVaulting = portfolio?.filter(item => 
-    mainCryptos.includes(item.crypto.symbol.toUpperCase()) && item.quantity > 0
-  ) || [];
-
   // Create cards for all main cryptos, even if balance is 0
   const vaultCryptos = mainCryptos.map(symbol => {
     const portfolioItem = portfolio?.find(item => 
@@ -27,14 +20,16 @@ const VaultsPage: React.FC = () => {
     );
     
     return {
-      crypto: portfolioItem?.crypto || {
-        id: `${symbol.toLowerCase()}-placeholder`,
-        name: symbol === 'BTC' ? 'Bitcoin' : 
-              symbol === 'ETH' ? 'Ethereum' : 
-              symbol === 'SOL' ? 'Solana' : 'Tether',
+      crypto: {
+        id: portfolioItem?.crypto.id || `${symbol.toLowerCase()}-placeholder`,
+        name: portfolioItem?.crypto.name || (
+          symbol === 'BTC' ? 'Bitcoin' : 
+          symbol === 'ETH' ? 'Ethereum' : 
+          symbol === 'SOL' ? 'Solana' : 'Tether'
+        ),
         symbol: symbol,
-        logo_url: '',
-        current_price: 0
+        logo_url: portfolioItem?.crypto.logo_url || '',
+        current_price: portfolioItem?.crypto.current_price || 0
       },
       availableBalance: portfolioItem?.quantity || 0
     };

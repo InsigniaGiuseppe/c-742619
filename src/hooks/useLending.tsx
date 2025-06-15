@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -109,24 +110,53 @@ const cancelLendingPosition = async (
 
   const totalToReturn = lendingPosition.amount_lent + lendingPosition.total_interest_earned;
 
-  // Use upsert for portfolio record (in case row doesn't exist)
-  const { data: upserted, error: upsertError } = await supabase
+  // Check if portfolio record exists first to avoid unique constraint violation
+  const { data: existingPortfolio, error: checkError } = await supabase
     .from('user_portfolios')
-    .upsert({
-      user_id: userId,
-      cryptocurrency_id: lendingPosition.cryptocurrency_id,
-      quantity: totalToReturn,
-      average_buy_price: 0,
-      total_invested: 0,
-      current_value: totalToReturn * (lendingPosition.crypto?.current_price || 0),
-      profit_loss: 0,
-      profit_loss_percentage: 0
-    }, { onConflict: 'user_id,cryptocurrency_id' })
-    .select();
+    .select('id, quantity')
+    .eq('user_id', userId)
+    .eq('cryptocurrency_id', lendingPosition.cryptocurrency_id)
+    .maybeSingle();
 
-  if (upsertError) {
-    console.error('Error upserting portfolio:', upsertError);
-    throw new Error(`Failed to update portfolio: ${upsertError.message}`);
+  if (checkError) {
+    console.error('Error checking existing portfolio:', checkError);
+    throw new Error(`Failed to check portfolio: ${checkError.message}`);
+  }
+
+  if (existingPortfolio) {
+    // Update existing portfolio record
+    const { error: updatePortfolioError } = await supabase
+      .from('user_portfolios')
+      .update({
+        quantity: existingPortfolio.quantity + totalToReturn,
+        current_value: (existingPortfolio.quantity + totalToReturn) * (lendingPosition.crypto?.current_price || 0),
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', existingPortfolio.id);
+
+    if (updatePortfolioError) {
+      console.error('Error updating portfolio:', updatePortfolioError);
+      throw new Error(`Failed to update portfolio: ${updatePortfolioError.message}`);
+    }
+  } else {
+    // Insert new portfolio record
+    const { error: insertPortfolioError } = await supabase
+      .from('user_portfolios')
+      .insert({
+        user_id: userId,
+        cryptocurrency_id: lendingPosition.cryptocurrency_id,
+        quantity: totalToReturn,
+        average_buy_price: 0,
+        total_invested: 0,
+        current_value: totalToReturn * (lendingPosition.crypto?.current_price || 0),
+        profit_loss: 0,
+        profit_loss_percentage: 0
+      });
+
+    if (insertPortfolioError) {
+      console.error('Error inserting portfolio:', insertPortfolioError);
+      throw new Error(`Failed to create portfolio: ${insertPortfolioError.message}`);
+    }
   }
 
   // Create transaction record for the cancellation

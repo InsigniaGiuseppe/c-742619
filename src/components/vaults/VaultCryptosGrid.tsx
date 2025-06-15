@@ -14,7 +14,7 @@ interface VaultCryptosGridProps {
     };
     availableBalance: number;
   }[];
-  onVault: (cryptoId: string, amount: number, durationDays: number) => void;
+  onVault: (cryptoId: string, amount: number, durationDays: number) => Promise<boolean>;
 }
 
 const VaultCryptosGrid: React.FC<VaultCryptosGridProps> = ({ vaultCryptos, onVault }) => (
