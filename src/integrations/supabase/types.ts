@@ -1501,6 +1501,53 @@ export type Database = {
           },
         ]
       }
+      user_vaults: {
+        Row: {
+          accrued_yield: number
+          amount_vaulted: number
+          created_at: string
+          ends_at: string
+          id: string
+          started_at: string
+          status: Database["public"]["Enums"]["vault_status"]
+          updated_at: string
+          user_id: string
+          vault_config_id: string
+        }
+        Insert: {
+          accrued_yield?: number
+          amount_vaulted: number
+          created_at?: string
+          ends_at: string
+          id?: string
+          started_at?: string
+          status?: Database["public"]["Enums"]["vault_status"]
+          updated_at?: string
+          user_id: string
+          vault_config_id: string
+        }
+        Update: {
+          accrued_yield?: number
+          amount_vaulted?: number
+          created_at?: string
+          ends_at?: string
+          id?: string
+          started_at?: string
+          status?: Database["public"]["Enums"]["vault_status"]
+          updated_at?: string
+          user_id?: string
+          vault_config_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_vaults_vault_config_id_fkey"
+            columns: ["vault_config_id"]
+            isOneToOne: false
+            referencedRelation: "vault_configurations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_watchlist: {
         Row: {
           created_at: string | null
@@ -1575,6 +1622,79 @@ export type Database = {
             columns: ["weapon_id"]
             isOneToOne: false
             referencedRelation: "weapons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vault_configurations: {
+        Row: {
+          apy: number
+          created_at: string
+          cryptocurrency_id: string
+          duration_days: number
+          id: string
+          is_active: boolean
+          updated_at: string
+        }
+        Insert: {
+          apy: number
+          created_at?: string
+          cryptocurrency_id: string
+          duration_days: number
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+        }
+        Update: {
+          apy?: number
+          created_at?: string
+          cryptocurrency_id?: string
+          duration_days?: number
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vault_configurations_cryptocurrency_id_fkey"
+            columns: ["cryptocurrency_id"]
+            isOneToOne: false
+            referencedRelation: "cryptocurrencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vault_payouts: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          payout_date: string
+          user_id: string
+          user_vault_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          payout_date?: string
+          user_id: string
+          user_vault_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          payout_date?: string
+          user_id?: string
+          user_vault_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vault_payouts_user_vault_id_fkey"
+            columns: ["user_vault_id"]
+            isOneToOne: false
+            referencedRelation: "user_vaults"
             referencedColumns: ["id"]
           },
         ]
@@ -1670,6 +1790,7 @@ export type Database = {
         | "proof_of_address"
       kyc_status: "not_started" | "pending" | "verified" | "rejected"
       order_status_type: "pending" | "completed" | "rejected" | "failed"
+      vault_status: "active" | "completed" | "withdrawn"
       vip_rank: "free" | "bronze" | "silver" | "gold"
       wallet_status: "pending" | "verified" | "rejected"
     }
@@ -1798,6 +1919,7 @@ export const Constants = {
       ],
       kyc_status: ["not_started", "pending", "verified", "rejected"],
       order_status_type: ["pending", "completed", "rejected", "failed"],
+      vault_status: ["active", "completed", "withdrawn"],
       vip_rank: ["free", "bronze", "silver", "gold"],
       wallet_status: ["pending", "verified", "rejected"],
     },

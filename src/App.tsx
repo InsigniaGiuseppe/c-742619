@@ -1,59 +1,89 @@
-import { Route, BrowserRouter as Router, Routes } from "react-router-dom";
-import Index from "./pages/Index";
-import { Toaster } from "@/components/ui/sonner";
-import LoginPage from "./pages/LoginPage";
-import RegisterPage from "./pages/RegisterPage";
-import DashboardPage from "./pages/DashboardPage";
-import ProtectedRoute from "./components/ProtectedRoute";
-import AdminRoute from "./components/AdminRoute";
-import AdminLoginPage from "./pages/AdminLoginPage";
-import AdminDashboard from "./pages/AdminDashboard";
-import AdminUsers from "./pages/AdminUsers";
-import AdminUserDetailPage from "./pages/AdminUserDetailPage";
-import AdminAuditLog from "./pages/AdminAuditLog";
-import AdminWallets from "./pages/AdminWallets";
-import AdminKyc from "./pages/AdminKyc";
-import AdminTransactions from "./pages/AdminTransactions";
-import ProfilePage from "./pages/ProfilePage";
-import WalletPage from "./pages/WalletPage";
-import TopUpPage from "./pages/TopUpPage";
-import LendingPage from "./pages/LendingPage";
-import MessagesPage from "./pages/MessagesPage";
-import TradingPage from "./pages/TradingPage";
-import CryptoDetailPage from "./pages/CryptoDetailPage";
-import { CryptocurrenciesProvider } from "./hooks/useCryptocurrencies";
+import React from 'react';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
+import { Toaster } from 'sonner';
+import { TooltipProvider } from '@/components/ui/tooltip';
+
+import { AuthProvider } from './hooks/useAuth';
+import Navigation from './components/Navigation';
+import Footer from './components/Footer';
+
+import ProtectedRoute from './components/ProtectedRoute';
+import AdminRoute from './components/AdminRoute';
+import DevRoute from './components/DevRoute';
+
+import Index from './pages/Index';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
+import DashboardPage from './pages/DashboardPage';
+import WalletPage from './pages/WalletPage';
+import ProfilePage from './pages/ProfilePage';
+import TradingPage from './pages/TradingPage';
+import CryptoDetailPage from './pages/CryptoDetailPage';
+import LendingPage from './pages/LendingPage';
+import VaultsPage from './pages/VaultsPage';
+import TopUpPage from './pages/TopUpPage';
+import WalletVerificationPage from './pages/WalletVerificationPage';
+
+// Admin pages
+import AdminDashboardPage from './pages/admin/AdminDashboardPage';
+import AdminUsersPage from './pages/admin/AdminUsersPage';
+import AdminTransactionsPage from './pages/admin/AdminTransactionsPage';
+import AdminKYCDocumentsPage from './pages/admin/AdminKYCDocumentsPage';
+import AdminExternalWalletsPage from './pages/admin/AdminExternalWalletsPage';
+import AdminTradingOrdersPage from './pages/admin/AdminTradingOrdersPage';
+import AdminVaultConfigurationsPage from './pages/admin/AdminVaultConfigurationsPage';
+
+// Dev test pages
+import DevPlaygroundPage from './pages/dev/DevPlaygroundPage';
+import DevCronTestPage from './pages/dev/DevCronTestPage';
+import DevStyleguidePage from './pages/dev/DevStyleguidePage';
 
 function App() {
   return (
     <Router>
-      <CryptocurrenciesProvider>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route path="/admin/login" element={<AdminLoginPage />} />
+      <AuthProvider>
+        <TooltipProvider>
+          <div className="flex flex-col min-h-screen bg-background text-foreground">
+            <Navigation />
+            <main className="flex-grow">
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/register" element={<RegisterPage />} />
+                
+                {/* Protected Routes */}
+                <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+                <Route path="/wallet" element={<ProtectedRoute><WalletPage /></ProtectedRoute>} />
+                <Route path="/lending" element={<ProtectedRoute><LendingPage /></ProtectedRoute>} />
+                <Route path="/vaults" element={<ProtectedRoute><VaultsPage /></ProtectedRoute>} />
+                <Route path="/trading" element={<ProtectedRoute><TradingPage /></ProtectedRoute>} />
+                <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+                <Route path="/crypto/:id" element={<ProtectedRoute><CryptoDetailPage /></ProtectedRoute>} />
+                <Route path="/top-up" element={<ProtectedRoute><TopUpPage /></ProtectedRoute>} />
+                <Route path="/wallet-verification" element={<ProtectedRoute><WalletVerificationPage /></ProtectedRoute>} />
 
-          {/* Protected Routes */}
-          <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
-          <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-          <Route path="/wallet" element={<ProtectedRoute><WalletPage /></ProtectedRoute>} />
-          <Route path="/top-up" element={<ProtectedRoute><TopUpPage /></ProtectedRoute>} />
-          <Route path="/lending" element={<ProtectedRoute><LendingPage /></ProtectedRoute>} />
-          <Route path="/messages" element={<ProtectedRoute><MessagesPage /></ProtectedRoute>} />
-          <Route path="/trading" element={<ProtectedRoute><TradingPage /></ProtectedRoute>} />
-          <Route path="/crypto/:symbol" element={<ProtectedRoute><CryptoDetailPage /></ProtectedRoute>} />
+                {/* Admin Routes */}
+                <Route path="/admin/dashboard" element={<AdminRoute><AdminDashboardPage /></AdminRoute>} />
+                <Route path="/admin/users" element={<AdminRoute><AdminUsersPage /></AdminRoute>} />
+                <Route path="/admin/transactions" element={<AdminRoute><AdminTransactionsPage /></AdminRoute>} />
+                <Route path="/admin/kyc-documents" element={<AdminRoute><AdminKYCDocumentsPage /></AdminRoute>} />
+                <Route path="/admin/external-wallets" element={<AdminRoute><AdminExternalWalletsPage /></AdminRoute>} />
+                <Route path="/admin/trading-orders" element={<AdminRoute><AdminTradingOrdersPage /></AdminRoute>} />
+                <Route path="/admin/vault-configurations" element={<AdminRoute><AdminVaultConfigurationsPage /></AdminRoute>} />
 
-          {/* Admin Routes */}
-          <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
-          <Route path="/admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
-          <Route path="/admin/users/:userId" element={<AdminRoute><AdminUserDetailPage /></AdminRoute>} />
-          <Route path="/admin/audit-log" element={<AdminRoute><AdminAuditLog /></AdminRoute>} />
-          <Route path="/admin/wallets" element={<AdminRoute><AdminWallets /></AdminRoute>} />
-          <Route path="/admin/kyc" element={<AdminRoute><AdminKyc /></AdminRoute>} />
-          <Route path="/admin/transactions" element={<AdminRoute><AdminTransactions /></AdminRoute>} />
-        </Routes>
-      </CryptocurrenciesProvider>
-      <Toaster />
+                {/* Dev Test Routes */}
+                <Route path="/dev/playground" element={<DevRoute><DevPlaygroundPage /></DevRoute>} />
+                <Route path="/dev/cron-test" element={<DevRoute><DevCronTestPage /></DevRoute>} />
+                <Route path="/dev/styleguide" element={<DevRoute><DevStyleguidePage /></DevRoute>} />
+
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </main>
+            <Footer />
+            <Toaster />
+          </div>
+        </TooltipProvider>
+      </AuthProvider>
     </Router>
   );
 }
