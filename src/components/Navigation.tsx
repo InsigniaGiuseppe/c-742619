@@ -35,19 +35,19 @@ const Navigation = () => {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link to={user ? '/dashboard' : '/'} className="flex items-center gap-3">
+          <Link to={user ? '/dashboard' : '/'} className="flex items-center gap-2 md:gap-3">
             <img 
               src="/lovable-uploads/3765d287-ffd3-40d5-8628-4f8191064138.png" 
               alt="PROMPTO TRADING Logo" 
-              className="w-8 h-8 object-contain"
+              className="w-6 h-6 md:w-8 md:h-8 object-contain"
             />
-            <span className="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent">
+            <span className="text-lg md:text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent">
               PROMPTO TRADING
             </span>
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-8">
+          <div className="hidden md:flex items-center space-x-6 lg:space-x-8">
             {user && navLinks.map((link) => (
               <Link
                 key={link.path}
@@ -64,9 +64,9 @@ const Navigation = () => {
           </div>
 
           {/* Desktop User Menu */}
-          <div className="hidden md:flex items-center space-x-4">
+          <div className="hidden md:flex items-center space-x-3 lg:space-x-4">
             {user ? (
-              <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-3 lg:space-x-4">
                 <Button
                   variant="ghost"
                   size="sm"
@@ -82,7 +82,7 @@ const Navigation = () => {
                       <User className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-56" align="end" forceMount>
+                  <DropdownMenuContent className="w-56 bg-gray-900 border-gray-700" align="end" forceMount>
                     <DropdownMenuItem onClick={() => navigate('/profile')}>
                       <Settings className="mr-2 h-4 w-4" />
                       <span>Profile</span>
@@ -139,6 +139,14 @@ const Navigation = () => {
               
               {user ? (
                 <div className="border-t border-gray-800 pt-2 mt-2">
+                  <Link
+                    to="/admin/login"
+                    className="flex items-center px-3 py-2 text-sm font-medium text-orange-400 hover:text-orange-300 hover:bg-gray-800 rounded-md"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <Shield className="mr-2 h-4 w-4" />
+                    Admin Portal
+                  </Link>
                   <Link
                     to="/profile"
                     className="flex items-center px-3 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-gray-800 rounded-md"

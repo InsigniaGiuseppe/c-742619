@@ -14,13 +14,13 @@ const RecentTransactions = () => {
     return (
       <Card className="glass glass-hover">
         <CardHeader>
-          <CardTitle>Recent Transactions</CardTitle>
+          <CardTitle className="text-lg md:text-xl">Recent Transactions</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             {[...Array(5)].map((_, i) => (
               <div key={i} className="animate-pulse">
-                <div className="h-16 bg-gray-800 rounded-lg"></div>
+                <div className="h-12 md:h-16 bg-gray-800 rounded-lg"></div>
               </div>
             ))}
           </div>
@@ -32,7 +32,6 @@ const RecentTransactions = () => {
   const recentTransactions = transactions.slice(0, 10);
 
   const getTransactionBgColor = (transactionType: string) => {
-    // Admin transactions get blue background
     if (transactionType.includes('admin')) {
       return 'bg-blue-500/30';
     }
@@ -80,15 +79,15 @@ const RecentTransactions = () => {
   return (
     <Card className="glass glass-hover">
       <CardHeader>
-        <CardTitle className="text-xl">Recent Transactions</CardTitle>
+        <CardTitle className="text-lg md:text-xl">Recent Transactions</CardTitle>
         <p className="text-sm text-muted-foreground">
           {recentTransactions.length} recent activities
         </p>
       </CardHeader>
       <CardContent>
         {recentTransactions.length === 0 ? (
-          <div className="text-gray-400 text-center py-12 space-y-2">
-            <div className="text-lg">No transactions yet</div>
+          <div className="text-gray-400 text-center py-8 md:py-12 space-y-2">
+            <div className="text-base md:text-lg">No transactions yet</div>
             <div className="text-sm">Start trading to see your activity here</div>
           </div>
         ) : (
@@ -98,19 +97,18 @@ const RecentTransactions = () => {
               const formattedType = formatTransactionType(transaction.transaction_type);
               const transactionIcon = getTransactionIcon(transaction.transaction_type);
               
-              // For admin transactions, show Settings icon; for crypto transactions, show coin logo
               const isAdminTransaction = transaction.transaction_type.includes('admin');
               const isBuyTransaction = transaction.transaction_type === 'trade_buy' || transaction.transaction_type === 'purchase' || transaction.transaction_type === 'buy' || transaction.transaction_type.includes('buy');
               
               return (
                 <div 
                   key={transaction.id} 
-                  className="flex items-center justify-between p-4 bg-white/5 rounded-lg hover:bg-white/10 transition-all duration-200 border border-white/10"
+                  className="flex items-center justify-between p-3 md:p-4 bg-white/5 rounded-lg hover:bg-white/10 transition-all duration-200 border border-white/10"
                 >
-                  <div className="flex items-center gap-4">
-                    <div className={`p-3 rounded-full ${transactionBgColor} flex items-center justify-center relative`}>
+                  <div className="flex items-center gap-3 md:gap-4 min-w-0 flex-1">
+                    <div className={`p-2 md:p-3 rounded-full ${transactionBgColor} flex items-center justify-center relative flex-shrink-0`}>
                       {isAdminTransaction ? (
-                        <Settings className="h-5 w-5 text-blue-500" />
+                        <Settings className="h-4 w-4 md:h-5 md:w-5 text-blue-500" />
                       ) : transaction.crypto ? (
                         <>
                           <CryptoLogo 
@@ -119,32 +117,31 @@ const RecentTransactions = () => {
                             symbol={transaction.crypto.symbol}
                             size="sm"
                           />
-                          {/* Direction indicator overlay */}
                           <div className="absolute -top-1 -right-1 bg-gray-900 rounded-full p-1 border border-gray-600">
                             {transactionIcon}
                           </div>
                         </>
                       ) : (
-                        <div className="w-6 h-6 rounded-full bg-gray-600 flex items-center justify-center text-xs font-bold">
+                        <div className="w-5 h-5 md:w-6 md:h-6 rounded-full bg-gray-600 flex items-center justify-center text-xs font-bold">
                           ?
                         </div>
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium truncate">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                        <p className="font-medium truncate text-sm md:text-base">
                           {transaction.description || `${formattedType} ${transaction.crypto?.symbol || 'CRYPTO'}`}
                         </p>
                         {!isAdminTransaction && (
                           <Badge 
                             variant={isBuyTransaction ? 'default' : 'destructive'}
-                            className="text-xs px-2 py-0.5"
+                            className="text-xs px-2 py-0.5 self-start sm:self-auto"
                           >
                             {isBuyTransaction ? 'BUY' : 'SELL'}
                           </Badge>
                         )}
                       </div>
-                      <div className="flex items-center gap-2 text-sm text-gray-400">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-xs md:text-sm text-gray-400">
                         <span>
                           {new Date(transaction.created_at).toLocaleDateString('en-US', {
                             month: 'short',
@@ -154,20 +151,20 @@ const RecentTransactions = () => {
                           })}
                         </span>
                         {transaction.amount && transaction.crypto && (
-                          <span className="text-gray-500">
+                          <span className="text-gray-500 truncate">
                             • {transaction.amount.toFixed(6)} {transaction.crypto?.symbol}
                           </span>
                         )}
                       </div>
                     </div>
                   </div>
-                  <div className="text-right space-y-1">
+                  <div className="text-right space-y-1 flex-shrink-0 ml-2">
                     <FormattedNumber
                       value={transaction.eur_value || 0}
                       type="currency"
                       currency="EUR"
                       showTooltip={false}
-                      className="font-semibold"
+                      className="font-semibold text-sm md:text-base"
                     />
                     <div>
                       <Badge 

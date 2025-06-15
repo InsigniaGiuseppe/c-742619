@@ -5,18 +5,18 @@ import { Link } from "react-router-dom";
 
 const Footer = () => {
   return (
-    <footer className="w-full py-12 mt-20">
-      <div className="container px-4">
-        <div className="glass glass-hover rounded-xl p-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+    <footer className="w-full py-8 md:py-12 mt-12 md:mt-20">
+      <div className="container px-4 md:px-6 lg:px-8">
+        <div className="glass glass-hover rounded-xl p-6 md:p-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
             <div className="space-y-4">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 md:gap-3">
                 <img 
                   src="/lovable-uploads/3765d287-ffd3-40d5-8628-4f8191064138.png" 
                   alt="PROMPTO TRADING Logo" 
-                  className="w-6 h-6 object-contain"
+                  className="w-5 h-5 md:w-6 md:h-6 object-contain"
                 />
-                <h3 className="font-medium text-lg">PROMPTO TRADING</h3>
+                <h3 className="font-medium text-base md:text-lg">PROMPTO TRADING</h3>
               </div>
               <p className="text-sm text-muted-foreground">
                 Empowering traders with advanced crypto trading solutions.
@@ -100,7 +100,7 @@ const Footer = () => {
             </div>
           </div>
 
-          <div className="mt-8 pt-8 border-t border-white/10">
+          <div className="mt-6 md:mt-8 pt-6 md:pt-8 border-t border-white/10">
             <p className="text-sm text-muted-foreground text-center">
               © {new Date().getFullYear()} PROMPTO TRADING. All rights reserved.
             </p>
