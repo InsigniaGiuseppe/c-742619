@@ -46,7 +46,7 @@ const TradeSheet: React.FC<TradeSheetProps> = ({ crypto, open, onOpenChange }) =
             <div className="flex justify-between items-center">
                 <span className="text-muted-foreground">24h Change</span>
                 <span className={isPositiveChange ? 'text-green-500' : 'text-red-500'}>
-                    <FormattedNumber value={crypto.price_change_percentage_24h || 0} type="percent" />
+                    <FormattedNumber value={crypto.price_change_percentage_24h || 0} type="percentage" />
                 </span>
             </div>
              <div className="flex justify-between items-center">
