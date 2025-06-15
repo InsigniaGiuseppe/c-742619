@@ -14,6 +14,8 @@ const AdminReservePage: React.FC = () => {
   const { reserves, loading, error, totalValue, totalCryptoValue, totalEurValue } = useAdminReserves();
   const [searchTerm, setSearchTerm] = React.useState('');
 
+  console.log('[AdminReservePage] Reserves data:', reserves);
+
   const filteredReserves = reserves?.filter(reserve => 
     reserve.asset_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     reserve.asset_symbol.toLowerCase().includes(searchTerm.toLowerCase())

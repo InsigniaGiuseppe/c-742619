@@ -20,7 +20,7 @@ const fetchReserves = async (exchangeRate: number): Promise<{
   totalCryptoValue: number;
   totalEurValue: number;
 }> => {
-  console.log('[useAdminReserves] Fetching platform reserves');
+  console.log('[useAdminReserves] Fetching platform reserves with exchange rate:', exchangeRate);
 
   // Define the main cryptocurrencies we track
   const mainCryptos = ['BTC', 'ETH', 'SOL', 'USDT'];
@@ -44,6 +44,8 @@ const fetchReserves = async (exchangeRate: number): Promise<{
     throw cryptoError;
   }
 
+  console.log('[useAdminReserves] Fetched crypto data:', cryptoData);
+
   // Calculate total user holdings to subtract from reserves
   const { data: portfolioData } = await supabase
     .from('user_portfolios')
@@ -63,6 +65,8 @@ const fetchReserves = async (exchangeRate: number): Promise<{
     }
   });
 
+  console.log('[useAdminReserves] User holdings:', userHoldings);
+
   // Fetch total EUR from all user balances
   const { data: profileData } = await supabase
     .from('profiles')
@@ -72,6 +76,8 @@ const fetchReserves = async (exchangeRate: number): Promise<{
     sum + (profile.demo_balance_usd || 0), 0) || 0;
 
   const totalUserBalanceEur = convertUsdToEur(totalUserBalanceUsd, exchangeRate);
+
+  console.log('[useAdminReserves] Total user balance USD:', totalUserBalanceUsd, 'EUR:', totalUserBalanceEur);
 
   // Build reserves array
   const reserves: ReserveAsset[] = [];
@@ -86,6 +92,8 @@ const fetchReserves = async (exchangeRate: number): Promise<{
     // Calculate EUR value: crypto amount * USD price * EUR exchange rate
     const priceUsd = cryptoInfo?.current_price || 0;
     const eurValue = actualReserve * convertUsdToEur(priceUsd, exchangeRate);
+
+    console.log(`[useAdminReserves] ${reserve.symbol}: actualReserve=${actualReserve}, priceUsd=${priceUsd}, eurValue=${eurValue}`);
 
     totalCryptoValue += eurValue;
 
@@ -126,6 +134,9 @@ const fetchReserves = async (exchangeRate: number): Promise<{
 
   const totalValue = totalCryptoValue + actualEurReserve;
 
+  console.log('[useAdminReserves] Final reserves:', reserves);
+  console.log('[useAdminReserves] Total values - crypto:', totalCryptoValue, 'eur:', actualEurReserve, 'total:', totalValue);
+
   return {
     reserves,
     totalValue,
@@ -143,6 +154,13 @@ export const useAdminReserves = () => {
     enabled: !!exchangeRate,
     staleTime: 30000, // 30 seconds
     refetchInterval: 60000, // 1 minute
+  });
+
+  console.log('[useAdminReserves] Query result:', {
+    data: query.data,
+    loading: query.isLoading,
+    error: query.error,
+    exchangeRate
   });
 
   return {
