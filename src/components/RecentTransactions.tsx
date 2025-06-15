@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useTransactionHistory, Transaction } from '@/hooks/useTransactionHistory';
@@ -10,8 +10,18 @@ import { format } from 'date-fns';
 import TransactionDetailModal from './TransactionDetailModal';
 
 const RecentTransactions = () => {
-  const { transactions, loading } = useTransactionHistory();
+  const { transactions, loading, refetch } = useTransactionHistory();
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+
+  // Auto-refresh transactions every 10 seconds to catch new lending transactions
+  useEffect(() => {
+    const interval = setInterval(() => {
+      console.log('[RecentTransactions] Auto-refreshing transactions');
+      refetch();
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, [refetch]);
 
   if (loading) {
     return (

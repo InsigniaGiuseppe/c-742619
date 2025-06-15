@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -252,7 +253,7 @@ export const useLending = () => {
 
       // Create transaction record regardless of new or updated
       console.log('[useLending] Creating transaction history record.');
-      await supabase
+      const { data: transactionData, error: transactionError } = await supabase
         .from('transaction_history')
         .insert({
           user_id: user.id,
@@ -262,8 +263,16 @@ export const useLending = () => {
           usd_value: amount * (crypto?.current_price || 0),
           status: 'completed',
           description: `Started lending ${amount} ${crypto?.symbol}`,
-        });
+        })
+        .select()
+        .single();
 
+      if (transactionError) {
+        console.error('[useLending] Error creating transaction:', transactionError);
+        throw transactionError;
+      }
+
+      console.log('[useLending] Transaction created successfully:', transactionData);
       return newOrUpdatedPosition;
     },
     onSuccess: () => {
@@ -300,7 +309,8 @@ export const useLending = () => {
       if (error) throw error;
 
       // Create transaction record for cancellation
-      await supabase
+      console.log('[useLending] Creating cancellation transaction record.');
+      const { data: transactionData, error: transactionError } = await supabase
         .from('transaction_history')
         .insert({
           user_id: user!.id,
@@ -310,8 +320,16 @@ export const useLending = () => {
           usd_value: data.amount_lent * (data.crypto?.current_price || 0),
           status: 'completed',
           description: `Cancelled lending and returned ${data.amount_lent} ${data.crypto?.symbol}`,
-        });
+        })
+        .select()
+        .single();
 
+      if (transactionError) {
+        console.error('[useLending] Error creating cancellation transaction:', transactionError);
+        throw transactionError;
+      }
+
+      console.log('[useLending] Cancellation transaction created:', transactionData);
       return data;
     },
     onSuccess: () => {

@@ -21,7 +21,7 @@ const WalletPage = () => {
   
   if (!user) {
     return (
-      <div className="flex flex-col items-center justify-center text-center p-4 py-20">
+      <div className="flex flex-col items-center justify-center text-center py-20">
         <h2 className="text-2xl font-bold mb-4">Access Denied</h2>
         <p className="text-muted-foreground mb-6">Please log in to manage your wallets.</p>
         <Button asChild>
@@ -37,8 +37,9 @@ const WalletPage = () => {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       transition={{ duration: 0.5 }}
+      className="space-y-8"
     >
-      <div className="text-center mb-12">
+      <div className="text-center">
         <h1 className="text-4xl font-bold mb-4">External Wallet Management</h1>
         <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
           Add and manage your external cryptocurrency wallets for withdrawals. Submitted wallets will be reviewed for security purposes.
