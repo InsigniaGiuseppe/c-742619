@@ -46,27 +46,87 @@ function App() {
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
                 
-                <Route element={<ProtectedRoute />}>
-                  <Route path="/dashboard" element={<DashboardPage />} />
-                  <Route path="/trading" element={<TradingPage />} />
-                  <Route path="/trading/:cryptoId" element={<CryptoDetailPage />} />
-                  <Route path="/lending" element={<LendingPage />} />
-                  <Route path="/vaults" element={<VaultsPage />} />
-                  <Route path="/spin" element={<SpinPage />} />
-                  <Route path="/wallet" element={<WalletPage />} />
-                  <Route path="/wallet/verification" element={<WalletVerificationPage />} />
-                  <Route path="/profile" element={<ProfilePage />} />
-                  <Route path="/messages" element={<MessagesPage />} />
-                  <Route path="/top-up" element={<TopUpPage />} />
-                </Route>
+                <Route path="/dashboard" element={
+                  <ProtectedRoute>
+                    <DashboardPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/trading" element={
+                  <ProtectedRoute>
+                    <TradingPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/trading/:cryptoId" element={
+                  <ProtectedRoute>
+                    <CryptoDetailPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/lending" element={
+                  <ProtectedRoute>
+                    <LendingPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/vaults" element={
+                  <ProtectedRoute>
+                    <VaultsPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/spin" element={
+                  <ProtectedRoute>
+                    <SpinPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/wallet" element={
+                  <ProtectedRoute>
+                    <WalletPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/wallet/verification" element={
+                  <ProtectedRoute>
+                    <WalletVerificationPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/profile" element={
+                  <ProtectedRoute>
+                    <ProfilePage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/messages" element={
+                  <ProtectedRoute>
+                    <MessagesPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/top-up" element={
+                  <ProtectedRoute>
+                    <TopUpPage />
+                  </ProtectedRoute>
+                } />
 
-                <Route path="/admin/*" element={<ProtectedRoute />}>
-                  <Route index element={<AdminDashboard />} />
-                  <Route path="transactions" element={<EnhancedTransactionManagement />} />
-                  <Route path="users" element={<AdminUsers />} />
-                  <Route path="kyc" element={<AdminKyc />} />
-                  <Route path="wallets" element={<AdminWallets />} />
-                </Route>
+                <Route path="/admin" element={
+                  <ProtectedRoute>
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/transactions" element={
+                  <ProtectedRoute>
+                    <EnhancedTransactionManagement />
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/users" element={
+                  <ProtectedRoute>
+                    <AdminUsers />
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/kyc" element={
+                  <ProtectedRoute>
+                    <AdminKyc />
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/wallets" element={
+                  <ProtectedRoute>
+                    <AdminWallets />
+                  </ProtectedRoute>
+                } />
               </Routes>
             </main>
             <Footer />
