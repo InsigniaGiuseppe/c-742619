@@ -40,7 +40,7 @@ const CryptoTableRow: React.FC<CryptoTableRowProps> = ({ crypto, onTrade }) => {
         {priceChangePercentage.toFixed(2)}%
       </TableCell>
       <TableCell>
-        <FormattedNumber value={crypto.market_cap} type="currency" notation="compact" />
+        <FormattedNumber value={crypto.market_cap || 0} type="currency" compact />
       </TableCell>
       <TableCell className="text-right">
         <Button 
