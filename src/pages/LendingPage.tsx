@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRealtimePortfolio } from '@/hooks/useRealtimePortfolio';
@@ -5,9 +6,9 @@ import { useLending } from '@/hooks/useLending';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
-import LendingStatsCard from '@/components/lending/LendingStatsCard';
+import LendingStatsCards from '@/components/lending/LendingStatsCards';
 import LendingPositionCard from '@/components/lending/LendingPositionCard';
-import IdleCryptoSuggestions from '@/components/lending/IdleCryptoSuggestions';
+import EnhancedIdleCryptoSuggestions from '@/components/lending/EnhancedIdleCryptoSuggestions';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import FormattedNumber from '@/components/FormattedNumber';
@@ -161,14 +162,14 @@ const LendingPage: React.FC = () => {
   const [isCancelling, setIsCancelling] = useState<string | null>(null);
   const [isNewLendingModalOpen, setIsNewLendingModalOpen] = useState(false);
 
-  // Calculate available cryptos for lending
+  // Calculate available cryptos for lending (only those with balance > 0)
   const availableCryptos = portfolio?.filter(item => item.quantity > 0).map(item => ({
     ...item,
     available_quantity: item.quantity,
     potential_daily_earnings: item.quantity * item.crypto.current_price * 0.05 / 365
   })) || [];
 
-  // Calculate lending stats for the stats card
+  // Calculate lending stats for the stats cards
   const totalLentValue = lendingPositions?.reduce((sum, pos) => sum + (pos.amount_lent * pos.crypto.current_price), 0) || 0;
   const totalEarnedInterest = lendingPositions?.reduce((sum, pos) => sum + (pos.total_interest_earned * pos.crypto.current_price), 0) || 0;
   const estimatedDailyReturn = lendingPositions?.reduce((sum, pos) => {
@@ -302,11 +303,19 @@ const LendingPage: React.FC = () => {
           </p>
         </div>
 
-        {/* Lending Stats */}
-        <LendingStatsCard 
+        {/* Lending Stats Cards */}
+        <LendingStatsCards 
           stats={stats}
           loading={false}
         />
+
+        {/* Idle Crypto Suggestions - Moved above Active Lending Positions */}
+        {availableCryptos.length > 0 && (
+          <EnhancedIdleCryptoSuggestions
+            availableCryptos={availableCryptos}
+            onStartLending={handleStartLendingFromSuggestion}
+          />
+        )}
 
         {/* Active Lending Positions */}
         <Card className="glass glass-hover">
@@ -357,14 +366,6 @@ const LendingPage: React.FC = () => {
             )}
           </CardContent>
         </Card>
-
-        {/* Idle Crypto Suggestions */}
-        {availableCryptos.length > 0 && (
-          <IdleCryptoSuggestions
-            availableCryptos={availableCryptos}
-            onStartLending={handleStartLendingFromSuggestion}
-          />
-        )}
 
         {/* New Lending Modal */}
         <NewLendingModal

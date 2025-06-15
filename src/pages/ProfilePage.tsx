@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import PersonalInfoSection from '@/components/profile/PersonalInfoSection';
 import PortfolioOverview from '@/components/PortfolioOverview';
@@ -13,7 +12,6 @@ const ProfilePage = () => {
 
   return (
     <div className="min-h-screen bg-black text-foreground flex flex-col">
-      <Navigation />
       <main className="flex-grow container mx-auto px-4 py-20 pt-24">
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-2">Profile</h1>
