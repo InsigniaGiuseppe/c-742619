@@ -5,6 +5,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recha
 import { Badge } from '@/components/ui/badge';
 import { TrendingUp, TrendingDown, Activity } from 'lucide-react';
 import FormattedNumber from './FormattedNumber';
+import CryptoLogo from './CryptoLogo';
 import { useRealtimePortfolio } from '@/hooks/useRealtimePortfolio';
 
 const COLORS = ['#8B5CF6', '#06B6D4', '#10B981', '#F59E0B', '#EF4444', '#EC4899', '#8B5A2B', '#6366F1'];
@@ -54,7 +55,9 @@ const EnhancedPortfolioChart = () => {
     name: item.crypto.symbol,
     value: item.current_value,
     percentage: totalValue > 0 ? (item.current_value / totalValue) * 100 : 0,
-    color: COLORS[index % COLORS.length]
+    color: COLORS[index % COLORS.length],
+    logo_url: item.crypto.logo_url,
+    fullName: item.crypto.name
   }));
 
   const isProfit = totalProfitLoss >= 0;
@@ -140,9 +143,11 @@ const EnhancedPortfolioChart = () => {
           {chartData.map((item, index) => (
             <div key={item.name} className="flex items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
               <div className="flex items-center gap-3">
-                <div 
-                  className="w-4 h-4 rounded-full"
-                  style={{ backgroundColor: item.color }}
+                <CryptoLogo 
+                  logo_url={item.logo_url}
+                  name={item.fullName}
+                  symbol={item.name}
+                  size="sm"
                 />
                 <span className="font-medium">{item.name}</span>
                 <span className="text-xs text-muted-foreground">
