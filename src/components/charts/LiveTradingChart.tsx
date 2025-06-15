@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   ComposedChart, 
@@ -9,7 +8,8 @@ import {
   YAxis, 
   CartesianGrid, 
   Tooltip, 
-  ResponsiveContainer
+  ResponsiveContainer,
+  Cell
 } from 'recharts';
 import { Cryptocurrency } from '@/hooks/useCryptocurrencies';
 import { useBinanceChartData, ChartDataPoint } from '@/hooks/useBinanceChartData';
@@ -103,7 +103,7 @@ const LiveTradingChart: React.FC<LiveTradingChartProps> = ({
     );
   }
 
-  // Prepare chart data - simplified without volume
+  // Prepare chart data with proper OHLC structure for candlesticks
   const chartData = liveData.map((item) => ({
     time: new Date(item.time).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
     timeMs: item.time,
@@ -112,6 +112,8 @@ const LiveTradingChart: React.FC<LiveTradingChartProps> = ({
     low: item.low,
     close: item.close,
     price: item.close,
+    // For candlestick rendering, we need the full OHLC range
+    candlestickValue: item.high, // Use high as the bar value for positioning
     isGreen: item.close >= item.open
   }));
 
@@ -187,7 +189,7 @@ const LiveTradingChart: React.FC<LiveTradingChartProps> = ({
           
           {chartType === 'candlestick' && (
             <Bar 
-              dataKey="high"
+              dataKey="candlestickValue"
               shape={(props: any) => <RechartsCandlestick {...props} />}
             />
           )}

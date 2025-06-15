@@ -25,25 +25,36 @@ const RechartsCandlestick: React.FC<CandlestickProps> = ({
   const color = isGreen ? '#10B981' : '#EF4444';
   
   // Calculate candlestick dimensions
-  const candleWidth = Math.max(width * 0.6, 8); // Make candlesticks thicker
+  const candleWidth = Math.max(width * 0.6, 8);
   const wickWidth = 2;
   const centerX = x + width / 2;
   const candleX = centerX - candleWidth / 2;
 
-  // Simple approach: use the given y and height as-is from Recharts
-  // Recharts already calculated these based on the data values
-  const bodyTop = Math.min(y, y + height);
-  const bodyBottom = Math.max(y, y + height);
+  // Calculate the price range for this data point
+  const priceRange = high - low;
+  const pixelsPerPrice = height / priceRange;
+
+  // Calculate Y positions for each price level
+  // y represents the top of the chart area (high price)
+  // y + height represents the bottom (low price)
+  const highY = y;
+  const lowY = y + height;
+  const openY = y + (high - open) * pixelsPerPrice;
+  const closeY = y + (high - close) * pixelsPerPrice;
+
+  // Body dimensions
+  const bodyTop = Math.min(openY, closeY);
+  const bodyBottom = Math.max(openY, closeY);
   const bodyHeight = Math.max(Math.abs(bodyBottom - bodyTop), 2);
 
   return (
     <g>
-      {/* High-Low Wick - use full height */}
+      {/* High-Low Wick */}
       <line
         x1={centerX}
-        y1={y}
+        y1={highY}
         x2={centerX}
-        y2={y + height}
+        y2={lowY}
         stroke={color}
         strokeWidth={wickWidth}
       />
@@ -54,7 +65,7 @@ const RechartsCandlestick: React.FC<CandlestickProps> = ({
         y={bodyTop}
         width={candleWidth}
         height={bodyHeight}
-        fill={isGreen ? color : 'transparent'}
+        fill={isGreen ? color : 'white'}
         stroke={color}
         strokeWidth={2}
         rx={1}
