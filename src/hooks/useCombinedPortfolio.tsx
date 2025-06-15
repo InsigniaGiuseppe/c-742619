@@ -126,9 +126,12 @@ export const useCombinedPortfolio = () => {
       combinedData.push({
         cryptocurrency_id: position.cryptocurrency_id,
         crypto: {
-          ...position.crypto,
+          id: position.crypto.id,
+          name: position.crypto.name,
+          symbol: position.crypto.symbol,
           current_price: convertUsdToEur(position.crypto.current_price, exchangeRate),
-          price_change_percentage_24h: 0 // Default value for lending-only positions
+          price_change_percentage_24h: 0,
+          logo_url: position.crypto.logo_url
         },
         trading: {
           quantity: 0,

@@ -18,6 +18,7 @@ export interface LendingPosition {
   updated_at: string;
   user_id: string;
   crypto: {
+    id: string;
     name: string;
     symbol: string;
     logo_url: string;
@@ -31,6 +32,7 @@ const fetchLendingPositions = async (userId: string): Promise<LendingPosition[]>
     .select(`
       *,
       crypto:cryptocurrencies(
+        id,
         name,
         symbol,
         logo_url,
@@ -45,7 +47,18 @@ const fetchLendingPositions = async (userId: string): Promise<LendingPosition[]>
     throw new Error(error.message);
   }
 
-  return data || [];
+  // Transform the data to match our interface
+  return (data || []).map(item => ({
+    ...item,
+    status: item.status as 'active' | 'completed' | 'cancelled',
+    crypto: {
+      id: item.crypto.id,
+      name: item.crypto.name,
+      symbol: item.crypto.symbol,
+      logo_url: item.crypto.logo_url || '',
+      current_price: item.crypto.current_price
+    }
+  }));
 };
 
 export const useLending = () => {

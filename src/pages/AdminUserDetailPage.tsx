@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -10,7 +11,7 @@ import { useAdminUser } from '@/hooks/useAdminUser';
 import UserActions from '@/components/admin/UserActions';
 import UserActivityLog from '@/components/admin/UserActivityLog';
 import UserFinancialControls from '@/components/admin/UserFinancialControls';
-import PortfolioOverview from '@/components/PortfolioOverview';
+import AdminPortfolioOverview from '@/components/admin/AdminPortfolioOverview';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const AdminUserDetailPage = () => {
@@ -133,7 +134,7 @@ const AdminUserDetailPage = () => {
           </TabsList>
           
           <TabsContent value="portfolio" className="mt-6">
-            <PortfolioOverview />
+            <AdminPortfolioOverview userId={userId!} />
           </TabsContent>
           
           <TabsContent value="financial" className="mt-6">
