@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -117,7 +118,7 @@ export const useTrade = (crypto: Cryptocurrency | undefined) => {
     const eurValue = parseFloat(amountEUR);
     const usdValue = convertEurToUsd(eurValue, exchangeRate);
     const coinAmount = parseFloat(amountCoin);
-    const feeAmountUsd = usdValue * 0.0035; // Updated to 0.35%
+    const feeAmountUsd = usdValue * 0.0035; // 0.35% fee
     const totalCostUsd = usdValue + feeAmountUsd;
     const userBalanceEur = convertUsdToEur(userBalanceUsd, exchangeRate);
 
@@ -133,7 +134,7 @@ export const useTrade = (crypto: Cryptocurrency | undefined) => {
       userHoldings,
     });
 
-    if (tradeType === 'buy' && eurValue > userBalanceEur) {
+    if (tradeType === 'buy' && totalCostUsd > userBalanceUsd) {
       toast.error('Insufficient balance');
       return;
     }
@@ -169,17 +170,15 @@ export const useTrade = (crypto: Cryptocurrency | undefined) => {
       if (orderError) throw new Error(`Failed at trading_orders: ${orderError.message}`);
       if (!order) throw new Error('Trading order creation returned no data.');
 
-      // Step 2: Create transaction history record with correct transaction_type
+      // Step 2: Create transaction history record using valid transaction types
       console.log(`${logPrefix} 2. Inserting into transaction_history...`);
-      // Use valid transaction types that match our constraint
-      const transactionType = tradeType === 'buy' ? 'buy' : 'sell';
       
       const { data: transaction, error: transactionError } = await supabase
         .from('transaction_history')
         .insert({
           user_id: user.id,
           cryptocurrency_id: crypto.id,
-          transaction_type: transactionType,
+          transaction_type: tradeType, // Use 'buy' or 'sell' directly
           amount: coinAmount,
           usd_value: usdValue, // Store USD value
           fee_amount: feeAmountUsd, // Store USD fees
@@ -219,8 +218,8 @@ export const useTrade = (crypto: Cryptocurrency | undefined) => {
           ? existingPortfolio.total_invested + eurValue 
           : Math.max(0, existingPortfolio.total_invested - eurValue);
         
-        const newAveragePrice = newQuantity > 0 ? newTotalInvested / newQuantity : 0;
-        const newCurrentValue = newQuantity * crypto.current_price;
+        const newAveragePrice = newQuantity > 0 ? crypto.current_price : 0;
+        const newCurrentValue = newQuantity * convertUsdToEur(crypto.current_price, exchangeRate);
         const newProfitLoss = newCurrentValue - newTotalInvested;
         const newProfitLossPercentage = newTotalInvested > 0 ? (newProfitLoss / newTotalInvested) * 100 : 0;
 
@@ -242,6 +241,8 @@ export const useTrade = (crypto: Cryptocurrency | undefined) => {
         if (portfolioUpdateError) throw new Error(`Failed to update portfolio: ${portfolioUpdateError.message}`);
       } else if (tradeType === 'buy') {
         console.log(`${logPrefix} 3b. Creating new portfolio entry...`);
+        const currentValueEur = convertUsdToEur(crypto.current_price * coinAmount, exchangeRate);
+        
         const { data: newPortfolio, error: portfolioCreateError } = await supabase
           .from('user_portfolios')
           .insert({
@@ -250,9 +251,9 @@ export const useTrade = (crypto: Cryptocurrency | undefined) => {
             quantity: coinAmount,
             average_buy_price: crypto.current_price,
             total_invested: eurValue,
-            current_value: eurValue,
-            profit_loss: 0,
-            profit_loss_percentage: 0
+            current_value: currentValueEur,
+            profit_loss: currentValueEur - eurValue,
+            profit_loss_percentage: ((currentValueEur - eurValue) / eurValue) * 100
           })
           .select()
           .single();
@@ -265,7 +266,7 @@ export const useTrade = (crypto: Cryptocurrency | undefined) => {
       console.log(`${logPrefix} 4. Updating user balance...`);
       const newBalance = tradeType === 'buy' 
         ? userBalanceUsd - totalCostUsd 
-        : userBalanceUsd + eurValue - feeAmountUsd;
+        : userBalanceUsd + usdValue - feeAmountUsd;
       
       const { data: updatedProfile, error: balanceError } = await supabase
         .from('profiles')
@@ -285,6 +286,7 @@ export const useTrade = (crypto: Cryptocurrency | undefined) => {
       queryClient.invalidateQueries({ queryKey: portfolioQueryKey });
       queryClient.invalidateQueries({ queryKey: historyQueryKey });
       queryClient.invalidateQueries({ queryKey: ['admin-transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['user-balance', user.id] });
       
       toast.success(`Successfully ${tradeType === 'buy' ? 'bought' : 'sold'} ${coinAmount.toFixed(8)} ${crypto.symbol} for €${eurValue.toFixed(2)}`);
       
