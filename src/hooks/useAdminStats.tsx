@@ -2,98 +2,96 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
-export interface AdminStats {
+interface AdminStats {
   totalUsers: number;
-  totalBalances: number;
-  pendingKycs: number;
-  pendingTransactions: number;
-  totalTradingProfit: number;
-  totalTrades: number;
+  totalVolume: number;
+  totalAUM: number;
+  activeUsers: number;
+  pendingKyc: number;
+  completedTransactions: number;
+  totalProfit: number;
+  totalFees: number;
 }
 
 const fetchAdminStats = async (): Promise<AdminStats> => {
-  // Get total users count
-  const { count: totalUsers, error: usersError } = await supabase
-    .from('profiles')
-    .select('*', { count: 'exact', head: true });
+  try {
+    // Get total users
+    const { count: totalUsers } = await supabase
+      .from('profiles')
+      .select('*', { count: 'exact', head: true });
 
-  if (usersError) {
-    console.error('Error fetching users count:', usersError);
-    throw new Error(usersError.message);
+    // Get active users (users who have logged in within the last 30 days)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    const { count: activeUsers } = await supabase
+      .from('profiles')
+      .select('*', { count: 'exact', head: true })
+      .gte('last_login_date', thirtyDaysAgo.toISOString());
+
+    // Get pending KYC submissions
+    const { count: pendingKyc } = await supabase
+      .from('kyc_documents')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'pending');
+
+    // Get total trading volume from trading orders
+    const { data: volumeData } = await supabase
+      .from('trading_orders')
+      .select('total_value')
+      .eq('order_status', 'completed');
+
+    const totalVolume = volumeData?.reduce((sum, order) => sum + Number(order.total_value || 0), 0) || 0;
+
+    // Get completed transactions count
+    const { count: completedTransactions } = await supabase
+      .from('transaction_history')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'completed');
+
+    // Calculate total fees from transaction history
+    const { data: feeData } = await supabase
+      .from('transaction_history')
+      .select('fee_amount')
+      .eq('status', 'completed');
+
+    const totalFees = feeData?.reduce((sum, transaction) => sum + Number(transaction.fee_amount || 0), 0) || 0;
+
+    // Calculate AUM (Assets Under Management) from user portfolios
+    const { data: portfolioData } = await supabase
+      .from('user_portfolios')
+      .select('current_value');
+
+    const totalAUM = portfolioData?.reduce((sum, portfolio) => sum + Number(portfolio.current_value || 0), 0) || 0;
+
+    // Calculate total profit from user portfolios
+    const { data: profitData } = await supabase
+      .from('user_portfolios')
+      .select('profit_loss');
+
+    const totalProfit = profitData?.reduce((sum, portfolio) => sum + Number(portfolio.profit_loss || 0), 0) || 0;
+
+    return {
+      totalUsers: totalUsers || 0,
+      totalVolume,
+      totalAUM,
+      activeUsers: activeUsers || 0,
+      pendingKyc: pendingKyc || 0,
+      completedTransactions: completedTransactions || 0,
+      totalProfit,
+      totalFees,
+    };
+  } catch (error) {
+    console.error('Error fetching admin stats:', error);
+    throw error;
   }
-
-  // Get total balances
-  const { data: balancesData, error: balancesError } = await supabase
-    .from('profiles')
-    .select('demo_balance_usd');
-
-  if (balancesError) {
-    console.error('Error fetching balances:', balancesError);
-    throw new Error(balancesError.message);
-  }
-
-  const totalBalances = balancesData?.reduce((sum, profile) => sum + (profile.demo_balance_usd || 0), 0) || 0;
-
-  // Get pending KYCs count
-  const { count: pendingKycs, error: kycsError } = await supabase
-    .from('kyc_documents')
-    .select('*', { count: 'exact', head: true })
-    .eq('status', 'pending');
-
-  if (kycsError) {
-    console.error('Error fetching pending KYCs:', kycsError);
-    throw new Error(kycsError.message);
-  }
-
-  // Get pending transactions count
-  const { count: pendingTransactions, error: transactionsError } = await supabase
-    .from('trading_orders')
-    .select('*', { count: 'exact', head: true })
-    .eq('order_status', 'pending');
-
-  if (transactionsError) {
-    console.error('Error fetching pending transactions:', transactionsError);
-    throw new Error(transactionsError.message);
-  }
-
-  // Get total trading profit (sum of all fees from completed orders)
-  const { data: feesData, error: feesError } = await supabase
-    .from('trading_orders')
-    .select('fees')
-    .eq('order_status', 'completed');
-
-  if (feesError) {
-    console.error('Error fetching trading fees:', feesError);
-    throw new Error(feesError.message);
-  }
-
-  const totalTradingProfit = feesData?.reduce((sum, order) => sum + (order.fees || 0), 0) || 0;
-
-  // Get total completed trades count
-  const { count: totalTrades, error: tradesError } = await supabase
-    .from('trading_orders')
-    .select('*', { count: 'exact', head: true })
-    .eq('order_status', 'completed');
-
-  if (tradesError) {
-    console.error('Error fetching total trades:', tradesError);
-    throw new Error(tradesError.message);
-  }
-
-  return {
-    totalUsers: totalUsers || 0,
-    totalBalances,
-    pendingKycs: pendingKycs || 0,
-    pendingTransactions: pendingTransactions || 0,
-    totalTradingProfit,
-    totalTrades: totalTrades || 0,
-  };
 };
 
 export const useAdminStats = () => {
   return useQuery({
     queryKey: ['admin-stats'],
     queryFn: fetchAdminStats,
-    refetchInterval: 30000, // Refetch every 30 seconds
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchInterval: 10 * 60 * 1000, // 10 minutes
   });
 };

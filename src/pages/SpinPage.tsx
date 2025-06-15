@@ -142,8 +142,20 @@ const SpinPage: React.FC = () => {
         <Card className="glass glass-hover">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="w-5 h-5" />
-              Your BTC Balance
+              <div className="flex items-center gap-2">
+                {btcHolding?.crypto.logo_url ? (
+                  <img 
+                    src={btcHolding.crypto.logo_url} 
+                    alt="Bitcoin"
+                    className="w-5 h-5 rounded-full"
+                  />
+                ) : (
+                  <div className="w-5 h-5 rounded-full bg-orange-500 flex items-center justify-center text-xs font-bold text-white">
+                    ₿
+                  </div>
+                )}
+                <span>Your BTC Balance</span>
+              </div>
             </CardTitle>
           </CardHeader>
           <CardContent>
