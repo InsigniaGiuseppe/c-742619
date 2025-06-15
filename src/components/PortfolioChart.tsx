@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { usePortfolio } from '@/hooks/usePortfolio';
 import FormattedNumber from './FormattedNumber';
+import CryptoLogo from './CryptoLogo';
 import { formatCryptoQuantity } from '@/lib/cryptoFormatters';
 
 const COLORS = ['#8B5CF6', '#06B6D4', '#10B981', '#F59E0B', '#EF4444', '#EC4899'];
@@ -125,20 +126,12 @@ const PortfolioChart = () => {
                   className="w-4 h-4 rounded-full"
                   style={{ backgroundColor: item.color }}
                 />
-                {item.logo_url ? (
-                  <img 
-                    src={item.logo_url} 
-                    alt={item.name}
-                    className="w-5 h-5 rounded-full"
-                    onError={(e) => {
-                      e.currentTarget.style.display = 'none';
-                    }}
-                  />
-                ) : (
-                  <div className="w-5 h-5 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-xs font-bold">
-                    {item.name.slice(0, 1)}
-                  </div>
-                )}
+                <CryptoLogo 
+                  logo_url={item.logo_url}
+                  name={item.fullName}
+                  symbol={item.name}
+                  size="sm"
+                />
                 <div>
                   <span className="font-medium">{item.name}</span>
                   <span className="text-xs text-muted-foreground ml-2">
