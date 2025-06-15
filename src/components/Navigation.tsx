@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -135,7 +136,9 @@ const Navigation = () => {
                     <LogOut className="mr-2 h-4 w-4" />
                     Sign Out
                   </button>
-                </div> : <div className="border-t border-gray-800 pt-2 mt-2 space-y-2">
+                </div>
+              ) : (
+                <div className="border-t border-gray-800 pt-2 mt-2 space-y-2">
                   <Link
                     to="/login"
                     className="block px-3 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-gray-800 rounded-md" onClick={() => setIsMobileMenuOpen(false)}
@@ -148,7 +151,8 @@ const Navigation = () => {
                   >
                     Get Started
                   </Link>
-                </div>}
+                </div>
+              )}
             </div>
           </div>}
       </div>
@@ -156,3 +160,4 @@ const Navigation = () => {
   );
 };
 export default Navigation;
+
