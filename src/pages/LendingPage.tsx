@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
@@ -295,7 +294,7 @@ const LendingPage = () => {
                                     logo_url={holding.crypto?.logo_url}
                                     name={holding.crypto?.name || 'Unknown'}
                                     symbol={holding.crypto?.symbol || 'N/A'}
-                                    size="xs"
+                                    size="sm"
                                   />
                                   <span>{holding.crypto?.symbol} - {formatCryptoQuantity(holding.quantity)} available</span>
                                   <Badge variant="outline" className="ml-auto">

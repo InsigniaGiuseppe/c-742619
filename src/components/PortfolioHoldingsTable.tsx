@@ -36,8 +36,11 @@ const PortfolioHoldingsTable: React.FC<PortfolioHoldingsTableProps> = ({ portfol
   const [selectedHolding, setSelectedHolding] = useState<Portfolio | null>(null);
 
   const handleSellClick = (holding: Portfolio) => {
-    setSelectedHolding(holding);
-    setSellModalOpen(true);
+    // Only allow selling if crypto data is available
+    if (holding.crypto) {
+      setSelectedHolding(holding);
+      setSellModalOpen(true);
+    }
   };
 
   return (
@@ -150,7 +153,8 @@ const PortfolioHoldingsTable: React.FC<PortfolioHoldingsTableProps> = ({ portfol
                             size="sm"
                             variant="outline"
                             onClick={() => handleSellClick(holding)}
-                            className="text-red-400 border-red-400 hover:bg-red-400 hover:text-white"
+                            disabled={!holding.crypto}
+                            className="text-red-400 border-red-400 hover:bg-red-400 hover:text-white disabled:opacity-50"
                           >
                             <Minus className="w-3 h-3 mr-1" />
                             Sell
@@ -167,14 +171,19 @@ const PortfolioHoldingsTable: React.FC<PortfolioHoldingsTableProps> = ({ portfol
       </Card>
 
       {/* Sell Modal */}
-      {selectedHolding && (
+      {selectedHolding && selectedHolding.crypto && (
         <SellCryptoModal
           isOpen={sellModalOpen}
           onClose={() => {
             setSellModalOpen(false);
             setSelectedHolding(null);
           }}
-          holding={selectedHolding}
+          holding={{
+            cryptocurrency_id: selectedHolding.cryptocurrency_id,
+            quantity: selectedHolding.quantity,
+            current_value: selectedHolding.current_value,
+            crypto: selectedHolding.crypto
+          }}
         />
       )}
     </>

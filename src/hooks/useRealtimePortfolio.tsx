@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { usePortfolio } from '@/hooks/usePortfolio';
@@ -10,13 +10,22 @@ export const useRealtimePortfolio = () => {
   const portfolio = usePortfolio();
   const lending = useLending();
   const [isRealtime, setIsRealtime] = useState(false);
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   useEffect(() => {
     if (!user) return;
 
-    // Subscribe to real-time updates for cryptocurrency prices
+    // Clean up existing channel before creating a new one
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+      setIsRealtime(false);
+    }
+
+    // Create a new channel with a unique name to avoid conflicts
+    const channelName = `crypto-price-updates-${Date.now()}`;
     const channel = supabase
-      .channel('crypto-price-updates')
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
@@ -63,14 +72,22 @@ export const useRealtimePortfolio = () => {
         if (status === 'SUBSCRIBED') {
           setIsRealtime(true);
           console.log('[Realtime] Connected to portfolio and lending updates');
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          setIsRealtime(false);
+          console.log('[Realtime] Disconnected from portfolio and lending updates');
         }
       });
 
+    channelRef.current = channel;
+
     return () => {
-      supabase.removeChannel(channel);
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
       setIsRealtime(false);
     };
-  }, [user, portfolio.refetch, lending.refetch]);
+  }, [user?.id]); // Only depend on user.id to prevent unnecessary re-subscriptions
 
   return {
     ...portfolio,

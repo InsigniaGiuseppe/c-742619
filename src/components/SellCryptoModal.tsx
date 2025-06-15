@@ -30,7 +30,16 @@ interface SellCryptoModalProps {
 const SellCryptoModal: React.FC<SellCryptoModalProps> = ({ isOpen, onClose, holding }) => {
   const [sellAmount, setSellAmount] = useState('');
   const [sellType, setSellType] = useState<'partial' | 'full'>('partial');
-  const { executeTrade, isTrading } = useTrade();
+  const { 
+    selectedCrypto, 
+    setSelectedCrypto, 
+    amount, 
+    setAmount, 
+    tradeType, 
+    setTradeType,
+    handleTrade, 
+    isLoading 
+  } = useTrade();
 
   const handleSellTypeChange = (type: 'partial' | 'full') => {
     setSellType(type);
@@ -42,18 +51,21 @@ const SellCryptoModal: React.FC<SellCryptoModalProps> = ({ isOpen, onClose, hold
   };
 
   const handleSell = async () => {
-    const amount = sellType === 'full' ? holding.quantity : parseFloat(sellAmount);
+    const sellAmountValue = sellType === 'full' ? holding.quantity : parseFloat(sellAmount);
     
-    if (amount <= 0 || amount > holding.quantity) {
+    if (sellAmountValue <= 0 || sellAmountValue > holding.quantity) {
       return;
     }
 
     try {
-      await executeTrade({
-        cryptoId: holding.cryptocurrency_id,
-        tradeType: 'sell',
-        amount: amount,
-      });
+      // Set up the trade parameters
+      setSelectedCrypto(holding.cryptocurrency_id);
+      setAmount(sellAmountValue.toString());
+      setTradeType('sell');
+      
+      // Execute the trade
+      await handleTrade();
+      
       onClose();
       setSellAmount('');
       setSellType('partial');
@@ -168,10 +180,10 @@ const SellCryptoModal: React.FC<SellCryptoModalProps> = ({ isOpen, onClose, hold
             </Button>
             <Button 
               onClick={handleSell}
-              disabled={!isValidAmount || isTrading}
+              disabled={!isValidAmount || isLoading}
               className="flex-1 bg-red-600 hover:bg-red-700"
             >
-              {isTrading ? 'Selling...' : `Sell ${holding.crypto.symbol}`}
+              {isLoading ? 'Selling...' : `Sell ${holding.crypto.symbol}`}
             </Button>
           </div>
         </div>
