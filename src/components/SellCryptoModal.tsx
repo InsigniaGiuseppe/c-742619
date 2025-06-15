@@ -4,10 +4,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import FormattedNumber from './FormattedNumber';
 import CryptoLogo from './CryptoLogo';
-import { useTrade } from '@/hooks/useTrade';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { useQueryClient } from '@tanstack/react-query';
 import { formatCryptoQuantity } from '@/lib/cryptoFormatters';
 
 interface SellCryptoModalProps {
@@ -28,18 +30,11 @@ interface SellCryptoModalProps {
 }
 
 const SellCryptoModal: React.FC<SellCryptoModalProps> = ({ isOpen, onClose, holding }) => {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [sellAmount, setSellAmount] = useState('');
   const [sellType, setSellType] = useState<'partial' | 'full'>('partial');
-  const { 
-    selectedCrypto, 
-    setSelectedCrypto, 
-    amount, 
-    setAmount, 
-    tradeType, 
-    setTradeType,
-    handleTrade, 
-    isLoading 
-  } = useTrade();
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSellTypeChange = (type: 'partial' | 'full') => {
     setSellType(type);
@@ -51,26 +46,131 @@ const SellCryptoModal: React.FC<SellCryptoModalProps> = ({ isOpen, onClose, hold
   };
 
   const handleSell = async () => {
-    const sellAmountValue = sellType === 'full' ? holding.quantity : parseFloat(sellAmount);
-    
-    if (sellAmountValue <= 0 || sellAmountValue > holding.quantity) {
+    if (!user) {
+      toast.error('Please log in to sell crypto');
       return;
     }
 
+    const sellAmountValue = sellType === 'full' ? holding.quantity : parseFloat(sellAmount);
+    
+    if (sellAmountValue <= 0 || sellAmountValue > holding.quantity) {
+      toast.error('Invalid sell amount');
+      return;
+    }
+
+    setIsLoading(true);
+
     try {
-      // Set up the trade parameters
-      setSelectedCrypto(holding.cryptocurrency_id);
-      setAmount(sellAmountValue.toString());
-      setTradeType('sell');
+      const eurValue = sellAmountValue * holding.crypto.current_price;
+      const feeAmount = eurValue * 0.0035; // 0.35% fee
       
-      // Execute the trade
-      await handleTrade();
+      console.log('[SellModal] Starting sell transaction:', {
+        userId: user.id,
+        cryptoId: holding.crypto.id,
+        sellAmount: sellAmountValue,
+        eurValue,
+        feeAmount
+      });
+
+      // Step 1: Create trading order
+      const { data: order, error: orderError } = await supabase
+        .from('trading_orders')
+        .insert({
+          user_id: user.id,
+          cryptocurrency_id: holding.crypto.id,
+          order_type: 'sell',
+          amount: sellAmountValue,
+          price_per_unit: holding.crypto.current_price,
+          total_value: eurValue,
+          fees: feeAmount,
+          order_status: 'completed',
+          executed_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (orderError) throw new Error(`Failed to create order: ${orderError.message}`);
+
+      // Step 2: Create transaction history
+      const { error: transactionError } = await supabase
+        .from('transaction_history')
+        .insert({
+          user_id: user.id,
+          cryptocurrency_id: holding.crypto.id,
+          transaction_type: 'trade_sell',
+          amount: sellAmountValue,
+          usd_value: eurValue,
+          fee_amount: feeAmount,
+          status: 'completed',
+          description: `SELL ${sellAmountValue.toFixed(8)} ${holding.crypto.symbol}`,
+          reference_order_id: order.id
+        });
+
+      if (transactionError) throw new Error(`Failed to create transaction: ${transactionError.message}`);
+
+      // Step 3: Update portfolio
+      const { data: existingPortfolio, error: portfolioFetchError } = await supabase
+        .from('user_portfolios')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('cryptocurrency_id', holding.crypto.id)
+        .single();
+
+      if (portfolioFetchError) throw new Error(`Failed to fetch portfolio: ${portfolioFetchError.message}`);
+
+      const newQuantity = existingPortfolio.quantity - sellAmountValue;
+      const newTotalInvested = Math.max(0, existingPortfolio.total_invested - eurValue);
+      const newAveragePrice = newQuantity > 0 ? newTotalInvested / newQuantity : 0;
+      const newCurrentValue = newQuantity * holding.crypto.current_price;
+      const newProfitLoss = newCurrentValue - newTotalInvested;
+      const newProfitLossPercentage = newTotalInvested > 0 ? (newProfitLoss / newTotalInvested) * 100 : 0;
+
+      const { error: portfolioUpdateError } = await supabase
+        .from('user_portfolios')
+        .update({
+          quantity: newQuantity,
+          average_buy_price: newAveragePrice,
+          total_invested: newTotalInvested,
+          current_value: newCurrentValue,
+          profit_loss: newProfitLoss,
+          profit_loss_percentage: newProfitLossPercentage
+        })
+        .eq('id', existingPortfolio.id);
+
+      if (portfolioUpdateError) throw new Error(`Failed to update portfolio: ${portfolioUpdateError.message}`);
+
+      // Step 4: Update user balance
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('demo_balance_usd')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError) throw new Error(`Failed to fetch profile: ${profileError.message}`);
+
+      const newBalance = profile.demo_balance_usd + eurValue - feeAmount;
+
+      const { error: balanceError } = await supabase
+        .from('profiles')
+        .update({ demo_balance_usd: newBalance })
+        .eq('id', user.id);
+
+      if (balanceError) throw new Error(`Failed to update balance: ${balanceError.message}`);
+
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['portfolio', user.id] });
+      queryClient.invalidateQueries({ queryKey: ['transaction-history', user.id] });
+      
+      toast.success(`Successfully sold ${sellAmountValue.toFixed(8)} ${holding.crypto.symbol}`);
       
       onClose();
       setSellAmount('');
       setSellType('partial');
-    } catch (error) {
-      console.error('Error selling crypto:', error);
+    } catch (error: any) {
+      console.error('[SellModal] Sell failed:', error);
+      toast.error(`Sell failed: ${error.message}`);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -167,7 +267,7 @@ const SellCryptoModal: React.FC<SellCryptoModalProps> = ({ isOpen, onClose, hold
                 </div>
                 <div className="flex justify-between text-xs text-muted-foreground">
                   <span>Trading fee:</span>
-                  <span>~0.1%</span>
+                  <span>~0.35%</span>
                 </div>
               </div>
             </div>
