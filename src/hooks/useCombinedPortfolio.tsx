@@ -11,7 +11,7 @@ export interface CombinedPortfolioItem {
     name: string;
     symbol: string;
     current_price: number;
-    price_change_percentage_24h: number;
+    price_change_percentage_24h?: number;
     logo_url?: string;
   };
   trading: {
@@ -80,7 +80,10 @@ export const useCombinedPortfolio = () => {
       // Create new entry
       combinedData.push({
         cryptocurrency_id: item.cryptocurrency_id,
-        crypto: item.crypto,
+        crypto: {
+          ...item.crypto,
+          price_change_percentage_24h: item.crypto.price_change_percentage_24h || 0
+        },
         trading: {
           quantity: item.quantity,
           value: item.current_value,
@@ -122,7 +125,11 @@ export const useCombinedPortfolio = () => {
       // Create new entry
       combinedData.push({
         cryptocurrency_id: position.cryptocurrency_id,
-        crypto: position.crypto,
+        crypto: {
+          ...position.crypto,
+          current_price: convertUsdToEur(position.crypto.current_price, exchangeRate),
+          price_change_percentage_24h: 0 // Default value for lending-only positions
+        },
         trading: {
           quantity: 0,
           value: 0,

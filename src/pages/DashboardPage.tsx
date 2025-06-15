@@ -63,7 +63,7 @@ const DashboardPage = () => {
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
             <img 
-              src="/lovable-uploads/b0e06c59-c716-48eb-af56-83b02e9c928c.png" 
+              src="/lovable-uploads/3765d287-ffd3-40d5-8628-4f8191064138.png" 
               alt="PROMPTO TRADING Logo" 
               className="w-10 h-10 object-contain"
             />

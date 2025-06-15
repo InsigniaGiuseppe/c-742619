@@ -1,3 +1,4 @@
+
 import { Github, Twitter, Shield } from "lucide-react";
 import { Button } from "./ui/button";
 import { Link } from "react-router-dom";
@@ -11,7 +12,7 @@ const Footer = () => {
             <div className="space-y-4">
               <div className="flex items-center gap-3">
                 <img 
-                  src="/lovable-uploads/b0e06c59-c716-48eb-af56-83b02e9c928c.png" 
+                  src="/lovable-uploads/3765d287-ffd3-40d5-8628-4f8191064138.png" 
                   alt="PROMPTO TRADING Logo" 
                   className="w-6 h-6 object-contain"
                 />
