@@ -3,6 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { usePortfolio } from '@/hooks/usePortfolio';
 import { useSpinGame } from '@/hooks/useSpinGame';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,14 +19,36 @@ const SpinPage: React.FC = () => {
   
   const { user } = useAuth();
   const { portfolio } = usePortfolio();
-  const { configurations, loading, spinning, fetchConfigurations, executeSpin } = useSpinGame();
+  const { spin, isSpinning, currentSpin, setCurrentSpin } = useSpinGame();
+  
+  // Fetch spin configurations separately
+  const { data: configurations = [], isLoading: loading } = useQuery({
+    queryKey: ['spin_configurations'],
+    queryFn: async () => {
+      console.log('[SpinPage] Fetching spin configurations');
+      const { data, error } = await supabase
+        .from('spin_configurations')
+        .select(`
+          *,
+          cryptocurrencies(symbol, name, current_price, logo_url)
+        `)
+        .eq('is_active', true);
+
+      if (error) {
+        console.error('[SpinPage] Error fetching configurations:', error);
+        throw error;
+      }
+
+      return data || [];
+    },
+  });
   
   console.log('[SpinPage] Hooks data:', {
     user: !!user,
     portfolioCount: portfolio?.length || 0,
     configurationsCount: configurations?.length || 0,
     loading,
-    spinning
+    isSpinning
   });
   
   const [betAmount, setBetAmount] = useState([0.0001]);
@@ -47,11 +71,6 @@ const SpinPage: React.FC = () => {
   });
 
   useEffect(() => {
-    console.log('[SpinPage] Fetching configurations');
-    fetchConfigurations();
-  }, []);
-
-  useEffect(() => {
     let interval: NodeJS.Timeout;
     if (cooldownTime > 0) {
       interval = setInterval(() => {
@@ -71,7 +90,7 @@ const SpinPage: React.FC = () => {
     console.log('[SpinPage] Generating roulette items with configurations:', configurations?.length);
     return configurations.map((config, index) => ({
       id: config.id,
-      crypto: config.crypto!,
+      crypto: config.cryptocurrencies!,
       amount: betAmountBtc * config.min_multiplier,
       tier: config.reward_tier
     }));
@@ -99,7 +118,7 @@ const SpinPage: React.FC = () => {
     setCooldownTime(10); // 10-second cooldown
 
     console.log('[SpinPage] Executing spin...');
-    const result = await executeSpin(betAmountBtc);
+    const result = await spin(betAmountBtc);
     console.log('[SpinPage] Spin result:', result);
     
     if (result) {
@@ -209,16 +228,16 @@ const SpinPage: React.FC = () => {
         <CardContent className="space-y-4">
           <SpinRoulette
             items={generateRouletteItems()}
-            isSpinning={spinning}
+            isSpinning={isSpinning}
             winningItem={lastSpinResult ? {
               id: 'winner',
-              crypto: lastSpinResult.crypto,
-              amount: lastSpinResult.reward_amount,
+              crypto: lastSpinResult.rewardCrypto,
+              amount: lastSpinResult.rewardAmount,
               tier: lastSpinResult.multiplier >= 3 ? 'epic' : lastSpinResult.multiplier >= 1.5 ? 'rare' : 'common'
             } : undefined}
             onSpinComplete={() => {
               if (lastSpinResult) {
-                toast.success(`🎉 You won ${lastSpinResult.reward_amount.toFixed(6)} ${lastSpinResult.crypto.symbol}!`);
+                toast.success(`🎉 You won ${lastSpinResult.rewardAmount.toFixed(6)} ${lastSpinResult.rewardCrypto}!`);
               }
             }}
           />
@@ -226,11 +245,11 @@ const SpinPage: React.FC = () => {
           <div className="flex items-center justify-center gap-4">
             <Button
               onClick={handleSpin}
-              disabled={spinning || !canSpin || btcBalance < betAmountBtc || loading}
+              disabled={isSpinning || !canSpin || btcBalance < betAmountBtc || loading}
               size="lg"
               className="bg-purple-600 hover:bg-purple-700 text-white min-w-48"
             >
-              {spinning ? (
+              {isSpinning ? (
                 <div className="flex items-center gap-2">
                   <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
                   Spinning...
@@ -278,14 +297,14 @@ const SpinPage: React.FC = () => {
                   </span>
                 </div>
                 <div className="flex items-center gap-2 mb-2">
-                  {config.crypto && (
+                  {config.cryptocurrencies && (
                     <>
                       <img 
-                        src={config.crypto.logo_url} 
-                        alt={config.crypto.symbol}
+                        src={config.cryptocurrencies.logo_url} 
+                        alt={config.cryptocurrencies.symbol}
                         className="w-6 h-6 rounded-full"
                       />
-                      <span className="font-semibold">{config.crypto.symbol}</span>
+                      <span className="font-semibold">{config.cryptocurrencies.symbol}</span>
                     </>
                   )}
                 </div>
@@ -294,7 +313,7 @@ const SpinPage: React.FC = () => {
                     {config.min_multiplier}x - {config.max_multiplier}x
                   </div>
                   <div className="text-muted-foreground">
-                    {(betAmountBtc * config.min_multiplier).toFixed(6)} - {(betAmountBtc * config.max_multiplier).toFixed(6)} {config.crypto?.symbol}
+                    {(betAmountBtc * config.min_multiplier).toFixed(6)} - {(betAmountBtc * config.max_multiplier).toFixed(6)} {config.cryptocurrencies?.symbol}
                   </div>
                 </div>
               </div>
