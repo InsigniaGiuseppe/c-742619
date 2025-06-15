@@ -7,7 +7,6 @@ import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Search, Eye, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
 import { useAdminReserves } from '@/hooks/useAdminReserves';
-import { formatCurrency } from '@/lib/formatters';
 import CryptoLogo from '@/components/CryptoLogo';
 import FormattedNumber from '@/components/FormattedNumber';
 
