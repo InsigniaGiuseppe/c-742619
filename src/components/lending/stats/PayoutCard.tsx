@@ -31,7 +31,7 @@ const PayoutCard: React.FC<PayoutCardProps> = ({ loading, nextPayoutIn, daysSinc
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Days Since Last Payout</p>
-              <p className="text-lg font-medium">{daysSinceLastPayout}</p>
+              <p className="text-2xl font-bold">{daysSinceLastPayout}</p>
             </div>
           </div>
         )}

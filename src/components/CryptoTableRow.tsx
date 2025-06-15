@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TableRow, TableCell } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -17,12 +17,33 @@ const CryptoTableRow: React.FC<CryptoTableRowProps> = ({ crypto, onTrade }) => {
   const priceChangePercentage = crypto.price_change_percentage_24h || 0;
   const isPositiveChange = priceChangePercentage >= 0;
 
+  const [priceChangeEffect, setPriceChangeEffect] = useState<'up' | 'down' | 'none'>('none');
+  const prevPriceRef = useRef<number | undefined>(crypto.current_price);
+
+  useEffect(() => {
+      const prevPrice = prevPriceRef.current;
+      if (prevPrice !== undefined && crypto.current_price !== prevPrice && prevPrice !== 0) {
+          setPriceChangeEffect(crypto.current_price > prevPrice ? 'up' : 'down');
+          const timer = setTimeout(() => {
+              setPriceChangeEffect('none');
+          }, 2000); // glow for 2 seconds
+          return () => clearTimeout(timer);
+      }
+      prevPriceRef.current = crypto.current_price;
+  }, [crypto.current_price]);
+
+  const getGlowClass = () => {
+    if (priceChangeEffect === 'up') return 'price-glow-up';
+    if (priceChangeEffect === 'down') return 'price-glow-down';
+    return '';
+  };
+  
   const handleRowClick = () => {
     navigate(`/crypto/${crypto.symbol.toLowerCase()}`);
   };
 
   return (
-    <TableRow onClick={handleRowClick} className="cursor-pointer hover:bg-white/5">
+    <TableRow onClick={handleRowClick} className={`cursor-pointer hover:bg-white/5 transition-shadow duration-1000 ${getGlowClass()}`}>
       <TableCell className="font-medium text-muted-foreground">{crypto.market_cap_rank || '-'}</TableCell>
       <TableCell>
         <div className="flex items-center gap-3">
@@ -44,13 +65,11 @@ const CryptoTableRow: React.FC<CryptoTableRowProps> = ({ crypto, onTrade }) => {
       </TableCell>
       <TableCell className="text-right">
         <Button 
-          variant="ghost"
           size="sm"
           onClick={(e) => {
             e.stopPropagation(); // prevent row click from navigating
             onTrade(crypto);
           }}
-          className="button-gradient"
         >
           Trade
         </Button>

@@ -6,7 +6,6 @@ import { X } from 'lucide-react';
 
 interface DashboardWidgetProps {
   id: string;
-  title: string;
   children: ReactNode;
   className?: string;
   headerActions?: ReactNode;
@@ -14,21 +13,19 @@ interface DashboardWidgetProps {
 
 const DashboardWidget: React.FC<DashboardWidgetProps> = ({
   id,
-  title,
   children,
   className = '',
   headerActions
 }) => {
   return (
     <Card className={`glass glass-hover h-full flex flex-col ${className}`}>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 shrink-0">
-        <div className="flex items-center gap-2">
-          <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        </div>
-        <div className="flex items-center gap-2">
-          {headerActions}
-        </div>
-      </CardHeader>
+      {headerActions &&
+        <CardHeader className="flex flex-row items-center justify-end space-y-0 pb-2 shrink-0">
+          <div className="flex items-center gap-2">
+            {headerActions}
+          </div>
+        </CardHeader>
+      }
       <CardContent className="flex-1 overflow-auto p-4 card-content">
         <div className="h-full w-full">
           {children}

@@ -32,7 +32,7 @@ const ReturnsCard: React.FC<ReturnsCardProps> = ({ loading, estimatedDailyReturn
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Monthly (30d)</p>
-              <FormattedNumber value={estimatedMonthlyReturn} type="currency" className="text-lg font-medium text-blue-500" />
+              <FormattedNumber value={estimatedMonthlyReturn} type="currency" className="text-2xl font-bold text-blue-400" />
             </div>
           </div>
         )}

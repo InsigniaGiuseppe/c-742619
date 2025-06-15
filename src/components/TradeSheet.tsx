@@ -28,7 +28,7 @@ const TradeSheet: React.FC<TradeSheetProps> = ({ crypto, open, onOpenChange }) =
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="bg-gray-950 border-gray-800 text-white w-full sm:max-w-md">
+      <SheetContent className="bg-background border-gray-800 text-white w-full sm:max-w-md">
         <SheetHeader className="mb-6">
           <SheetTitle className="flex items-center gap-3 text-2xl">
             <CryptoLogo logo_url={crypto.logo_url} name={crypto.name} symbol={crypto.symbol} size="lg" />

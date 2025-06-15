@@ -54,8 +54,8 @@ const TradeForm: React.FC<TradeFormProps> = ({ crypto }) => {
         onValueChange={(value) => { if (value) setTradeType(value as 'buy' | 'sell') }}
         className="grid grid-cols-2"
       >
-        <ToggleGroupItem value="buy" aria-label="Buy" className="data-[state=on]:button-gradient data-[state=on]:text-white">Buy</ToggleGroupItem>
-        <ToggleGroupItem value="sell" aria-label="Sell" className="data-[state=on]:button-gradient data-[state=on]:text-white">Sell</ToggleGroupItem>
+        <ToggleGroupItem value="buy" aria-label="Buy" className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">Buy</ToggleGroupItem>
+        <ToggleGroupItem value="sell" aria-label="Sell" className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">Sell</ToggleGroupItem>
       </ToggleGroup>
 
       <div className="space-y-2">
@@ -81,7 +81,7 @@ const TradeForm: React.FC<TradeFormProps> = ({ crypto }) => {
         <div className="flex justify-between text-sm">
           <span className="text-muted-foreground">You receive</span>
           <span className="text-muted-foreground">
-            Holding: {userHoldingsDisplay.toFixed(6)} {crypto.symbol.toUpperCase()}
+            Available: {userHoldingsDisplay.toFixed(6)} {crypto.symbol.toUpperCase()}
           </span>
         </div>
         <div className="relative">
@@ -96,7 +96,7 @@ const TradeForm: React.FC<TradeFormProps> = ({ crypto }) => {
         </div>
       </div>
 
-      <Button onClick={handleTrade} disabled={isProcessingTrade || !amountEUR || parseFloat(amountEUR) <= 0} className="w-full button-gradient text-lg py-6">
+      <Button onClick={handleTrade} disabled={isProcessingTrade || !amountEUR || parseFloat(amountEUR) <= 0} className="w-full text-lg py-6">
         {isProcessingTrade ? <Loader2 className="animate-spin" /> : `${tradeType === 'buy' ? 'Buy' : 'Sell'} ${crypto.name}`}
       </Button>
     </div>

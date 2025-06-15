@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -53,7 +54,25 @@ export const useTrade = (crypto: Cryptocurrency | undefined) => {
         console.error('[useTrade] Error fetching portfolio:', portfolioError);
       }
 
-      setUserHoldings(portfolio?.quantity || 0);
+      // Fetch user's lent amount for this crypto
+      const { data: lending, error: lendingError } = await supabase
+        .from('user_lending')
+        .select('amount_lent')
+        .eq('user_id', user.id)
+        .eq('cryptocurrency_id', crypto.id)
+        .eq('status', 'active')
+        .single();
+
+      if (lendingError && lendingError.code !== 'PGRST116') {
+        console.error('[useTrade] Error fetching lending data:', lendingError);
+      }
+
+      const totalHoldings = portfolio?.quantity || 0;
+      const lentAmount = lending?.amount_lent || 0;
+      const tradableHoldings = totalHoldings - lentAmount;
+      
+      setUserHoldings(tradableHoldings > 0 ? tradableHoldings : 0);
+
     } catch (error) {
       console.error('[useTrade] Unexpected error in fetchUserData:', error);
     }

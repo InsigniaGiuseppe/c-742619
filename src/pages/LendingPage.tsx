@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
@@ -147,7 +146,7 @@ const LendingPage = () => {
                 </CardTitle>
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                   <DialogTrigger asChild>
-                    <Button className="button-gradient">
+                    <Button>
                       <Plus className="w-4 h-4 mr-2" />
                       New Lending Position
                     </Button>
@@ -205,7 +204,7 @@ const LendingPage = () => {
 
                       <Button 
                         onClick={handleStartLending} 
-                        className="w-full button-gradient"
+                        className="w-full"
                         disabled={isStartingLending || !selectedCrypto || !lendingAmount || parseFloat(lendingAmount) <= 0}
                       >
                         {isStartingLending ? 'Starting...' : 'Start Lending'}
