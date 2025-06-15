@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { usePortfolio } from '@/hooks/usePortfolio';
@@ -410,7 +409,10 @@ const SpinPage: React.FC = () => {
           setShowResultModal(false);
           setLastSpinResult(null);
         }}
-        result={lastSpinResult}
+        result={lastSpinResult ? {
+          ...lastSpinResult,
+          rewardValue: lastSpinResult.rewardValue // Pass the USD value
+        } : null}
       />
     </div>
   );

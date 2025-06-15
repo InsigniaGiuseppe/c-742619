@@ -15,6 +15,7 @@ interface SpinResultModalProps {
     rewardAmount: number;
     multiplier: number;
     tier?: string;
+    rewardValue?: number; // USD value of the reward
   } | null;
 }
 
@@ -83,17 +84,22 @@ const SpinResultModal: React.FC<SpinResultModalProps> = ({
             <>
               <p className="text-lg text-muted-foreground">You won:</p>
               
-              <div className={`flex items-center justify-center gap-3 p-4 rounded-xl bg-gradient-to-r from-green-500/20 to-blue-500/20 ${getTierGlow(result.tier || 'common')}`}>
+              <div className={`flex items-center justify-center gap-3 p-6 rounded-xl bg-gradient-to-r from-green-500/20 to-blue-500/20 ${getTierGlow(result.tier || 'common')}`}>
                 <CryptoLogo
                   symbol={result.rewardCrypto}
                   name={result.rewardCrypto}
                   size="lg"
-                  className="w-12 h-12"
+                  className="w-16 h-16"
                 />
-                <div>
-                  <div className="text-2xl font-bold text-white">
+                <div className="text-left">
+                  <div className="text-3xl font-bold text-white mb-1">
                     <FormattedNumber value={result.rewardAmount} type="price" /> {result.rewardCrypto}
                   </div>
+                  {result.rewardValue && (
+                    <div className="text-lg text-green-300 mb-2">
+                      ≈ <FormattedNumber value={result.rewardValue} type="currency" />
+                    </div>
+                  )}
                   <div className={`text-sm font-semibold ${getTierColor(result.tier || 'common')}`}>
                     {result.multiplier.toFixed(2)}x Multiplier • {result.tier?.toUpperCase() || 'COMMON'}
                   </div>
