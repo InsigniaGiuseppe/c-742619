@@ -45,11 +45,11 @@ const CryptoDetailHeader: React.FC<CryptoDetailHeaderProps> = ({ crypto, userHol
         <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
           <div>
             <span className="text-muted-foreground">Market Cap: </span>
-            <span>{formatCurrency(crypto.market_cap, { compact: true })}</span>
+            <span>{formatCurrency(crypto.market_cap, { currency: 'EUR', compact: true })}</span>
           </div>
           <div>
             <span className="text-muted-foreground">24h Volume: </span>
-            <span>{formatCurrency(crypto.volume_24h || 0, { compact: true })}</span>
+            <span>{formatCurrency(crypto.volume_24h || 0, { currency: 'EUR', compact: true })}</span>
           </div>
           <div>
             <span className="text-muted-foreground">Your Holdings: </span>

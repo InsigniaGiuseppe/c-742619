@@ -7,6 +7,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { formatCurrency, formatPrice } from '@/lib/formatters';
 import { Cryptocurrency } from '@/hooks/useCryptocurrencies';
 import { useTrade } from '@/hooks/useTrade';
+import { useUserBalance } from '@/hooks/useUserBalance';
 import { useExchangeRate } from '@/hooks/useExchangeRate';
 import { convertUsdToEur } from '@/lib/currencyConverter';
 import { toast } from 'sonner';
@@ -17,6 +18,7 @@ interface TradeWidgetProps {
 
 const TradeWidget: React.FC<TradeWidgetProps> = ({ crypto }) => {
   const { exchangeRate } = useExchangeRate();
+  const { balance } = useUserBalance();
   const {
     user,
     tradeType,
@@ -28,7 +30,6 @@ const TradeWidget: React.FC<TradeWidgetProps> = ({ crypto }) => {
     handleAmountEURChange,
     handleAmountCoinChange,
     isProcessingTrade,
-    userBalance,
     handleTrade,
   } = useTrade(crypto);
 
@@ -40,7 +41,7 @@ const TradeWidget: React.FC<TradeWidgetProps> = ({ crypto }) => {
       <CardHeader>
         <CardTitle>Trade {crypto.symbol.toUpperCase()}</CardTitle>
         <p className="text-sm text-muted-foreground">
-          Account Balance: {formatCurrency(userBalance, { currency: 'EUR' })}
+          Account Balance: {formatCurrency(balance, { currency: 'EUR' })}
         </p>
       </CardHeader>
       <CardContent className="space-y-4">
