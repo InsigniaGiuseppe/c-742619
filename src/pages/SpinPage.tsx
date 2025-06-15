@@ -118,7 +118,7 @@ const SpinPage: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              <FormattedNumber value={btcBalance} type="crypto" /> BTC
+              <FormattedNumber value={btcBalance} type="price" /> BTC
             </div>
             <div className="text-sm text-muted-foreground">
               ≈ <FormattedNumber value={btcBalance * btcPrice} type="currency" />

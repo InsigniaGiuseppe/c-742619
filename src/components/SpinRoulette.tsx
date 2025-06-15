@@ -99,7 +99,8 @@ const SpinRoulette: React.FC<SpinRouletteProps> = ({
                 >
                   <CryptoLogo
                     symbol={item.crypto.symbol}
-                    logoUrl={item.crypto.logo_url}
+                    logo_url={item.crypto.logo_url}
+                    name={item.crypto.name}
                     size="sm"
                     className="mb-1"
                   />

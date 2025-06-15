@@ -1,9 +1,10 @@
+
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
 
-import Index from '@/pages/IndexPage';
+import Index from '@/pages/Index';
 import LoginPage from '@/pages/LoginPage';
 import RegisterPage from '@/pages/RegisterPage';
 import DashboardPage from '@/pages/DashboardPage';
@@ -18,16 +19,15 @@ import MessagesPage from '@/pages/MessagesPage';
 import TopUpPage from '@/pages/TopUpPage';
 import SpinPage from '@/pages/SpinPage';
 
-import AdminDashboardPage from '@/pages/admin/AdminDashboardPage';
+import AdminDashboard from '@/pages/AdminDashboard';
 import EnhancedTransactionManagement from '@/components/admin/EnhancedTransactionManagement';
-import EnhancedUserManagement from '@/components/admin/EnhancedUserManagement';
-import EnhancedCryptoManagement from '@/components/admin/EnhancedCryptoManagement';
-import EnhancedLendingManagement from '@/components/admin/EnhancedLendingManagement';
-import EnhancedVaultManagement from '@/components/admin/EnhancedVaultManagement';
+import AdminUsers from '@/pages/AdminUsers';
+import AdminTransactions from '@/pages/AdminTransactions';
+import AdminKyc from '@/pages/AdminKyc';
+import AdminWallets from '@/pages/AdminWallets';
 
-import DevPlaygroundPage from '@/pages/dev/DevPlaygroundPage';
 import { AuthProvider } from '@/hooks/useAuth';
-import { ProtectedRoute } from '@/components/ProtectedRoute';
+import ProtectedRoute from '@/components/ProtectedRoute';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 
@@ -60,17 +60,12 @@ function App() {
                   <Route path="/top-up" element={<TopUpPage />} />
                 </Route>
 
-                <Route path="/admin" element={<ProtectedRoute requiredRole="admin" />}>
-                  <Route index element={<AdminDashboardPage />} />
+                <Route path="/admin/*" element={<ProtectedRoute />}>
+                  <Route index element={<AdminDashboard />} />
                   <Route path="transactions" element={<EnhancedTransactionManagement />} />
-                  <Route path="users" element={<EnhancedUserManagement />} />
-                  <Route path="cryptocurrencies" element={<EnhancedCryptoManagement />} />
-                  <Route path="lending" element={<EnhancedLendingManagement />} />
-                  <Route path="vaults" element={<EnhancedVaultManagement />} />
-                </Route>
-
-                <Route path="/dev" element={<ProtectedRoute requiredRole="dev" />}>
-                  <Route index element={<DevPlaygroundPage />} />
+                  <Route path="users" element={<AdminUsers />} />
+                  <Route path="kyc" element={<AdminKyc />} />
+                  <Route path="wallets" element={<AdminWallets />} />
                 </Route>
               </Routes>
             </main>

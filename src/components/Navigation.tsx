@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -13,7 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useToast } from '@/components/ui/use-toast';
-import { Dice6 } from '@/components/ui/icons';
+import { Dice6 } from 'lucide-react';
 
 const navLinks = [
   { href: '/dashboard', label: 'Dashboard' },
@@ -152,7 +153,7 @@ const Navigation: React.FC = () => {
             {isAdmin && (
               <li>
                 <Link 
-                  to="/admin/dashboard" 
+                  to="/admin" 
                   className="text-sm font-semibold text-orange-400 hover:text-orange-300 transition-colors duration-300 story-link"
                 >
                   Admin
