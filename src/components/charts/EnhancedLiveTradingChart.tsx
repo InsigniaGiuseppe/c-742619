@@ -31,42 +31,36 @@ const EnhancedLiveTradingChart: React.FC<EnhancedLiveTradingChartProps> = ({
   const [liveData, setLiveData] = useState<ChartDataPoint[]>([]);
   const lastUpdateRef = useRef<number>(0);
 
-  // Get optimal data sampling based on timeframe
+  // Get optimal data sampling based on timeframe for better candle visibility
   const getOptimalDataSampling = (data: ChartDataPoint[], tf: string) => {
     if (data.length === 0) return data;
 
     let maxCandles: number;
-    let sampleRate: number;
 
     switch (tf) {
       case '1h':
-        maxCandles = 30; // Show ~30 candles for 1H view
+        maxCandles = 30; // Show 30 candles for 1H view
         break;
       case '4h':
-        maxCandles = 40; // Show ~40 candles for 4H view
+        maxCandles = 50; // Show 50 candles for 4H view
         break;
       case '1d':
-        maxCandles = 50; // Show ~50 candles for 1D view
+        maxCandles = 60; // Show 60 candles for 1D view
         break;
       case '1w':
-        maxCandles = 60; // Show ~60 candles for 1W view
+        maxCandles = 80; // Show 80 candles for 1W view
         break;
       default:
-        maxCandles = 40;
+        maxCandles = 50;
     }
 
-    // Calculate sample rate to get desired number of candles
-    sampleRate = Math.max(1, Math.floor(data.length / maxCandles));
-    
-    // Sample data at calculated intervals
-    const sampledData = data.filter((_, index) => index % sampleRate === 0);
-    
-    // Always include the last data point for current price
-    if (sampledData[sampledData.length - 1] !== data[data.length - 1]) {
-      sampledData.push(data[data.length - 1]);
+    // If we have fewer data points than max candles, return all
+    if (data.length <= maxCandles) {
+      return data;
     }
 
-    return sampledData;
+    // Take the most recent data points
+    return data.slice(-maxCandles);
   };
 
   // Convert timeframe to update interval (in milliseconds)
@@ -108,8 +102,8 @@ const EnhancedLiveTradingChart: React.FC<EnhancedLiveTradingChartProps> = ({
       };
 
       setLiveData(prev => {
-        const sampledData = getOptimalDataSampling([...prev.slice(-200), newCandle], timeframe);
-        return sampledData;
+        const newData = [...prev.slice(-199), newCandle];
+        return getOptimalDataSampling(newData, timeframe);
       });
       lastUpdateRef.current = now;
     } else {
@@ -145,7 +139,7 @@ const EnhancedLiveTradingChart: React.FC<EnhancedLiveTradingChartProps> = ({
     );
   }
 
-  // Format time labels based on timeframe with proper granularity
+  // Format time labels with better granularity based on timeframe
   const formatTimeLabel = (timestamp: number) => {
     const date = new Date(timestamp);
     switch (timeframe) {
@@ -156,10 +150,10 @@ const EnhancedLiveTradingChart: React.FC<EnhancedLiveTradingChartProps> = ({
           hour12: false 
         });
       case '4h':
-        return date.toLocaleTimeString('en-US', { 
-          hour: '2-digit', 
-          minute: '2-digit',
-          hour12: false 
+        return date.toLocaleDateString('en-US', { 
+          month: 'short', 
+          day: 'numeric',
+          hour: '2-digit'
         });
       case '1d':
         return date.toLocaleDateString('en-US', { 
@@ -179,11 +173,11 @@ const EnhancedLiveTradingChart: React.FC<EnhancedLiveTradingChartProps> = ({
     }
   };
 
-  // Get tick interval for X-axis based on data length and timeframe
+  // Get tick interval for X-axis based on data length
   const getXAxisInterval = (dataLength: number) => {
-    if (dataLength <= 20) return 0; // Show all ticks
-    if (dataLength <= 40) return 1; // Show every other tick
-    if (dataLength <= 60) return 2; // Show every 3rd tick
+    if (dataLength <= 15) return 0; // Show all ticks for small datasets
+    if (dataLength <= 30) return 1; // Show every other tick
+    if (dataLength <= 50) return 2; // Show every 3rd tick
     return Math.floor(dataLength / 8); // Show ~8 ticks max
   };
 
@@ -274,6 +268,7 @@ const EnhancedLiveTradingChart: React.FC<EnhancedLiveTradingChartProps> = ({
         <ComposedChart 
           data={chartData} 
           margin={{ top: 20, right: 40, left: 20, bottom: 20 }}
+          barCategoryGap="20%" // Add spacing between bars/candles
         >
           <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
           <XAxis 
@@ -281,10 +276,10 @@ const EnhancedLiveTradingChart: React.FC<EnhancedLiveTradingChartProps> = ({
             stroke="#9CA3AF"
             fontSize={12}
             interval={getXAxisInterval(chartData.length)}
-            minTickGap={20}
-            angle={timeframe === '1h' || timeframe === '4h' ? 0 : -45}
-            textAnchor={timeframe === '1h' || timeframe === '4h' ? 'middle' : 'end'}
-            height={timeframe === '1h' || timeframe === '4h' ? 30 : 60}
+            minTickGap={30}
+            angle={timeframe === '1h' ? 0 : -45}
+            textAnchor={timeframe === '1h' ? 'middle' : 'end'}
+            height={timeframe === '1h' ? 30 : 60}
           />
           <YAxis 
             orientation="right"
@@ -320,6 +315,7 @@ const EnhancedLiveTradingChart: React.FC<EnhancedLiveTradingChartProps> = ({
             <Bar 
               dataKey="high"
               shape={CustomCandlestick}
+              maxBarSize={50} // Limit maximum bar width for better spacing
             />
           )}
         </ComposedChart>

@@ -3,7 +3,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useTransactionHistory } from '@/hooks/useTransactionHistory';
-import { Settings } from 'lucide-react';
+import { Settings, ArrowUp, ArrowDown } from 'lucide-react';
 import FormattedNumber from './FormattedNumber';
 import CryptoLogo from './CryptoLogo';
 
@@ -34,11 +34,11 @@ const RecentTransactions = () => {
   const getTransactionBgColor = (transactionType: string) => {
     // Admin transactions get blue background
     if (transactionType.includes('admin')) {
-      return 'bg-blue-500/20';
+      return 'bg-blue-500/30';
     }
     
     const isBuy = transactionType === 'trade_buy' || transactionType === 'purchase' || transactionType === 'buy' || transactionType.includes('buy');
-    return isBuy ? 'bg-green-500/20' : 'bg-red-500/20';
+    return isBuy ? 'bg-green-500/30' : 'bg-red-500/30';
   };
 
   const formatTransactionType = (transactionType: string) => {
@@ -66,6 +66,17 @@ const RecentTransactions = () => {
     }
   };
 
+  const getTransactionIcon = (transactionType: string) => {
+    if (transactionType.includes('admin')) {
+      return <Settings className="h-3 w-3 text-blue-500" />;
+    }
+    
+    const isBuy = transactionType === 'trade_buy' || transactionType === 'purchase' || transactionType === 'buy' || transactionType.includes('buy');
+    return isBuy ? 
+      <ArrowUp className="h-3 w-3 text-green-500" /> : 
+      <ArrowDown className="h-3 w-3 text-red-500" />;
+  };
+
   return (
     <Card className="glass glass-hover">
       <CardHeader>
@@ -85,9 +96,11 @@ const RecentTransactions = () => {
             {recentTransactions.map((transaction, index) => {
               const transactionBgColor = getTransactionBgColor(transaction.transaction_type);
               const formattedType = formatTransactionType(transaction.transaction_type);
+              const transactionIcon = getTransactionIcon(transaction.transaction_type);
               
               // For admin transactions, show Settings icon; for crypto transactions, show coin logo
               const isAdminTransaction = transaction.transaction_type.includes('admin');
+              const isBuyTransaction = transaction.transaction_type === 'trade_buy' || transaction.transaction_type === 'purchase' || transaction.transaction_type === 'buy' || transaction.transaction_type.includes('buy');
               
               return (
                 <div 
@@ -95,16 +108,22 @@ const RecentTransactions = () => {
                   className="flex items-center justify-between p-4 bg-white/5 rounded-lg hover:bg-white/10 transition-all duration-200 border border-white/10"
                 >
                   <div className="flex items-center gap-4">
-                    <div className={`p-2 rounded-full ${transactionBgColor} flex items-center justify-center`}>
+                    <div className={`p-3 rounded-full ${transactionBgColor} flex items-center justify-center relative`}>
                       {isAdminTransaction ? (
-                        <Settings className="h-4 w-4 text-blue-500" />
+                        <Settings className="h-5 w-5 text-blue-500" />
                       ) : transaction.crypto ? (
-                        <CryptoLogo 
-                          logo_url={transaction.crypto.logo_url}
-                          name={transaction.crypto.name}
-                          symbol={transaction.crypto.symbol}
-                          size="sm"
-                        />
+                        <>
+                          <CryptoLogo 
+                            logo_url={transaction.crypto.logo_url}
+                            name={transaction.crypto.name}
+                            symbol={transaction.crypto.symbol}
+                            size="sm"
+                          />
+                          {/* Direction indicator overlay */}
+                          <div className="absolute -top-1 -right-1 bg-gray-900 rounded-full p-1 border border-gray-600">
+                            {transactionIcon}
+                          </div>
+                        </>
                       ) : (
                         <div className="w-6 h-6 rounded-full bg-gray-600 flex items-center justify-center text-xs font-bold">
                           ?
@@ -112,9 +131,19 @@ const RecentTransactions = () => {
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="font-medium truncate">
-                        {transaction.description || `${formattedType} ${transaction.crypto?.symbol || 'CRYPTO'}`}
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium truncate">
+                          {transaction.description || `${formattedType} ${transaction.crypto?.symbol || 'CRYPTO'}`}
+                        </p>
+                        {!isAdminTransaction && (
+                          <Badge 
+                            variant={isBuyTransaction ? 'default' : 'destructive'}
+                            className="text-xs px-2 py-0.5"
+                          >
+                            {isBuyTransaction ? 'BUY' : 'SELL'}
+                          </Badge>
+                        )}
+                      </div>
                       <div className="flex items-center gap-2 text-sm text-gray-400">
                         <span>
                           {new Date(transaction.created_at).toLocaleDateString('en-US', {

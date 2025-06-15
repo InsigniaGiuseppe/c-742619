@@ -51,15 +51,19 @@ const OHLCCandlestick: React.FC<OHLCCandlestickProps> = ({
   const isGreen = close >= open;
   const color = isGreen ? '#10B981' : '#EF4444'; // Green or Red
   
-  // Calculate candle width (80% of available width, min 4px, max 20px)
-  const candleWidth = Math.max(Math.min(width * 0.8, 20), 4);
+  // Calculate candle width with improved sizing
+  // Use 70% of available width, with minimum 8px and maximum 20px for better visibility
+  const candleWidth = Math.max(Math.min(width * 0.7, 20), 8);
   const centerX = x + width / 2;
   const candleX = centerX - candleWidth / 2;
   
   // Body dimensions
   const bodyTop = Math.min(openY, closeY);
   const bodyBottom = Math.max(openY, closeY);
-  const bodyHeight = Math.max(bodyBottom - bodyTop, 1); // Minimum 1px height
+  const bodyHeight = Math.max(bodyBottom - bodyTop, 2); // Minimum 2px height for visibility
+
+  // Wick width - slightly thicker for better visibility
+  const wickWidth = Math.max(1.5, candleWidth * 0.1);
 
   return (
     <g>
@@ -70,7 +74,8 @@ const OHLCCandlestick: React.FC<OHLCCandlestickProps> = ({
         x2={centerX}
         y2={lowY}
         stroke={color}
-        strokeWidth={1}
+        strokeWidth={wickWidth}
+        opacity={0.8}
       />
       
       {/* Open-Close Body */}
@@ -82,7 +87,8 @@ const OHLCCandlestick: React.FC<OHLCCandlestickProps> = ({
         fill={isGreen ? color : color}
         stroke={color}
         strokeWidth={1}
-        rx={0.5}
+        rx={1}
+        opacity={0.9}
       />
       
       {/* For doji candles (open = close), add a horizontal line */}
