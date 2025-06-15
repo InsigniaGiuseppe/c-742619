@@ -15,6 +15,7 @@ const AdminReservePage: React.FC = () => {
   const [searchTerm, setSearchTerm] = React.useState('');
 
   console.log('[AdminReservePage] Reserves data:', reserves);
+  console.log('[AdminReservePage] Total values:', { totalValue, totalCryptoValue, totalEurValue });
 
   const filteredReserves = reserves?.filter(reserve => 
     reserve.asset_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -209,7 +210,14 @@ const AdminReservePage: React.FC = () => {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <FormattedNumber value={reserve.eur_value} type="currency" currency="EUR" />
+                    <div className="font-mono">
+                      <FormattedNumber value={reserve.eur_value} type="currency" currency="EUR" />
+                      {reserve.asset_symbol !== 'EUR' && reserve.eur_value === 0 && (
+                        <div className="text-xs text-muted-foreground mt-1">
+                          Price data unavailable
+                        </div>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell>
                     <span className="text-sm text-muted-foreground">

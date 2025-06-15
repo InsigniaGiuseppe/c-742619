@@ -22,15 +22,12 @@ const fetchReserves = async (exchangeRate: number): Promise<{
 }> => {
   console.log('[useAdminReserves] Fetching platform reserves with exchange rate:', exchangeRate);
 
-  // Define the main cryptocurrencies we track
-  const mainCryptos = ['BTC', 'ETH', 'SOL', 'USDT'];
-  
-  // Initialize default reserves (these would be set by admin in production)
-  const defaultReserves = [
-    { symbol: 'BTC', name: 'Bitcoin', amount: 100 },
-    { symbol: 'ETH', name: 'Ethereum', amount: 1000 },
-    { symbol: 'SOL', name: 'Solana', amount: 5000 },
-    { symbol: 'USDT', name: 'Tether', amount: 500000 },
+  // Define the main cryptocurrencies we track with fallback prices (in USD)
+  const mainCryptos = [
+    { symbol: 'BTC', name: 'Bitcoin', amount: 100, fallbackPriceUsd: 67000 },
+    { symbol: 'ETH', name: 'Ethereum', amount: 1000, fallbackPriceUsd: 3500 },
+    { symbol: 'SOL', name: 'Solana', amount: 5000, fallbackPriceUsd: 180 },
+    { symbol: 'USDT', name: 'Tether', amount: 500000, fallbackPriceUsd: 1 },
   ];
 
   // Enhanced logo URLs as fallback
@@ -45,11 +42,11 @@ const fetchReserves = async (exchangeRate: number): Promise<{
   const { data: cryptoData, error: cryptoError } = await supabase
     .from('cryptocurrencies')
     .select('symbol, name, current_price, logo_url')
-    .in('symbol', mainCryptos.map(c => c.toLowerCase()));
+    .in('symbol', mainCryptos.map(c => c.symbol.toLowerCase()));
 
   if (cryptoError) {
     console.error('[useAdminReserves] Error fetching crypto data:', cryptoError);
-    throw cryptoError;
+    // Continue with fallback data instead of throwing
   }
 
   console.log('[useAdminReserves] Fetched crypto data:', cryptoData);
@@ -92,13 +89,13 @@ const fetchReserves = async (exchangeRate: number): Promise<{
   let totalCryptoValue = 0;
 
   // Add crypto reserves with proper EUR value calculation and logos
-  defaultReserves.forEach(reserve => {
+  mainCryptos.forEach(reserve => {
     const cryptoInfo = cryptoData?.find(c => c.symbol.toLowerCase() === reserve.symbol.toLowerCase());
     const userHolding = userHoldings[reserve.symbol] || 0;
     const actualReserve = Math.max(0, reserve.amount - userHolding);
     
-    // Calculate EUR value: crypto amount * USD price * EUR exchange rate
-    const priceUsd = cryptoInfo?.current_price || 0;
+    // Use database price if available, otherwise use fallback
+    const priceUsd = cryptoInfo?.current_price || reserve.fallbackPriceUsd;
     const eurValue = actualReserve * convertUsdToEur(priceUsd, exchangeRate);
 
     console.log(`[useAdminReserves] ${reserve.symbol}: actualReserve=${actualReserve}, priceUsd=${priceUsd}, eurValue=${eurValue}`);
@@ -119,7 +116,7 @@ const fetchReserves = async (exchangeRate: number): Promise<{
       asset_name: cryptoInfo?.name || reserve.name,
       reserve_amount: actualReserve,
       eur_value: eurValue,
-      last_updated: 'just now',
+      last_updated: priceUsd === reserve.fallbackPriceUsd ? 'fallback data' : 'just now',
       status,
       logo_url: logoUrl,
     });
