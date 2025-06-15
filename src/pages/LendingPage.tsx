@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { CalendarDays, Percent, DollarSign, TrendingUp, X } from 'lucide-react';
 import FormattedNumber from '@/components/FormattedNumber';
 import CryptoLogo from '@/components/CryptoLogo';
@@ -35,6 +36,10 @@ const LendingPage = () => {
   const getDailyReturn = (amount: number, symbol: string) => {
     const annualRate = getAnnualRate(symbol) / 100;
     return (amount * annualRate) / 365;
+  };
+
+  const getClosingFee = (amount: number) => {
+    return amount * 0.01; // 1% closing fee
   };
 
   // Filter portfolio to only show coins with available balance (quantity > 0)
@@ -203,6 +208,8 @@ const LendingPage = () => {
                           {lendingPositions.map((position) => {
                             const dailyYield = getDailyReturn(position.amount_lent, position.crypto.symbol);
                             const dailyYieldUSD = dailyYield * position.crypto.current_price;
+                            const closingFee = getClosingFee(position.amount_lent);
+                            const closingFeeUSD = closingFee * position.crypto.current_price;
                             
                             return (
                               <TableRow key={position.id} className="hover:bg-white/5">
@@ -268,16 +275,53 @@ const LendingPage = () => {
                                   </Badge>
                                 </TableCell>
                                 <TableCell className="text-right">
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => handleCancelLending(position.id)}
-                                    disabled={isCancellingLending}
-                                    className="text-red-400 border-red-400 hover:bg-red-400 hover:text-white"
-                                  >
-                                    <X className="w-3 h-3 mr-1" />
-                                    Cancel
-                                  </Button>
+                                  <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        disabled={isCancellingLending}
+                                        className="text-red-400 border-red-400 hover:bg-red-400 hover:text-white"
+                                      >
+                                        <X className="w-3 h-3 mr-1" />
+                                        Cancel
+                                      </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                      <AlertDialogHeader>
+                                        <AlertDialogTitle>Cancel Lending Position</AlertDialogTitle>
+                                        <AlertDialogDescription className="space-y-3">
+                                          <div>
+                                            Are you sure you want to cancel this lending position? This action cannot be undone.
+                                          </div>
+                                          <div className="bg-yellow-500/10 border border-yellow-500/20 p-3 rounded-lg">
+                                            <div className="font-semibold text-yellow-500 mb-2">⚠️ Closing Fee Notice</div>
+                                            <div className="text-sm space-y-1">
+                                              <div>A closing fee of <strong>1%</strong> will be deducted from your lent amount:</div>
+                                              <div className="font-mono">
+                                                Fee: {formatCryptoQuantity(closingFee)} {position.crypto.symbol} 
+                                                <span className="text-muted-foreground ml-1">
+                                                  (~<FormattedNumber value={closingFeeUSD} type="currency" showTooltip={false} />)
+                                                </span>
+                                              </div>
+                                              <div className="font-mono">
+                                                You'll receive: {formatCryptoQuantity(position.amount_lent - closingFee)} {position.crypto.symbol}
+                                              </div>
+                                            </div>
+                                          </div>
+                                        </AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                        <AlertDialogCancel>Keep Lending</AlertDialogCancel>
+                                        <AlertDialogAction
+                                          onClick={() => handleCancelLending(position.id)}
+                                          className="bg-red-600 hover:bg-red-700"
+                                        >
+                                          Accept Fee & Cancel
+                                        </AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
                                 </TableCell>
                               </TableRow>
                             );

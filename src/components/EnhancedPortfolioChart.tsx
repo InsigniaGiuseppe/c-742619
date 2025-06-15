@@ -24,7 +24,7 @@ const EnhancedPortfolioChart = () => {
     return (
       <Card className="glass glass-hover">
         <CardHeader>
-          <CardTitle>Portfolio Distribution</CardTitle>
+          <CardTitle>Portfolio Distribution by Value</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-center h-64">
@@ -39,7 +39,7 @@ const EnhancedPortfolioChart = () => {
     return (
       <Card className="glass glass-hover">
         <CardHeader>
-          <CardTitle>Portfolio Distribution</CardTitle>
+          <CardTitle>Portfolio Distribution by Value</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col items-center justify-center h-64 text-gray-400 space-y-2">
@@ -69,10 +69,10 @@ const EnhancedPortfolioChart = () => {
         <div className="bg-gray-800 p-3 rounded-lg border border-gray-600 shadow-lg">
           <p className="font-medium text-white">{data.name}</p>
           <p className="text-sm text-gray-300">
-            Value: <FormattedNumber value={data.value} type="currency" showTooltip={false} />
+            USD Value: <FormattedNumber value={data.value} type="currency" showTooltip={false} />
           </p>
           <p className="text-sm text-gray-300">
-            {data.percentage.toFixed(1)}%
+            {data.percentage.toFixed(1)}% of total value
           </p>
         </div>
       );
@@ -84,7 +84,7 @@ const EnhancedPortfolioChart = () => {
     <Card className="glass glass-hover">
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
-          <span>Portfolio Distribution</span>
+          <span>Portfolio Distribution by USD Value</span>
           <div className="flex items-center gap-2">
             {isRealtime && (
               <Badge variant="outline" className="text-green-500 border-green-500">
@@ -140,6 +140,9 @@ const EnhancedPortfolioChart = () => {
         </ResponsiveContainer>
         
         <div className="mt-6 space-y-3">
+          <div className="text-xs text-muted-foreground mb-2">
+            * Distribution shown by USD value, not coin quantity
+          </div>
           {chartData.map((item, index) => (
             <div key={item.name} className="flex items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
               <div className="flex items-center gap-3">
@@ -151,7 +154,7 @@ const EnhancedPortfolioChart = () => {
                 />
                 <span className="font-medium">{item.name}</span>
                 <span className="text-xs text-muted-foreground">
-                  {item.percentage.toFixed(1)}%
+                  {item.percentage.toFixed(1)}% of value
                 </span>
               </div>
               <FormattedNumber value={item.value} type="currency" showTooltip={false} className="font-semibold" />
