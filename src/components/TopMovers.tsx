@@ -29,7 +29,7 @@ const MoverItem = ({ crypto, isGainer }: { crypto: Cryptocurrency, isGainer: boo
         <FormattedNumber value={crypto.current_price} type="price" className="text-sm"/>
         <div className={`flex items-center justify-end gap-1 text-xs ${isGainer ? 'text-green-400' : 'text-red-400'}`}>
           {isGainer ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
-          <FormattedNumber value={crypto.price_change_percentage_24h || 0} type="percent" />
+          <FormattedNumber value={crypto.price_change_percentage_24h || 0} type="percentage" />
         </div>
       </div>
     </div>
