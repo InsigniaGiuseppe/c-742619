@@ -31,6 +31,44 @@ const EnhancedLiveTradingChart: React.FC<EnhancedLiveTradingChartProps> = ({
   const [liveData, setLiveData] = useState<ChartDataPoint[]>([]);
   const lastUpdateRef = useRef<number>(0);
 
+  // Get optimal data sampling based on timeframe
+  const getOptimalDataSampling = (data: ChartDataPoint[], tf: string) => {
+    if (data.length === 0) return data;
+
+    let maxCandles: number;
+    let sampleRate: number;
+
+    switch (tf) {
+      case '1h':
+        maxCandles = 30; // Show ~30 candles for 1H view
+        break;
+      case '4h':
+        maxCandles = 40; // Show ~40 candles for 4H view
+        break;
+      case '1d':
+        maxCandles = 50; // Show ~50 candles for 1D view
+        break;
+      case '1w':
+        maxCandles = 60; // Show ~60 candles for 1W view
+        break;
+      default:
+        maxCandles = 40;
+    }
+
+    // Calculate sample rate to get desired number of candles
+    sampleRate = Math.max(1, Math.floor(data.length / maxCandles));
+    
+    // Sample data at calculated intervals
+    const sampledData = data.filter((_, index) => index % sampleRate === 0);
+    
+    // Always include the last data point for current price
+    if (sampledData[sampledData.length - 1] !== data[data.length - 1]) {
+      sampledData.push(data[data.length - 1]);
+    }
+
+    return sampledData;
+  };
+
   // Convert timeframe to update interval (in milliseconds)
   const getUpdateInterval = (tf: string) => {
     switch (tf) {
@@ -45,10 +83,11 @@ const EnhancedLiveTradingChart: React.FC<EnhancedLiveTradingChartProps> = ({
   // Update live data when binance data changes
   useEffect(() => {
     if (binanceData.length > 0) {
-      setLiveData([...binanceData]);
+      const sampledData = getOptimalDataSampling(binanceData, timeframe);
+      setLiveData(sampledData);
       lastUpdateRef.current = Date.now();
     }
-  }, [binanceData]);
+  }, [binanceData, timeframe]);
 
   // Handle live price updates with proper candlestick logic
   useEffect(() => {
@@ -68,7 +107,10 @@ const EnhancedLiveTradingChart: React.FC<EnhancedLiveTradingChartProps> = ({
         close: crypto.current_price,
       };
 
-      setLiveData(prev => [...prev.slice(-99), newCandle]); // Keep last 100 candles
+      setLiveData(prev => {
+        const sampledData = getOptimalDataSampling([...prev.slice(-200), newCandle], timeframe);
+        return sampledData;
+      });
       lastUpdateRef.current = now;
     } else {
       // Update current candle
@@ -103,11 +145,16 @@ const EnhancedLiveTradingChart: React.FC<EnhancedLiveTradingChartProps> = ({
     );
   }
 
-  // Format time labels based on timeframe
+  // Format time labels based on timeframe with proper granularity
   const formatTimeLabel = (timestamp: number) => {
     const date = new Date(timestamp);
     switch (timeframe) {
       case '1h':
+        return date.toLocaleTimeString('en-US', { 
+          hour: '2-digit', 
+          minute: '2-digit',
+          hour12: false 
+        });
       case '4h':
         return date.toLocaleTimeString('en-US', { 
           hour: '2-digit', 
@@ -130,6 +177,14 @@ const EnhancedLiveTradingChart: React.FC<EnhancedLiveTradingChartProps> = ({
           day: 'numeric' 
         });
     }
+  };
+
+  // Get tick interval for X-axis based on data length and timeframe
+  const getXAxisInterval = (dataLength: number) => {
+    if (dataLength <= 20) return 0; // Show all ticks
+    if (dataLength <= 40) return 1; // Show every other tick
+    if (dataLength <= 60) return 2; // Show every 3rd tick
+    return Math.floor(dataLength / 8); // Show ~8 ticks max
   };
 
   // Prepare chart data with proper OHLC structure
@@ -225,8 +280,11 @@ const EnhancedLiveTradingChart: React.FC<EnhancedLiveTradingChartProps> = ({
             dataKey="timeLabel" 
             stroke="#9CA3AF"
             fontSize={12}
-            interval="preserveStartEnd"
-            minTickGap={30}
+            interval={getXAxisInterval(chartData.length)}
+            minTickGap={20}
+            angle={timeframe === '1h' || timeframe === '4h' ? 0 : -45}
+            textAnchor={timeframe === '1h' || timeframe === '4h' ? 'middle' : 'end'}
+            height={timeframe === '1h' || timeframe === '4h' ? 30 : 60}
           />
           <YAxis 
             orientation="right"
