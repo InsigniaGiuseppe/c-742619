@@ -10,11 +10,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { usePortfolio } from '@/hooks/usePortfolio';
 import { useLending } from '@/hooks/useLending';
-import { PiggyBank, Plus, X, TrendingUp } from 'lucide-react';
+import { PiggyBank, Plus, X } from 'lucide-react';
 import { toast } from 'sonner';
 import FormattedNumber from '@/components/FormattedNumber';
 import CryptoLogo from '@/components/CryptoLogo';
-import LendingStatsCard from '@/components/lending/LendingStatsCard';
+import TotalLentCard from '@/components/lending/stats/TotalLentCard';
+import PerformanceCard from '@/components/lending/stats/PerformanceCard';
+import ReturnsCard from '@/components/lending/stats/ReturnsCard';
+import PayoutCard from '@/components/lending/stats/PayoutCard';
 
 const LendingPage = () => {
   const { portfolio } = usePortfolio();
@@ -94,8 +97,27 @@ const LendingPage = () => {
         </div>
 
         {/* Lending Statistics */}
-        <div className="mb-8">
-          <LendingStatsCard stats={lendingStats} loading={loading} />
+        <div className="mb-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <TotalLentCard 
+            loading={loading}
+            totalLentValue={lendingStats.totalLentValue}
+            totalEarnedInterest={lendingStats.totalEarnedInterest}
+          />
+          <PerformanceCard 
+            loading={loading}
+            averageYield={lendingStats.averageYield}
+            activeLendingCount={lendingStats.activeLendingCount}
+          />
+          <ReturnsCard
+            loading={loading}
+            estimatedDailyReturn={lendingStats.estimatedDailyReturn}
+            estimatedMonthlyReturn={lendingStats.estimatedMonthlyReturn}
+          />
+          <PayoutCard
+            loading={loading}
+            nextPayoutIn={lendingStats.nextPayoutIn}
+            daysSinceLastPayout={lendingStats.daysSinceLastPayout}
+          />
         </div>
 
         {/* Start New Lending Position */}
