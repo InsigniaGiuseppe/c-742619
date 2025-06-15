@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,6 +17,8 @@ import {
 } from 'lucide-react';
 import { useAdminStats } from '@/hooks/useAdminStats';
 import { formatCurrency } from '@/lib/formatters';
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const AdminDashboard = () => {
   const { data: stats, isLoading, error } = useAdminStats();
@@ -73,6 +74,32 @@ const AdminDashboard = () => {
     }
   ];
 
+  const { data: reserves } = useQuery({
+    queryKey: ["platform-reserves-stats"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("platform_reserves")
+        .select("balance,total_fees_collected,total_losses_collected");
+      return (
+        data ||
+        []
+      );
+    },
+    staleTime: 10 * 60 * 1000,
+    refetchInterval: 30 * 1000,
+  });
+
+  const platformProfit =
+    reserves && reserves.length
+      ? reserves.reduce(
+        (sum, r) =>
+          sum +
+          Number(r.total_fees_collected || 0) +
+          Number(r.total_losses_collected || 0),
+        0
+      )
+      : 0;
+
   const quickStats = [
     {
       title: 'Total Volume',
@@ -97,6 +124,15 @@ const AdminDashboard = () => {
       value: stats ? `${stats.pendingKyc}` : 'Loading...',
       icon: AlertTriangle,
       change: stats && stats.pendingKyc > 0 ? 'Needs attention' : 'All clear'
+    },
+    {
+      title: "Platform Profit",
+      value:
+        platformProfit === 0
+          ? "Loading..."
+          : formatCurrency(platformProfit, { currency: "EUR", compact: true }),
+      icon: DollarSign,
+      change: "",
     }
   ];
 

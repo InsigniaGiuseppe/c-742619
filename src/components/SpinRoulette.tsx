@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import CryptoLogo from '@/components/CryptoLogo';
 
@@ -31,78 +30,68 @@ const SpinRoulette: React.FC<SpinRouletteProps> = ({
   const sliderTrackRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Card dimensions matching the provided structure
+  // Animation/display constants
   const CARD_WIDTH = 120;
-  const CARD_MARGIN = 8; // 4px on each side
+  const CARD_MARGIN = 8;
   const TOTAL_CARD_WIDTH = CARD_WIDTH + CARD_MARGIN;
-  const TOTAL_CARDS = 60;
-  const WINNING_INDEX = 42; // Position winning card for center alignment
+  const TOTAL_CARDS = 61; // Make odd to allow for perfect middle
+  const WINNING_INDEX = Math.floor(TOTAL_CARDS / 2);
 
   useEffect(() => {
     if (isSpinning && winningItem && items.length > 0) {
-      console.log('[SpinRoulette] Generating cards for spin');
-      
-      // Reset any previous animation
+      // Reset previous animation before generating new cards!
       if (sliderTrackRef.current) {
-        sliderTrackRef.current.style.transition = 'none';
-        sliderTrackRef.current.style.transform = 'translateX(0px)';
+        sliderTrackRef.current.style.transition = "none";
+        sliderTrackRef.current.style.transform = "translateX(0px)";
       }
 
-      // Generate cards with winning item at specific index
+      // Generate new card list: lots of filler + win in final center+filler after
       const generatedCards: SpinItem[] = [];
-      
       for (let i = 0; i < TOTAL_CARDS; i++) {
         if (i === WINNING_INDEX) {
-          generatedCards.push({
-            ...winningItem,
-            id: `winner-${i}`,
-          });
+          generatedCards.push({ ...winningItem, id: `winner-${i}` });
         } else {
           const randomItem = items[Math.floor(Math.random() * items.length)];
           generatedCards.push({
             ...randomItem,
             id: `card-${i}`,
-            amount: randomItem.amount * (0.3 + Math.random() * 2) // Vary amounts
+            amount: randomItem.amount * (0.3 + Math.random() * 2)
           });
         }
       }
-
       setCards(generatedCards);
-      
-      // Start animation after cards are set
+
+      // Delay before calling spin
       setTimeout(() => {
         startSpinAnimation();
-      }, 100);
+      }, 120);
     }
+    // eslint-disable-next-line
   }, [isSpinning, winningItem, items]);
 
-  const startSpinAnimation = () => {
+  function startSpinAnimation() {
     if (!sliderTrackRef.current || !containerRef.current) return;
 
     setIsAnimating(true);
-    
     const containerWidth = containerRef.current.offsetWidth;
-    const cardCenterOffset = CARD_WIDTH / 2;
-    
-    // Calculate the exact offset to center the winning card
-    const winningCardPosition = WINNING_INDEX * TOTAL_CARD_WIDTH + cardCenterOffset;
-    const containerCenter = containerWidth / 2;
-    const finalOffset = winningCardPosition - containerCenter;
+    const cardOffset = CARD_WIDTH / 2;
+    // Final offset brings the WINNING_INDEX card to dead center.
+    const winningCardAnchor = WINNING_INDEX * TOTAL_CARD_WIDTH + cardOffset;
+    const center = containerWidth / 2;
+    const finalOffset = Math.round(winningCardAnchor - center);
 
-    console.log('[SpinRoulette] Starting animation to offset:', finalOffset);
-
-    // Apply the slide animation
-    sliderTrackRef.current.style.transition = 'transform 4s cubic-bezier(0.25, 0.1, 0.25, 1)';
+    // Animate
+    sliderTrackRef.current.style.transition = "transform 3.5s cubic-bezier(0.25,0.1,0.25,1)";
     sliderTrackRef.current.style.transform = `translateX(-${finalOffset}px)`;
 
-    // Complete the spin after animation
+    // Finish & invoke callback
     setTimeout(() => {
       setIsAnimating(false);
       setTimeout(() => {
         onSpinComplete?.();
-      }, 500); // Small delay for dramatic effect
-    }, 4000);
-  };
+      }, 500);
+    }, 3500);
+  }
 
   const getTierGlow = (tier: string) => {
     switch (tier) {
@@ -140,26 +129,23 @@ const SpinRoulette: React.FC<SpinRouletteProps> = ({
 
   return (
     <div className="relative w-full">
-      {/* Main spin container */}
-      <div 
+      <div
         ref={containerRef}
         className="relative w-full h-36 overflow-hidden bg-gradient-to-r from-gray-900 via-black to-gray-900 rounded-xl border-2 border-green-400/50"
-        style={{ position: 'relative' }}
+        style={{ position: "relative" }}
       >
         {/* Center marker */}
-        <div 
+        <div
           className="absolute top-0 left-1/2 w-0.5 h-full bg-green-400 z-30"
-          style={{ 
-            transform: 'translateX(-50%)',
-            boxShadow: '0 0 10px rgba(34, 197, 94, 0.8)'
+          style={{
+            transform: "translateX(-50%)",
+            boxShadow: "0 0 10px rgba(34, 197, 94, 0.8)",
           }}
         >
-          {/* Top arrow */}
-          <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-8 border-l-transparent border-r-transparent border-b-green-400"></div>
-          {/* Bottom arrow */}
-          <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-8 border-l-transparent border-r-transparent border-t-green-400"></div>
+          {/* Arrows */}
+          <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-8 border-l-transparent border-r-transparent border-b-green-400"></div>
+          <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-8 border-l-transparent border-r-transparent border-t-green-400"></div>
         </div>
-
         {/* Slider track */}
         <div className="flex items-center h-full">
           {isSpinning && cards.length > 0 ? (
@@ -167,9 +153,9 @@ const SpinRoulette: React.FC<SpinRouletteProps> = ({
               ref={sliderTrackRef}
               className="flex items-center h-full"
               style={{
-                transition: 'none', // Will be set by JavaScript
-                transform: 'translateX(0px)', // Initial position
-                willChange: 'transform'
+                transition: "none",
+                transform: "translateX(0px)",
+                willChange: "transform",
               }}
             >
               {cards.map((card, index) => {
@@ -181,39 +167,34 @@ const SpinRoulette: React.FC<SpinRouletteProps> = ({
                   <div
                     key={card.id}
                     className="flex-shrink-0 flex flex-col items-center justify-center p-2"
-                    style={{ 
+                    style={{
                       width: CARD_WIDTH,
                       marginRight: CARD_MARGIN / 2,
-                      marginLeft: CARD_MARGIN / 2
+                      marginLeft: CARD_MARGIN / 2,
                     }}
                   >
                     <div className={`relative rounded-lg p-3 ${bgClass} ${glowClass} transition-all duration-300`}>
-                      {card.crypto.symbol === 'LOSS' ? (
-                        <div className="w-12 h-12 rounded-full bg-red-500 flex items-center justify-center text-white font-bold text-lg">
-                          ✗
-                        </div>
+                      {card.crypto.symbol === "LOSS" ? (
+                        <div className="w-12 h-12 rounded-full bg-red-500 flex items-center justify-center text-white font-bold text-lg">✗</div>
                       ) : (
                         <CryptoLogo
-                          symbol={card.crypto?.symbol || 'UNK'}
+                          symbol={card.crypto?.symbol || "UNK"}
                           logo_url={card.crypto?.logo_url}
-                          name={card.crypto?.name || 'Unknown'}
+                          name={card.crypto?.name || "Unknown"}
                           size="lg"
                           className="w-12 h-12"
                         />
                       )}
-                      
-                      {/* Winner glow effect */}
                       {isWinner && isAnimating && (
                         <div className="absolute inset-0 rounded-lg bg-yellow-400/30 pointer-events-none animate-pulse"></div>
                       )}
                     </div>
-
                     <div className="text-center mt-1">
                       <div className="text-xs font-bold text-white">
-                        {card.crypto.symbol === 'LOSS' ? '0.00' : card.amount.toFixed(4)}
+                        {card.crypto.symbol === "LOSS" ? "0.00" : card.amount.toFixed(4)}
                       </div>
                       <div className="text-xs text-gray-300">
-                        {card.crypto.symbol === 'LOSS' ? 'LOSS' : card.crypto.symbol.toUpperCase()}
+                        {card.crypto.symbol === "LOSS" ? "LOSS" : card.crypto.symbol.toUpperCase()}
                       </div>
                     </div>
                   </div>
@@ -221,32 +202,29 @@ const SpinRoulette: React.FC<SpinRouletteProps> = ({
               })}
             </div>
           ) : (
-            // Static preview when not spinning
+            // Static preview
             <div className="flex items-center justify-center w-full h-full">
               <div className="flex justify-center gap-6">
                 {items.slice(0, 5).map((item, index) => {
                   const glowClass = getTierGlow(item.tier);
                   const bgClass = getTierBgColor(item.tier);
-                  
                   return (
                     <div key={item.id} className="flex flex-col items-center">
                       <div className={`rounded-lg p-3 ${bgClass} ${glowClass}`}>
-                        {item.crypto.symbol === 'LOSS' ? (
-                          <div className="w-12 h-12 rounded-full bg-red-500 flex items-center justify-center text-white font-bold text-lg">
-                            ✗
-                          </div>
+                        {item.crypto.symbol === "LOSS" ? (
+                          <div className="w-12 h-12 rounded-full bg-red-500 flex items-center justify-center text-white font-bold text-lg">✗</div>
                         ) : (
                           <CryptoLogo
-                            symbol={item.crypto?.symbol || 'UNK'}
+                            symbol={item.crypto?.symbol || "UNK"}
                             logo_url={item.crypto?.logo_url}
-                            name={item.crypto?.name || 'Unknown'}
+                            name={item.crypto?.name || "Unknown"}
                             size="lg"
                             className="w-12 h-12"
                           />
                         )}
                       </div>
                       <div className="text-xs text-white font-medium text-center mt-2">
-                        {item.crypto.symbol === 'LOSS' ? 'LOSS' : item.crypto.symbol.toUpperCase()}
+                        {item.crypto.symbol === "LOSS" ? "LOSS" : item.crypto.symbol.toUpperCase()}
                       </div>
                     </div>
                   );
@@ -255,8 +233,7 @@ const SpinRoulette: React.FC<SpinRouletteProps> = ({
             </div>
           )}
         </div>
-
-        {/* Edge gradients for depth */}
+        {/* Gradients */}
         <div className="absolute left-0 top-0 w-20 h-full bg-gradient-to-r from-black via-black/80 to-transparent pointer-events-none z-20"></div>
         <div className="absolute right-0 top-0 w-20 h-full bg-gradient-to-l from-black via-black/80 to-transparent pointer-events-none z-20"></div>
       </div>
