@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import CryptoLogo from '@/components/CryptoLogo';
 
@@ -37,15 +38,19 @@ const SpinRoulette: React.FC<SpinRouletteProps> = ({
   const TOTAL_CARDS = 61; // Make odd to allow for perfect middle
   const WINNING_INDEX = Math.floor(TOTAL_CARDS / 2);
 
+  // NEW: Store calculated positions for animation
+  const [animationOffsets, setAnimationOffsets] = useState<{ startOffset: number; endOffset: number }>({
+    startOffset: 0,
+    endOffset: 0,
+  });
+
   useEffect(() => {
     if (isSpinning && winningItem && items.length > 0) {
-      // Reset previous animation before generating new cards!
       if (sliderTrackRef.current) {
         sliderTrackRef.current.style.transition = "none";
         sliderTrackRef.current.style.transform = "translateX(0px)";
       }
 
-      // Generate new card list: lots of filler + win in final center+filler after
       const generatedCards: SpinItem[] = [];
       for (let i = 0; i < TOTAL_CARDS; i++) {
         if (i === WINNING_INDEX) {
@@ -61,30 +66,50 @@ const SpinRoulette: React.FC<SpinRouletteProps> = ({
       }
       setCards(generatedCards);
 
-      // Delay before calling spin
+      // NEW: Calculate start & end offsets for animation
       setTimeout(() => {
-        startSpinAnimation();
-      }, 120);
+        const container = containerRef.current;
+        if (!container) return;
+        const containerWidth = container.offsetWidth;
+        const cardOffset = CARD_WIDTH / 2;
+        const winningCardAnchor = WINNING_INDEX * TOTAL_CARD_WIDTH + cardOffset;
+        const center = containerWidth / 2;
+        const endOffset = Math.round(winningCardAnchor - center);
+
+        // Start offset: extra "pre-slide" so that cards start well off-screen
+        // Let's show ~15 cards sliding in before winner arrives
+        const preSlideCards = 15;
+        const startOffset = endOffset - preSlideCards * TOTAL_CARD_WIDTH;
+
+        setAnimationOffsets({ startOffset, endOffset });
+
+        // Call animation
+        startSpinAnimation(startOffset, endOffset);
+      }, 150); // Give DOM time to render cards
     }
     // eslint-disable-next-line
   }, [isSpinning, winningItem, items]);
 
-  function startSpinAnimation() {
-    if (!sliderTrackRef.current || !containerRef.current) return;
-
+  function startSpinAnimation(startOffset: number, endOffset: number) {
+    if (!sliderTrackRef.current) return;
     setIsAnimating(true);
-    const containerWidth = containerRef.current.offsetWidth;
-    const cardOffset = CARD_WIDTH / 2;
-    // Final offset brings the WINNING_INDEX card to dead center.
-    const winningCardAnchor = WINNING_INDEX * TOTAL_CARD_WIDTH + cardOffset;
-    const center = containerWidth / 2;
-    const finalOffset = Math.round(winningCardAnchor - center);
 
-    // Animate
-    sliderTrackRef.current.style.transition = "transform 3.5s cubic-bezier(0.25,0.1,0.25,1)";
-    sliderTrackRef.current.style.transform = `translateX(-${finalOffset}px)`;
+    // 1. Set initial offset with no transition
+    sliderTrackRef.current.style.transition = "none";
+    sliderTrackRef.current.style.transform = `translateX(-${startOffset}px)`;
 
-    // Finish & invoke callback
+    // 2. Animate to final offset with a transition
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        sliderTrackRef.current!.style.transition = "transform 3.5s cubic-bezier(0.25,0.1,0.25,1)";
+        sliderTrackRef.current!.style.transform = `translateX(-${endOffset}px)`;
+      });
+    });
+
+    // Logging for dev
+    console.log('[SpinRoulette] Animation: startOffset', startOffset, 'endOffset', endOffset);
+
+    // 3. After animation, finish
     setTimeout(() => {
       setIsAnimating(false);
       setTimeout(() => {
@@ -154,7 +179,7 @@ const SpinRoulette: React.FC<SpinRouletteProps> = ({
               className="flex items-center h-full"
               style={{
                 transition: "none",
-                transform: "translateX(0px)",
+                transform: `translateX(-${animationOffsets.startOffset}px)`,
                 willChange: "transform",
               }}
             >
