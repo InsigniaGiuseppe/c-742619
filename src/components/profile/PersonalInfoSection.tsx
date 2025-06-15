@@ -1,145 +1,196 @@
-import React from 'react';
+
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
-import { User, Shield, CheckCircle, Clock, XCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
-interface PersonalInfoSectionProps {
-  user: any;
-}
+const PersonalInfoSection = () => {
+  const { user, profile } = useAuth();
+  const [isEditing, setIsEditing] = useState(false);
+  const [formData, setFormData] = useState({
+    full_name: profile?.full_name || '',
+    email: profile?.email || user?.email || '',
+    phone: profile?.phone || '',
+    date_of_birth: profile?.date_of_birth || '',
+    address: profile?.address || '',
+    city: profile?.city || '',
+    postal_code: profile?.postal_code || '',
+    country: profile?.country || '',
+  });
 
-const PersonalInfoSection: React.FC<PersonalInfoSectionProps> = ({ user }) => {
-  const getKycStatusColor = (status: string) => {
-    switch (status) {
-      case 'approved': return 'bg-green-500/20 text-green-400 border-green-500/30';
-      case 'pending': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
-      case 'rejected': return 'bg-red-500/20 text-red-400 border-red-500/30';
-      case 'not_started': return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
-      default: return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSave = async () => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          full_name: formData.full_name,
+          phone: formData.phone,
+          date_of_birth: formData.date_of_birth || null,
+          address: formData.address,
+          city: formData.city,
+          postal_code: formData.postal_code,
+          country: formData.country,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user.id);
+
+      if (error) throw error;
+
+      toast.success('Profile updated successfully');
+      setIsEditing(false);
+    } catch (error: any) {
+      console.error('Error updating profile:', error);
+      toast.error('Failed to update profile');
     }
   };
 
-  const getKycIcon = (status: string) => {
-    switch (status) {
-      case 'approved': return <CheckCircle className="w-4 h-4" />;
-      case 'pending': return <Clock className="w-4 h-4" />;
-      case 'rejected': return <XCircle className="w-4 h-4" />;
-      default: return <User className="w-4 h-4" />;
-    }
+  const handleCancel = () => {
+    setFormData({
+      full_name: profile?.full_name || '',
+      email: profile?.email || user?.email || '',
+      phone: profile?.phone || '',
+      date_of_birth: profile?.date_of_birth || '',
+      address: profile?.address || '',
+      city: profile?.city || '',
+      postal_code: profile?.postal_code || '',
+      country: profile?.country || '',
+    });
+    setIsEditing(false);
   };
-
-  const DetailRow = ({ label, value }: { label: string; value: React.ReactNode }) => (
-    <TableRow>
-      <TableCell className="font-medium text-muted-foreground w-1/3">{label}</TableCell>
-      <TableCell>{value || 'Not provided'}</TableCell>
-    </TableRow>
-  );
 
   return (
-    <div className="space-y-6">
-      <Card className="glass glass-hover">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <User className="w-5 h-5" />
-            Personal Information
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableBody>
-              <DetailRow label="Full Name" value={user?.full_name} />
-              <DetailRow label="Username" value={user?.username} />
-              <DetailRow label="Email" value={user?.email} />
-              <DetailRow label="Phone" value={user?.phone} />
-              <DetailRow label="Date of Birth" value={user?.date_of_birth ? new Date(user.date_of_birth).toLocaleDateString() : null} />
-              <DetailRow 
-                label="Account Type" 
-                value={
-                  <Badge variant="outline" className="bg-blue-500/20 text-blue-400">
-                    {user?.account_type || 'Standard'}
-                  </Badge>
-                } 
-              />
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-
-      <Card className="glass glass-hover">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Shield className="w-5 h-5" />
-            Verification Status
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between p-4 border border-border rounded-lg">
-              <div className="flex items-center gap-3">
-                {getKycIcon(user?.kyc_status || 'not_started')}
-                <div>
-                  <div className="font-medium">KYC Verification</div>
-                  <div className="text-sm text-muted-foreground">
-                    Identity verification status
-                  </div>
-                </div>
-              </div>
-              <Badge className={getKycStatusColor(user?.kyc_status || 'not_started')}>
-                {user?.kyc_status?.replace(/_/g, ' ') || 'Not Started'}
-              </Badge>
-            </div>
-            
-            <div className="flex items-center justify-between p-4 border border-border rounded-lg">
-              <div className="flex items-center gap-3">
-                <Shield className="w-4 h-4" />
-                <div>
-                  <div className="font-medium">Two-Factor Authentication</div>
-                  <div className="text-sm text-muted-foreground">
-                    Extra security for your account
-                  </div>
-                </div>
-              </div>
-              <Badge className={user?.two_factor_enabled ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'}>
-                {user?.two_factor_enabled ? 'Enabled' : 'Disabled'}
-              </Badge>
-            </div>
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <CardTitle>Personal Information</CardTitle>
+        {!isEditing ? (
+          <Button onClick={() => setIsEditing(true)} variant="outline">
+            Edit
+          </Button>
+        ) : (
+          <div className="flex gap-2">
+            <Button onClick={handleCancel} variant="outline" size="sm">
+              Cancel
+            </Button>
+            <Button onClick={handleSave} size="sm">
+              Save
+            </Button>
           </div>
-        </CardContent>
-      </Card>
+        )}
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="full_name">Full Name</Label>
+            <Input
+              id="full_name"
+              name="full_name"
+              value={formData.full_name}
+              onChange={handleInputChange}
+              disabled={!isEditing}
+              placeholder="Enter your full name"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              value={formData.email}
+              disabled={true}
+              className="bg-muted"
+            />
+          </div>
 
-      <Card className="glass glass-hover">
-        <CardHeader>
-          <CardTitle>Address Information</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableBody>
-              <DetailRow label="Address" value={user?.address} />
-              <DetailRow label="City" value={user?.city} />
-              <DetailRow label="Postal Code" value={user?.postal_code} />
-              <DetailRow label="Country" value={user?.country} />
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+          <div className="space-y-2">
+            <Label htmlFor="phone">Phone Number</Label>
+            <Input
+              id="phone"
+              name="phone"
+              value={formData.phone}
+              onChange={handleInputChange}
+              disabled={!isEditing}
+              placeholder="Enter your phone number"
+            />
+          </div>
 
-      <Card className="glass glass-hover">
-        <CardHeader>
-          <CardTitle>Financial Information</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableBody>
-              <DetailRow 
-                label="Account Balance" 
-                value={user?.demo_balance_usd ? `$${Number(user.demo_balance_usd).toLocaleString()}` : '$0'} 
-              />
-              <DetailRow label="IBAN" value={user?.bank_details_iban} />
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-    </div>
+          <div className="space-y-2">
+            <Label htmlFor="date_of_birth">Date of Birth</Label>
+            <Input
+              id="date_of_birth"
+              name="date_of_birth"
+              type="date"
+              value={formData.date_of_birth}
+              onChange={handleInputChange}
+              disabled={!isEditing}
+            />
+          </div>
+
+          <div className="space-y-2 md:col-span-2">
+            <Label htmlFor="address">Address</Label>
+            <Input
+              id="address"
+              name="address"
+              value={formData.address}
+              onChange={handleInputChange}
+              disabled={!isEditing}
+              placeholder="Enter your address"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="city">City</Label>
+            <Input
+              id="city"
+              name="city"
+              value={formData.city}
+              onChange={handleInputChange}
+              disabled={!isEditing}
+              placeholder="Enter your city"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="postal_code">Postal Code</Label>
+            <Input
+              id="postal_code"
+              name="postal_code"
+              value={formData.postal_code}
+              onChange={handleInputChange}
+              disabled={!isEditing}
+              placeholder="Enter your postal code"
+            />
+          </div>
+
+          <div className="space-y-2 md:col-span-2">
+            <Label htmlFor="country">Country</Label>
+            <Input
+              id="country"
+              name="country"
+              value={formData.country}
+              onChange={handleInputChange}
+              disabled={!isEditing}
+              placeholder="Enter your country"
+            />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 

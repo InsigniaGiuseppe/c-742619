@@ -1,295 +1,350 @@
 
 import React, { useState } from 'react';
+import { useAuth } from '@/hooks/useAuth';
+import { useRealtimePortfolio } from '@/hooks/useRealtimePortfolio';
+import { useLending } from '@/hooks/useLending';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { usePortfolio } from '@/hooks/usePortfolio';
-import { useLending } from '@/hooks/useLending';
-import { PiggyBank, Plus } from 'lucide-react';
-import { toast } from 'sonner';
-import CryptoLogo from '@/components/CryptoLogo';
-import TotalLentCard from '@/components/lending/stats/TotalLentCard';
-import PerformanceCard from '@/components/lending/stats/PerformanceCard';
-import ReturnsCard from '@/components/lending/stats/ReturnsCard';
-import PayoutCard from '@/components/lending/stats/PayoutCard';
+import { Plus } from 'lucide-react';
+import LendingStatsCard from '@/components/lending/LendingStatsCard';
 import LendingPositionCard from '@/components/lending/LendingPositionCard';
 import IdleCryptoSuggestions from '@/components/lending/IdleCryptoSuggestions';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import FormattedNumber from '@/components/FormattedNumber';
 
-const LendingPage = () => {
-  const { portfolio } = usePortfolio();
-  const { 
-    lendingPositions, 
-    lendingStats,
-    loading, 
-    startLending, 
-    cancelLending, 
-    isStartingLending, 
-    isCancellingLending 
-  } = useLending();
-  
-  const [selectedCrypto, setSelectedCrypto] = useState<string>('');
-  const [lendingAmount, setLendingAmount] = useState<string>('');
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+interface NewLendingModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  availableCryptos: Array<any>;
+  onLendingStarted: () => void;
+}
 
-  // Create a map of lent amounts for quick lookup
-  const lentAmounts = lendingPositions.reduce((acc, pos) => {
-    if (pos.status === 'active') {
-      acc[pos.cryptocurrency_id] = (acc[pos.cryptocurrency_id] || 0) + pos.amount_lent;
-    }
-    return acc;
-  }, {} as Record<string, number>);
+const NewLendingModal: React.FC<NewLendingModalProps> = ({ isOpen, onClose, availableCryptos, onLendingStarted }) => {
+  const [selectedCrypto, setSelectedCrypto] = useState('');
+  const [amount, setAmount] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { user } = useAuth();
 
-  // Calculate available cryptos for lending, considering already lent amounts
-  const availableCryptos = portfolio
-    .map(item => {
-      const lentAmount = lentAmounts[item.cryptocurrency_id] || 0;
-      const availableQuantity = item.quantity - lentAmount;
-      const topCoins = ['BTC', 'ETH', 'USDT', 'BNB', 'SOL'];
-      const apy = topCoins.includes(item.crypto.symbol.toUpperCase()) ? 0.05 : 0.03;
-      const dailyRate = apy / 365;
-      const potential_daily_earnings = availableQuantity * dailyRate * item.crypto.current_price;
-      
-      return { 
-        ...item, 
-        available_quantity: availableQuantity,
-        potential_daily_earnings
-      };
-    })
-    .filter(item => item.available_quantity > 1e-8); // Use a small epsilon to filter out dust
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !selectedCrypto || !amount) return;
 
-  const handleStartLending = (cryptoId?: string, amount?: string) => {
-    const targetCrypto = cryptoId || selectedCrypto;
-    const targetAmount = amount || lendingAmount;
-    
-    if (!targetCrypto || !targetAmount) {
-      toast.error('Please select a cryptocurrency and enter an amount');
-      return;
-    }
+    setIsSubmitting(true);
+    try {
+      const selectedCryptoData = availableCryptos.find(c => c.cryptocurrency_id === selectedCrypto);
+      if (!selectedCryptoData) throw new Error('Crypto not found');
 
-    const amountNum = parseFloat(targetAmount);
-    const selectedPosition = availableCryptos.find(p => p.cryptocurrency_id === targetCrypto);
-
-    if (!selectedPosition || amountNum > selectedPosition.available_quantity) {
-      toast.error('Insufficient balance for this lending amount');
-      return;
-    }
-
-    startLending(
-      { cryptoId: targetCrypto, amount: amountNum },
-      {
-        onSuccess: () => {
-          toast.success('Lending successful!');
-          setIsDialogOpen(false);
-          setSelectedCrypto('');
-          setLendingAmount('');
-        },
-        onError: (error) => {
-          toast.error(`Failed to start lending: ${error.message}`);
-        },
+      const lendingAmount = parseFloat(amount);
+      if (lendingAmount <= 0 || lendingAmount > selectedCryptoData.quantity) {
+        throw new Error('Invalid lending amount');
       }
-    );
+
+      // Start lending position
+      const { error: lendingError } = await supabase
+        .from('user_lending')
+        .insert({
+          user_id: user.id,
+          cryptocurrency_id: selectedCrypto,
+          amount_lent: lendingAmount,
+          original_amount_lent: lendingAmount,
+          annual_interest_rate: ['BTC', 'ETH', 'USDT', 'SOL'].includes(selectedCryptoData.crypto.symbol.toUpperCase()) ? 0.05 : 0.03,
+          status: 'active'
+        });
+
+      if (lendingError) throw lendingError;
+
+      // Update portfolio
+      const { error: portfolioError } = await supabase
+        .from('user_portfolios')
+        .update({
+          quantity: selectedCryptoData.quantity - lendingAmount
+        })
+        .eq('user_id', user.id)
+        .eq('cryptocurrency_id', selectedCrypto);
+
+      if (portfolioError) throw portfolioError;
+
+      // Add transaction record with correct type
+      const { error: transactionError } = await supabase
+        .from('transaction_history')
+        .insert({
+          user_id: user.id,
+          cryptocurrency_id: selectedCrypto,
+          transaction_type: 'lending_start',
+          amount: lendingAmount,
+          usd_value: lendingAmount * selectedCryptoData.crypto.current_price,
+          description: `Started lending ${lendingAmount} ${selectedCryptoData.crypto.symbol}`,
+          status: 'completed'
+        });
+
+      if (transactionError) throw transactionError;
+
+      toast.success(`Successfully started lending ${amount} ${selectedCryptoData.crypto.symbol}`);
+      onLendingStarted();
+      onClose();
+      setSelectedCrypto('');
+      setAmount('');
+    } catch (error: any) {
+      console.error('Lending error:', error);
+      toast.error(`Failed to start lending: ${error.message}`);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleQuickLend = (cryptoId: string) => {
-    setSelectedCrypto(cryptoId);
-    setIsDialogOpen(true);
-  };
-
-  const handleCancelLending = (positionId: string, symbol: string) => {
-    cancelLending(positionId, {
-      onSuccess: () => {
-        toast.success(`Lending position for ${symbol} cancelled successfully!`);
-      },
-      onError: (error) => {
-        toast.error(`Failed to cancel lending: ${error.message}`);
-      },
-    });
-  };
+  if (!isOpen) return null;
 
   return (
-    <div>
-      <div className="mb-6 md:mb-8">
-        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-2">
-          <img 
-            src="/lovable-uploads/3765d287-ffd3-40d5-8628-4f8191064138.png" 
-            alt="PROMPTO TRADING Logo" 
-            className="w-8 h-8 md:w-10 md:h-10 object-contain"
-          />
-          <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white">CRYPTO LENDING</h1>
-        </div>
-        <p className="text-muted-foreground text-sm md:text-base">
-          Earn passive income by lending your cryptocurrencies • Daily payouts at 9:00 AM • Cancel anytime
-        </p>
-      </div>
-
-      {/* Enhanced Lending Statistics */}
-      <div className="mb-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <TotalLentCard 
-          loading={loading}
-          totalLentValue={lendingStats.totalLentValue}
-          totalEarnedInterest={lendingStats.totalEarnedInterest}
-        />
-        <PerformanceCard 
-          loading={loading}
-          averageYield={lendingStats.averageYield}
-          activeLendingCount={lendingStats.activeLendingCount}
-        />
-        <ReturnsCard
-          loading={loading}
-          estimatedDailyReturn={lendingStats.estimatedDailyReturn}
-          estimatedMonthlyReturn={lendingStats.estimatedMonthlyReturn}
-        />
-        <PayoutCard
-          loading={loading}
-          nextPayoutIn={lendingStats.nextPayoutIn}
-          daysSinceLastPayout={lendingStats.daysSinceLastPayout}
-        />
-      </div>
-
-      {/* Idle Crypto Suggestions */}
-      {availableCryptos.length > 0 && (
-        <div className="mb-8">
-          <IdleCryptoSuggestions 
-            availableCryptos={availableCryptos}
-            onStartLending={handleQuickLend}
-          />
-        </div>
-      )}
-
-      {/* Active Lending Positions */}
-      <Card className="glass glass-hover">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <Card className="w-full max-w-md mx-4">
         <CardHeader>
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div>
-                <CardTitle className="text-xl">Active Lending Positions</CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  {lendingPositions.length} active position{lendingPositions.length !== 1 ? 's' : ''}
-                  {lendingPositions.length > 0 && (
-                    <> • Earning <span className="text-green-400 font-medium">
-                      €{lendingStats.estimatedDailyReturn.toFixed(2)}/day
-                    </span></>
-                  )}
-                </p>
-              </div>
-              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700">
-                    <Plus className="w-4 h-4 mr-2" />
-                    New Lending Position
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-[425px] bg-gray-900 border-gray-700">
-                  <DialogHeader>
-                    <DialogTitle>Start New Lending Position</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Select Cryptocurrency</label>
-                      <Select value={selectedCrypto} onValueChange={setSelectedCrypto}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Choose a cryptocurrency" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {availableCryptos.map((crypto) => (
-                            <SelectItem key={crypto.cryptocurrency_id} value={crypto.cryptocurrency_id}>
-                              <div className="flex items-center gap-2">
-                                <CryptoLogo 
-                                  logo_url={crypto.crypto.logo_url}
-                                  name={crypto.crypto.name}
-                                  symbol={crypto.crypto.symbol}
-                                  size="sm"
-                                />
-                                <span>{crypto.crypto.symbol} - Available: {crypto.available_quantity.toFixed(6)}</span>
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Amount to Lend</label>
-                      <Input
-                        type="number"
-                        value={lendingAmount}
-                        onChange={(e) => setLendingAmount(e.target.value)}
-                        placeholder="Enter amount"
-                        step="0.000001"
-                        min="0"
-                      />
-                      {selectedCrypto && lendingAmount && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Estimated daily earnings: €{(parseFloat(lendingAmount) * 
-                            (availableCryptos.find(c => c.cryptocurrency_id === selectedCrypto)?.potential_daily_earnings || 0) / 
-                            (availableCryptos.find(c => c.cryptocurrency_id === selectedCrypto)?.available_quantity || 1)
-                          ).toFixed(4)}
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
-                      <h4 className="text-sm font-medium mb-2 text-blue-400">Interest Rates</h4>
-                      <div className="space-y-1 text-xs text-muted-foreground">
-                        <p>• Top coins (BTC, ETH, USDT, BNB, SOL): <span className="text-green-500 font-medium">5% APR</span></p>
-                        <p>• Other cryptocurrencies: <span className="text-green-500 font-medium">3% APR</span></p>
-                        <p>• Interest paid daily at 9:00 AM</p>
-                        <p>• Compound interest automatically applied</p>
-                      </div>
-                    </div>
-
-                    <Button 
-                      onClick={() => handleStartLending()} 
-                      className="w-full bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700"
-                      disabled={isStartingLending || !selectedCrypto || !lendingAmount || parseFloat(lendingAmount) <= 0}
-                    >
-                      {isStartingLending ? 'Starting...' : 'Start Lending'}
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
-          </div>
+          <CardTitle>New Lending Position</CardTitle>
         </CardHeader>
         <CardContent>
-          {loading ? (
-            <div className="space-y-4">
-              {[...Array(3)].map((_, i) => (
-                <div key={i} className="animate-pulse">
-                  <div className="h-32 bg-gray-800 rounded-xl"></div>
-                </div>
-              ))}
-            </div>
-          ) : lendingPositions.length === 0 ? (
-            <div className="text-center py-16 text-muted-foreground">
-              <PiggyBank className="w-20 h-20 mx-auto mb-6 opacity-30" />
-              <p className="text-xl mb-3">No Active Lending Positions</p>
-              <p className="text-sm max-w-md mx-auto leading-relaxed">
-                Start your first lending position to begin earning passive income. 
-                Your crypto will work for you while you sleep! 
-              </p>
-              <Button 
-                className="mt-6 bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700"
-                onClick={() => setIsDialogOpen(true)}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">Select Cryptocurrency</label>
+              <select 
+                value={selectedCrypto} 
+                onChange={(e) => setSelectedCrypto(e.target.value)}
+                className="w-full p-2 border rounded bg-background"
+                required
               >
-                <Plus className="w-4 h-4 mr-2" />
-                Start Lending Now
+                <option value="">Choose crypto to lend</option>
+                {availableCryptos.map((crypto) => (
+                  <option key={crypto.cryptocurrency_id} value={crypto.cryptocurrency_id}>
+                    {crypto.crypto.symbol} - Available: {crypto.quantity.toFixed(6)}
+                  </option>
+                ))}
+              </select>
+            </div>
+            
+            {selectedCrypto && (
+              <div>
+                <label className="block text-sm font-medium mb-2">Amount to Lend</label>
+                <input
+                  type="number"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  max={availableCryptos.find(c => c.cryptocurrency_id === selectedCrypto)?.quantity || 0}
+                  step="0.000001"
+                  className="w-full p-2 border rounded bg-background"
+                  placeholder="Enter amount"
+                  required
+                />
+              </div>
+            )}
+            
+            <div className="flex gap-2 pt-4">
+              <Button type="button" variant="outline" onClick={onClose} className="flex-1">
+                Cancel
+              </Button>
+              <Button 
+                type="submit" 
+                disabled={isSubmitting || !selectedCrypto || !amount}
+                className="flex-1 bg-green-500 hover:bg-green-600 text-white"
+              >
+                {isSubmitting ? 'Starting...' : 'Start Lending'}
               </Button>
             </div>
-          ) : (
-            <div className="space-y-6">
-              {lendingPositions.map((position) => (
-                <LendingPositionCard
-                  key={position.id}
-                  position={position}
-                  onCancel={handleCancelLending}
-                  isCancelling={isCancellingLending}
-                />
-              ))}
-            </div>
-          )}
+          </form>
         </CardContent>
       </Card>
+    </div>
+  );
+};
+
+const LendingPage: React.FC = () => {
+  const { user } = useAuth();
+  const { portfolio } = useRealtimePortfolio();
+  const { lendingPositions, refetch: refetchLending } = useLending();
+  const [isCancelling, setIsCancelling] = useState<string | null>(null);
+  const [isNewLendingModalOpen, setIsNewLendingModalOpen] = useState(false);
+
+  // Calculate available cryptos for lending
+  const availableCryptos = portfolio?.filter(item => item.quantity > 0).map(item => ({
+    ...item,
+    available_quantity: item.quantity,
+    potential_daily_earnings: item.quantity * item.crypto.current_price * 0.05 / 365
+  })) || [];
+
+  // Calculate lending stats
+  const totalLent = lendingPositions?.reduce((sum, pos) => sum + (pos.amount_lent * pos.crypto.current_price), 0) || 0;
+  const totalEarnings = lendingPositions?.reduce((sum, pos) => sum + (pos.total_interest_earned * pos.crypto.current_price), 0) || 0;
+  const dailyEarnings = lendingPositions?.reduce((sum, pos) => {
+    const dailyRate = pos.annual_interest_rate / 365;
+    return sum + (pos.amount_lent * dailyRate * pos.crypto.current_price);
+  }, 0) || 0;
+
+  const handleCancelLending = async (positionId: string, symbol: string) => {
+    if (!user) return;
+    
+    setIsCancelling(positionId);
+    try {
+      const position = lendingPositions?.find(p => p.id === positionId);
+      if (!position) throw new Error('Position not found');
+
+      // Cancel lending position
+      const { error: lendingError } = await supabase
+        .from('user_lending')
+        .update({
+          status: 'cancelled',
+          lending_cancelled_at: new Date().toISOString()
+        })
+        .eq('id', positionId);
+
+      if (lendingError) throw lendingError;
+
+      // Return crypto to portfolio
+      const { data: existingPortfolio } = await supabase
+        .from('user_portfolios')
+        .select('quantity')
+        .eq('user_id', user.id)
+        .eq('cryptocurrency_id', position.cryptocurrency_id)
+        .single();
+
+      const newQuantity = (existingPortfolio?.quantity || 0) + position.amount_lent;
+      
+      const { error: portfolioError } = await supabase
+        .from('user_portfolios')
+        .upsert({
+          user_id: user.id,
+          cryptocurrency_id: position.cryptocurrency_id,
+          quantity: newQuantity
+        });
+
+      if (portfolioError) throw portfolioError;
+
+      // Add transaction record
+      const { error: transactionError } = await supabase
+        .from('transaction_history')
+        .insert({
+          user_id: user.id,
+          cryptocurrency_id: position.cryptocurrency_id,
+          transaction_type: 'lending_cancelled',
+          amount: position.amount_lent,
+          usd_value: position.amount_lent * position.crypto.current_price,
+          description: `Cancelled lending position for ${position.amount_lent} ${symbol}`,
+          status: 'completed'
+        });
+
+      if (transactionError) throw transactionError;
+
+      toast.success(`Successfully cancelled lending position for ${symbol}`);
+      refetchLending();
+    } catch (error: any) {
+      console.error('Cancel lending error:', error);
+      toast.error(`Failed to cancel lending: ${error.message}`);
+    } finally {
+      setIsCancelling(null);
+    }
+  };
+
+  const handleStartLendingFromSuggestion = (cryptoId: string) => {
+    setIsNewLendingModalOpen(true);
+  };
+
+  if (!user) {
+    return (
+      <div className="container mx-auto py-8 px-4 text-center">
+        <p className="text-muted-foreground">Please log in to access the lending platform.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="container mx-auto py-8 px-4 md:px-6 lg:px-8">
+      <div className="space-y-8">
+        {/* Header */}
+        <div className="text-center">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-center gap-2 sm:gap-3 mb-4">
+            <img 
+              src="/lovable-uploads/3765d287-ffd3-40d5-8628-4f8191064138.png" 
+              alt="PROMPTO TRADING Logo" 
+              className="w-8 h-8 md:w-10 md:h-10 object-contain mx-auto sm:mx-0"
+            />
+            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight text-white">Crypto Lending</h1>
+          </div>
+          <p className="mt-4 text-lg text-muted-foreground">
+            Lend your crypto assets and earn passive income with daily interest payments.
+          </p>
+        </div>
+
+        {/* Lending Stats */}
+        <LendingStatsCard 
+          totalLent={totalLent}
+          totalEarnings={totalEarnings}
+          dailyEarnings={dailyEarnings}
+          activePositions={lendingPositions?.length || 0}
+        />
+
+        {/* Active Lending Positions */}
+        <Card className="glass glass-hover">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-xl mb-2">Active Lending Positions</CardTitle>
+                {lendingPositions && lendingPositions.length > 0 && (
+                  <p className="text-lg font-semibold text-muted-foreground">
+                    {lendingPositions.length} active position{lendingPositions.length !== 1 ? 's' : ''} • Earning{' '}
+                    <FormattedNumber 
+                      value={dailyEarnings} 
+                      type="currency" 
+                      showTooltip={false} 
+                      className="text-green-400 font-bold" 
+                    />
+                    /day
+                  </p>
+                )}
+              </div>
+              <Button
+                onClick={() => setIsNewLendingModalOpen(true)}
+                className="bg-green-500 hover:bg-green-600 text-white"
+                disabled={availableCryptos.length === 0}
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                New Lending Position
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {lendingPositions && lendingPositions.length > 0 ? (
+              <div className="grid gap-4">
+                {lendingPositions.map((position) => (
+                  <LendingPositionCard
+                    key={position.id}
+                    position={position}
+                    onCancel={handleCancelLending}
+                    isCancelling={isCancelling === position.id}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12 text-muted-foreground">
+                <p className="text-lg mb-2">No Active Lending Positions</p>
+                <p className="text-sm">Start lending your crypto to earn daily interest.</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Idle Crypto Suggestions */}
+        {availableCryptos.length > 0 && (
+          <IdleCryptoSuggestions
+            availableCryptos={availableCryptos}
+            onStartLending={handleStartLendingFromSuggestion}
+          />
+        )}
+
+        {/* New Lending Modal */}
+        <NewLendingModal
+          isOpen={isNewLendingModalOpen}
+          onClose={() => setIsNewLendingModalOpen(false)}
+          availableCryptos={availableCryptos}
+          onLendingStarted={refetchLending}
+        />
+      </div>
     </div>
   );
 };

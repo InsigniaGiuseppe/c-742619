@@ -1969,6 +1969,16 @@ export type Database = {
         | "proof_of_address"
       kyc_status: "not_started" | "pending" | "verified" | "rejected"
       order_status_type: "pending" | "completed" | "rejected" | "failed"
+      transaction_type:
+        | "buy"
+        | "sell"
+        | "deposit"
+        | "withdrawal"
+        | "lending_interest"
+        | "lending_start"
+        | "lending_cancelled"
+        | "vault_deposit"
+        | "vault_withdrawal"
       vault_status: "active" | "completed" | "withdrawn"
       vip_rank: "free" | "bronze" | "silver" | "gold"
       wallet_status: "pending" | "verified" | "rejected"
@@ -2098,6 +2108,17 @@ export const Constants = {
       ],
       kyc_status: ["not_started", "pending", "verified", "rejected"],
       order_status_type: ["pending", "completed", "rejected", "failed"],
+      transaction_type: [
+        "buy",
+        "sell",
+        "deposit",
+        "withdrawal",
+        "lending_interest",
+        "lending_start",
+        "lending_cancelled",
+        "vault_deposit",
+        "vault_withdrawal",
+      ],
       vault_status: ["active", "completed", "withdrawn"],
       vip_rank: ["free", "bronze", "silver", "gold"],
       wallet_status: ["pending", "verified", "rejected"],

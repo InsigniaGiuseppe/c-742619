@@ -47,6 +47,19 @@ export const useRealtimePortfolio = () => {
         {
           event: '*',
           schema: 'public',
+          table: 'user_portfolios'
+        },
+        (payload) => {
+          console.log('[Realtime] Portfolio updated:', payload);
+          // Refetch portfolio data when user portfolios change
+          portfolio.refetch();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
           table: 'user_lending'
         },
         (payload) => {
@@ -67,6 +80,19 @@ export const useRealtimePortfolio = () => {
           console.log('[Realtime] Interest payment received:', payload);
           // Refetch both when interest payments are added
           lending.refetch();
+          portfolio.refetch();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'trading_orders'
+        },
+        (payload) => {
+          console.log('[Realtime] Trading order updated:', payload);
+          // Refetch portfolio when trading orders change
           portfolio.refetch();
         }
       )
