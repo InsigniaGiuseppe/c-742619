@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -214,21 +213,32 @@ export const useTrade = (crypto: Cryptocurrency | undefined) => {
           ? existingPortfolio.quantity + coinAmount 
           : existingPortfolio.quantity - coinAmount;
         
+        // FIXED: Store EUR values correctly
         const newTotalInvested = tradeType === 'buy' 
-          ? existingPortfolio.total_invested + eurValue 
-          : Math.max(0, existingPortfolio.total_invested - eurValue);
+          ? existingPortfolio.total_invested + eurValue  // Add EUR amount, not USD
+          : Math.max(0, existingPortfolio.total_invested - eurValue); // Subtract EUR amount
         
         const newAveragePrice = newQuantity > 0 ? crypto.current_price : 0;
         const newCurrentValue = newQuantity * convertUsdToEur(crypto.current_price, exchangeRate);
         const newProfitLoss = newCurrentValue - newTotalInvested;
         const newProfitLossPercentage = newTotalInvested > 0 ? (newProfitLoss / newTotalInvested) * 100 : 0;
 
+        console.log(`${logPrefix} 3a. Portfolio calculation:`, {
+          newQuantity,
+          newTotalInvested,
+          newCurrentValue,
+          newProfitLoss,
+          newProfitLossPercentage,
+          eurValue,
+          existingTotalInvested: existingPortfolio.total_invested
+        });
+
         const { data: updatedPortfolio, error: portfolioUpdateError } = await supabase
           .from('user_portfolios')
           .update({
             quantity: newQuantity,
             average_buy_price: newAveragePrice,
-            total_invested: newTotalInvested,
+            total_invested: newTotalInvested, // Store in EUR
             current_value: newCurrentValue,
             profit_loss: newProfitLoss,
             profit_loss_percentage: newProfitLossPercentage
@@ -250,7 +260,7 @@ export const useTrade = (crypto: Cryptocurrency | undefined) => {
             cryptocurrency_id: crypto.id,
             quantity: coinAmount,
             average_buy_price: crypto.current_price,
-            total_invested: eurValue,
+            total_invested: eurValue, // Store EUR value directly
             current_value: currentValueEur,
             profit_loss: currentValueEur - eurValue,
             profit_loss_percentage: ((currentValueEur - eurValue) / eurValue) * 100
