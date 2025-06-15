@@ -85,7 +85,8 @@ const SpinRewardTierDisplay: React.FC<SpinRewardTierDisplayProps> = ({
               backdrop-blur-sm
             `}
             style={{
-              filter: isSelected ? 'drop-shadow(0 0 20px currentColor)' : 'none'
+              filter: isSelected ? 'drop-shadow(0 0 20px currentColor)' : 'none',
+              boxShadow: isSelected ? getTierGlow(reward.tier, true).replace('shadow-', '').replace(' animate-pulse', '') : 'none'
             }}
           >
             {/* Tier Badge */}
