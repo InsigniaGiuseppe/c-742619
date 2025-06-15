@@ -163,9 +163,9 @@ const SpinRoulette: React.FC<SpinRouletteProps> = ({
                     {/* Crypto logo with enhanced ring */}
                     <div className={`relative ring-2 ${colors.ringColor} rounded-full p-1 mb-2`}>
                       <CryptoLogo
-                        symbol={item.crypto.symbol}
-                        logo_url={item.crypto.logo_url}
-                        name={item.crypto.name}
+                        symbol={item.crypto?.symbol || 'UNK'}
+                        logo_url={item.crypto?.logo_url}
+                        name={item.crypto?.name || 'Unknown'}
                         size="md"
                         className="drop-shadow-lg"
                       />
@@ -177,7 +177,7 @@ const SpinRoulette: React.FC<SpinRouletteProps> = ({
                         {item.amount.toFixed(6)}
                       </div>
                       <div className="text-xs text-gray-200 font-medium">
-                        {item.crypto.symbol.toUpperCase()}
+                        {(item.crypto?.symbol || 'UNK').toUpperCase()}
                       </div>
                     </div>
 
@@ -267,13 +267,13 @@ const SpinRoulette: React.FC<SpinRouletteProps> = ({
                     >
                       <div className={`ring-1 ${colors.ringColor} rounded-full p-1 mb-1`}>
                         <CryptoLogo
-                          symbol={item.crypto.symbol}
-                          logo_url={item.crypto.logo_url}
-                          name={item.crypto.name}
+                          symbol={item.crypto?.symbol || 'UNK'}
+                          logo_url={item.crypto?.logo_url}
+                          name={item.crypto?.name || 'Unknown'}
                           size="sm"
                         />
                       </div>
-                      <div className="text-xs text-white font-medium">{item.crypto.symbol}</div>
+                      <div className="text-xs text-white font-medium">{item.crypto?.symbol || 'UNK'}</div>
                     </motion.div>
                   );
                 })}

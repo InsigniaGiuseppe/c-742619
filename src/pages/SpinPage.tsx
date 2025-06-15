@@ -90,7 +90,11 @@ const SpinPage: React.FC = () => {
     console.log('[SpinPage] Generating roulette items with configurations:', configurations?.length);
     return configurations.map((config, index) => ({
       id: config.id,
-      crypto: config.cryptocurrencies!,
+      crypto: {
+        name: config.cryptocurrencies?.name || 'Unknown',
+        symbol: config.cryptocurrencies?.symbol || 'UNK',
+        logo_url: config.cryptocurrencies?.logo_url
+      },
       amount: betAmountBtc * config.min_multiplier,
       tier: config.reward_tier
     }));
@@ -231,7 +235,11 @@ const SpinPage: React.FC = () => {
             isSpinning={isSpinning}
             winningItem={lastSpinResult ? {
               id: 'winner',
-              crypto: lastSpinResult.rewardCrypto,
+              crypto: {
+                name: lastSpinResult.rewardCrypto,
+                symbol: lastSpinResult.rewardCrypto,
+                logo_url: undefined
+              },
               amount: lastSpinResult.rewardAmount,
               tier: lastSpinResult.multiplier >= 3 ? 'epic' : lastSpinResult.multiplier >= 1.5 ? 'rare' : 'common'
             } : undefined}
