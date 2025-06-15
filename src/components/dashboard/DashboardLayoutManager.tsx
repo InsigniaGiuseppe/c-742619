@@ -7,6 +7,7 @@ import ProfitLossWidget from './widgets/ProfitLossWidget';
 import PortfolioGrowthChartWidget from './widgets/PortfolioGrowthChartWidget';
 import PortfolioDistributionWidget from './widgets/PortfolioDistributionWidget';
 import PortfolioHoldingsTableWidget from './widgets/PortfolioHoldingsTableWidget';
+import RecentTransactionsWidget from './widgets/RecentTransactionsWidget';
 
 interface WidgetConfig {
   id: string;
@@ -20,6 +21,7 @@ const widgetConfigs: WidgetConfig[] = [
   { id: 'profit-loss', component: ProfitLossWidget, className: 'md:col-span-12 lg:col-span-4' },
   { id: 'portfolio-holdings-table', component: PortfolioHoldingsTableWidget, className: 'md:col-span-12' },
   { id: 'portfolio-distribution', component: PortfolioDistributionWidget, className: 'md:col-span-12' },
+  { id: 'recent-transactions', component: RecentTransactionsWidget, className: 'md:col-span-12' },
   { id: 'portfolio-growth-chart', component: PortfolioGrowthChartWidget, className: 'md:col-span-12' },
 ];
 

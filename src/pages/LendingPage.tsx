@@ -135,15 +135,16 @@ const LendingPage = () => {
           />
         </div>
 
-        {/* Start New Lending Position */}
-        <div className="mb-8">
-          <Card className="glass glass-hover">
-            <CardHeader>
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <CardTitle className="flex items-center gap-2">
-                  <PiggyBank className="w-5 h-5" />
-                  Start Lending
-                </CardTitle>
+        {/* Active Lending Positions */}
+        <Card className="glass glass-hover">
+          <CardHeader>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                  <CardTitle>Active Lending Positions</CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    {lendingPositions.length} active position{lendingPositions.length !== 1 ? 's' : ''}
+                  </p>
+                </div>
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                   <DialogTrigger asChild>
                     <Button>
@@ -212,35 +213,7 @@ const LendingPage = () => {
                     </div>
                   </DialogContent>
                 </Dialog>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8 text-muted-foreground">
-                {availableCryptos.length === 0 ? (
-                  <div>
-                    <PiggyBank className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                    <p className="text-lg mb-2">No Available Cryptocurrencies</p>
-                    <p className="text-sm">You need to own cryptocurrencies to start lending</p>
-                  </div>
-                ) : (
-                  <div>
-                    <PiggyBank className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                    <p className="text-lg mb-2">Ready to Start Earning</p>
-                    <p className="text-sm">Click "New Lending Position" to begin earning passive income</p>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Active Lending Positions */}
-        <Card className="glass glass-hover">
-          <CardHeader>
-            <CardTitle>Active Lending Positions</CardTitle>
-            <p className="text-sm text-muted-foreground">
-              {lendingPositions.length} active position{lendingPositions.length !== 1 ? 's' : ''}
-            </p>
+            </div>
           </CardHeader>
           <CardContent>
             {loading ? (
@@ -255,7 +228,7 @@ const LendingPage = () => {
               <div className="text-center py-12 text-muted-foreground">
                 <PiggyBank className="w-16 h-16 mx-auto mb-4 opacity-30" />
                 <p className="text-lg mb-2">No Active Lending Positions</p>
-                <p className="text-sm">Start your first lending position to begin earning passive income</p>
+                <p className="text-sm">Start your first lending position to begin earning passive income. <br/> Click "New Lending Position" to get started.</p>
               </div>
             ) : (
               <div className="space-y-4">
