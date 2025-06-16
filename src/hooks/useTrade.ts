@@ -6,7 +6,7 @@ import { Cryptocurrency } from './useCryptocurrencies';
 import { useQueryClient } from '@tanstack/react-query';
 import { useExchangeRate } from './useExchangeRate';
 import { convertUsdToEur, convertEurToUsd } from '@/lib/currencyConverter';
-import CryptoPnLCalculator from '@/lib/CryptoPnLCalculator';
+import CryptoPnLCalculator, { SellPnlResult } from '@/lib/CryptoPnLCalculator';
 
 export const useTrade = (crypto: Cryptocurrency | undefined) => {
   const { user } = useAuth();
@@ -148,13 +148,14 @@ export const useTrade = (crypto: Cryptocurrency | undefined) => {
     setIsProcessingTrade(true);
     const logPrefix = `[Trade-Step]`;
 
-    // Update PnL calculator before processing trade
+    // Update PnL calculator before processing trade and capture realized PnL
+    let sellPnlResult: SellPnlResult | null = null;
     try {
       if (tradeType === 'buy') {
         pnlCalculatorRef.current.addBuy(crypto.symbol, coinAmount, eurValue);
       } else {
-        const result = pnlCalculatorRef.current.addSell(crypto.symbol, coinAmount, eurValue);
-        console.log('[useTrade] PnL result', result);
+        sellPnlResult = pnlCalculatorRef.current.addSell(crypto.symbol, coinAmount, eurValue);
+        console.log('[useTrade] PnL result', sellPnlResult);
       }
     } catch (err) {
       console.error('[useTrade] PnL calculation error', err);
@@ -205,6 +206,25 @@ export const useTrade = (crypto: Cryptocurrency | undefined) => {
       console.log(`${logPrefix} 2. Result:`, { transaction, transactionError });
       if (transactionError) throw new Error(`Failed at transaction_history: ${transactionError.message}`);
       if (!transaction) throw new Error('Transaction history creation returned no data.');
+
+      // Record realized gains when a sell occurs
+      if (tradeType === 'sell' && sellPnlResult) {
+        const { error: gainsError } = await supabase
+          .from('realized_gains')
+          .insert({
+            user_id: user.id,
+            cryptocurrency_id: crypto.id,
+            quantity_sold: sellPnlResult.totalQuantitySold,
+            total_cost_basis: sellPnlResult.totalCostBasis,
+            total_sale_value: sellPnlResult.totalSaleValue,
+            realized_pnl: sellPnlResult.totalPnL,
+            details: sellPnlResult.details,
+            sold_at: new Date().toISOString(),
+          });
+        if (gainsError) {
+          console.error('[useTrade] Failed to record realized gains:', gainsError);
+        }
+      }
 
       // Step 3: Update or create portfolio entry
       console.log(`${logPrefix} 3. Fetching existing portfolio for update...`);
@@ -311,6 +331,7 @@ export const useTrade = (crypto: Cryptocurrency | undefined) => {
       queryClient.invalidateQueries({ queryKey: historyQueryKey });
       queryClient.invalidateQueries({ queryKey: ['admin-transactions'] });
       queryClient.invalidateQueries({ queryKey: ['user-balance', user.id] });
+      queryClient.invalidateQueries({ queryKey: ['enhanced-portfolio', user.id] });
       
       toast.success(`Successfully ${tradeType === 'buy' ? 'bought' : 'sold'} ${coinAmount.toFixed(8)} ${crypto.symbol} for €${eurValue.toFixed(2)}`);
       
