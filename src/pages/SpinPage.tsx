@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePortfolio } from "@/hooks/usePortfolio";
@@ -18,7 +17,11 @@ const SpinPage: React.FC = () => {
   
   const { user } = useAuth();
   const { portfolio } = usePortfolio();
-  const { spin, isSpinning, currentSpin, setCurrentSpin } = useSpinGame();
+  const { spin, currentSpin, setCurrentSpin } = useSpinGame();
+  
+  // Local spinning state for animation control
+  const [isSpinning, setIsSpinning] = useState(false);
+  const [pendingResult, setPendingResult] = useState<any>(null);
   
   const { data: configurations = [], isLoading: loading } = useQuery({
     queryKey: ['spin_configurations'],
@@ -31,7 +34,7 @@ const SpinPage: React.FC = () => {
           cryptocurrencies(symbol, name, current_price, logo_url)
         `)
         .eq('is_active', true)
-        .order('probability', { ascending: false });
+        .order('reward_tier', { ascending: true });
 
       if (error) {
         console.error('[SpinPage] Error fetching configurations:', error);
@@ -52,8 +55,8 @@ const SpinPage: React.FC = () => {
   const btcHolding = portfolio?.find(p => p.crypto.symbol === 'BTC');
   const btcBalance = btcHolding?.quantity || 0;
   const btcPrice = btcHolding?.crypto.current_price || 50000;
+  const betAmountUsd = betAmountBtc * btcPrice;
 
-  // Cooldown timer effect
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (cooldownTime > 0) {
@@ -70,19 +73,59 @@ const SpinPage: React.FC = () => {
     return () => clearInterval(interval);
   }, [cooldownTime]);
 
-  // Handle spin result modal display
-  useEffect(() => {
-    if (lastSpinResult && !isSpinning) {
-      // Show modal after animation completes
-      const timer = setTimeout(() => {
+  // Show result modal when animation completes
+  const handleSpinComplete = () => {
+    console.log('[SpinPage] Spin animation complete');
+    setIsSpinning(false);
+    
+    if (pendingResult) {
+      setLastSpinResult(pendingResult);
+      setPendingResult(null);
+      
+      // Show modal after a short delay
+      setTimeout(() => {
         setShowResultModal(true);
-      }, 1500);
-      return () => clearTimeout(timer);
+      }, 500);
     }
-  }, [lastSpinResult, isSpinning]);
+  };
+
+  const getMultiplierColor = (multiplier: number) => {
+    if (multiplier >= 8) return 'text-yellow-400';
+    if (multiplier >= 3) return 'text-purple-400';
+    if (multiplier >= 1.5) return 'text-blue-400';
+    return 'text-gray-400';
+  };
+
+  const getTierBadgeStyle = (tier: string) => {
+    switch (tier) {
+      case 'legendary':
+        return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
+      case 'epic':
+        return 'bg-purple-500/20 text-purple-400 border-purple-500/30';
+      case 'rare':
+        return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
+      default:
+        return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
+    }
+  };
+
+  const getTierGlow = (tier: string) => {
+    switch (tier) {
+      case 'legendary':
+        return 'shadow-[0_0_20px_rgba(255,215,0,0.6)] ring-2 ring-yellow-400/30';
+      case 'epic':
+        return 'shadow-[0_0_16px_rgba(168,85,247,0.6)] ring-2 ring-purple-400/30';
+      case 'rare':
+        return 'shadow-[0_0_12px_rgba(59,130,246,0.6)] ring-2 ring-blue-400/30';
+      case 'common':
+        return 'shadow-[0_0_8px_rgba(156,163,175,0.4)] ring-1 ring-gray-400/20';
+      default:
+        return '';
+    }
+  };
 
   const generateRouletteItems = () => {
-    const items = configurations.map((config) => ({
+    const allTierItems = configurations.map((config, index) => ({
       id: config.id,
       crypto: {
         name: config.cryptocurrencies?.name || 'Unknown',
@@ -93,8 +136,7 @@ const SpinPage: React.FC = () => {
       tier: config.reward_tier
     }));
 
-    // Add loss option
-    items.push({
+    allTierItems.push({
       id: 'loss',
       crypto: {
         name: 'Loss',
@@ -105,7 +147,7 @@ const SpinPage: React.FC = () => {
       tier: 'loss'
     });
 
-    return items;
+    return allTierItems;
   };
 
   const handleSpin = async () => {
@@ -119,24 +161,30 @@ const SpinPage: React.FC = () => {
       return;
     }
 
-    // Start cooldown immediately
+    if (isSpinning) {
+      toast.error('Please wait for the current spin to complete');
+      return;
+    }
+
     setCanSpin(false);
     setCooldownTime(10);
+    setIsSpinning(true); // Set spinning state immediately
+    
+    console.log('[SpinPage] Starting spin');
 
-    console.log('[SpinPage] Starting spin...');
     const result = await spin(betAmountBtc);
     
     if (result) {
-      console.log('[SpinPage] Spin completed:', result);
-      setLastSpinResult(result);
+      console.log('[SpinPage] Spin result received:', result);
+      setPendingResult(result);
+      // Keep isSpinning true - it will be set to false by handleSpinComplete
     } else {
-      // If spin failed, reset cooldown
-      setCanSpin(true);
-      setCooldownTime(0);
+      // If spin failed, reset state
+      setIsSpinning(false);
     }
   };
 
-  // Group configurations for display
+  // Group configurations by cryptocurrency and tier
   const groupedConfigurations = configurations.reduce((acc, config) => {
     const symbol = config.cryptocurrencies?.symbol || 'UNK';
     if (!acc[symbol]) {
@@ -165,29 +213,8 @@ const SpinPage: React.FC = () => {
     );
   }
 
-  const winningRouletteItem = lastSpinResult ? {
-    id: "winner",
-    crypto: {
-      name: lastSpinResult.rewardCrypto,
-      symbol: lastSpinResult.rewardCrypto,
-      logo_url: configurations.find(c => c.cryptocurrencies?.symbol === lastSpinResult.rewardCrypto)?.cryptocurrencies?.logo_url
-    },
-    amount: lastSpinResult.rewardAmount,
-    tier: lastSpinResult.tier || (
-      lastSpinResult.isWin
-        ? lastSpinResult.multiplier >= 8
-          ? "legendary"
-          : lastSpinResult.multiplier >= 3
-          ? "epic"
-          : lastSpinResult.multiplier >= 1.5
-          ? "rare"
-          : "common"
-        : "loss"
-    )
-  } : undefined;
-
   return (
-    <div className="space-y-6 max-w-6xl mx-auto">
+    <div className="space-y-6 max-w-4xl mx-auto">
       {/* Header */}
       <div className="text-center space-y-2">
         <div className="flex items-center justify-center gap-2 mb-4">
@@ -195,7 +222,7 @@ const SpinPage: React.FC = () => {
           <h1 className="text-3xl font-bold">VaultSpin</h1>
         </div>
         <p className="text-muted-foreground">
-          Spin the roulette to win cryptocurrency rewards! Bet BTC and win from the top cryptocurrencies.
+          Spin the roulette to win cryptocurrency rewards! Bet BTC and win from the top 5 coins.
         </p>
       </div>
 
@@ -208,29 +235,6 @@ const SpinPage: React.FC = () => {
           betAmount={betAmount}
           setBetAmount={setBetAmount}
         />
-
-        {/* Quick Stats */}
-        <div className="glass glass-hover p-6 rounded-xl">
-          <h3 className="text-lg font-semibold mb-4">Game Statistics</h3>
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Win Rate:</span>
-              <span className="text-green-400">70%</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Loss Rate:</span>
-              <span className="text-red-400">30%</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">House Fee:</span>
-              <span>0.01%</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Max Multiplier:</span>
-              <span className="text-yellow-400">15x</span>
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* Roulette & Controls */}
@@ -238,40 +242,49 @@ const SpinPage: React.FC = () => {
         <SpinRoulette
           items={generateRouletteItems()}
           isSpinning={isSpinning}
-          winningItem={winningRouletteItem}
-          onSpinComplete={() => {
-            console.log('[SpinPage] Roulette animation completed');
-          }}
+          winningItem={pendingResult ? {
+            id: "winner",
+            crypto: {
+              name: pendingResult.rewardCrypto,
+              symbol: pendingResult.rewardCrypto,
+              logo_url: undefined
+            },
+            amount: pendingResult.rewardAmount,
+            tier: pendingResult.tier || (
+              pendingResult.isWin
+                ? pendingResult.multiplier >= 8
+                  ? "legendary"
+                  : pendingResult.multiplier >= 3
+                  ? "epic"
+                  : pendingResult.multiplier >= 1.5
+                  ? "rare"
+                  : "common"
+                : "loss"
+            )
+          } : undefined}
+          onSpinComplete={handleSpinComplete}
         />
-        
-        <div className="mt-6">
-          <SpinControls
-            isSpinning={isSpinning}
-            canSpin={canSpin}
-            btcBalance={btcBalance}
-            betAmountBtc={betAmountBtc}
-            loading={loading}
-            cooldownTime={cooldownTime}
-            handleSpin={handleSpin}
-          />
-        </div>
-
+        <SpinControls
+          isSpinning={isSpinning}
+          canSpin={canSpin}
+          btcBalance={btcBalance}
+          betAmountBtc={betAmountBtc}
+          loading={loading}
+          cooldownTime={cooldownTime}
+          handleSpin={handleSpin}
+        />
         {btcBalance < betAmountBtc && (
-          <div className="text-center text-red-400 text-sm mt-4">
+          <div className="text-center text-red-400 text-sm">
             Insufficient BTC balance. You need at least {betAmountBtc.toFixed(6)} BTC to spin.
           </div>
         )}
-
-        <div className="text-center text-xs text-muted-foreground mt-2">
+        <div className="text-center text-xs text-muted-foreground">
           0.01% fee applies to all spins • 30% chance to lose your bet
         </div>
       </div>
 
       {/* Reward Tiers */}
-      <RewardTiers 
-        groupedConfigurations={groupedConfigurations} 
-        betAmountBtc={betAmountBtc} 
-      />
+      <RewardTiers groupedConfigurations={groupedConfigurations} betAmountBtc={betAmountBtc} />
 
       {/* Result Modal */}
       <SpinResultModal
@@ -279,9 +292,12 @@ const SpinPage: React.FC = () => {
         onClose={() => {
           setShowResultModal(false);
           setLastSpinResult(null);
-          setCurrentSpin(null);
         }}
-        result={lastSpinResult}
+        result={
+          lastSpinResult
+            ? { ...lastSpinResult, rewardValue: lastSpinResult.rewardValue }
+            : null
+        }
       />
     </div>
   );
