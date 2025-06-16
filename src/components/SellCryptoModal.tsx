@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 import { formatCryptoQuantity } from '@/lib/cryptoFormatters';
+import CryptoPnLCalculator from '@/lib/CryptoPnLCalculator';
 
 interface SellCryptoModalProps {
   isOpen: boolean;
@@ -32,6 +33,7 @@ interface SellCryptoModalProps {
 const SellCryptoModal: React.FC<SellCryptoModalProps> = ({ isOpen, onClose, holding }) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const pnlCalcRef = useRef(new CryptoPnLCalculator());
   const [sellAmount, setSellAmount] = useState('');
   const [sellType, setSellType] = useState<'partial' | 'full'>('partial');
   const [isLoading, setIsLoading] = useState(false);
@@ -63,6 +65,14 @@ const SellCryptoModal: React.FC<SellCryptoModalProps> = ({ isOpen, onClose, hold
     try {
       const eurValue = sellAmountValue * holding.crypto.current_price;
       const feeAmount = eurValue * 0.0035; // 0.35% fee
+
+      // update PnL calculator before executing
+      try {
+        const result = pnlCalcRef.current.addSell(holding.crypto.symbol, sellAmountValue, eurValue);
+        console.log('[SellModal] PnL result', result);
+      } catch (err) {
+        console.error('[SellModal] PnL calculation error', err);
+      }
       
       console.log('[SellModal] Starting sell transaction:', {
         userId: user.id,
@@ -166,9 +176,10 @@ const SellCryptoModal: React.FC<SellCryptoModalProps> = ({ isOpen, onClose, hold
       onClose();
       setSellAmount('');
       setSellType('partial');
-    } catch (error: any) {
+    } catch (error) {
       console.error('[SellModal] Sell failed:', error);
-      toast.error(`Sell failed: ${error.message}`);
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      toast.error(`Sell failed: ${message}`);
     } finally {
       setIsLoading(false);
     }
