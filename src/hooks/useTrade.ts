@@ -317,9 +317,10 @@ export const useTrade = (crypto: Cryptocurrency | undefined) => {
       setAmountEUR('');
       setAmountCoin('');
       fetchUserData();
-    } catch (error: any) {
+    } catch (error) {
       console.error('[useTrade] Trade failed:', error);
-      toast.error(`Trade failed: ${error.message}`);
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      toast.error(`Trade failed: ${message}`);
     } finally {
       setIsProcessingTrade(false);
     }

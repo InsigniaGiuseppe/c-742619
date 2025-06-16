@@ -176,9 +176,10 @@ const SellCryptoModal: React.FC<SellCryptoModalProps> = ({ isOpen, onClose, hold
       onClose();
       setSellAmount('');
       setSellType('partial');
-    } catch (error: any) {
+    } catch (error) {
       console.error('[SellModal] Sell failed:', error);
-      toast.error(`Sell failed: ${error.message}`);
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      toast.error(`Sell failed: ${message}`);
     } finally {
       setIsLoading(false);
     }
