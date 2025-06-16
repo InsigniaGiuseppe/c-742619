@@ -1,5 +1,5 @@
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { usePortfolio } from '@/hooks/usePortfolio';
@@ -12,6 +12,28 @@ export const useRealtimePortfolio = () => {
   const [isRealtime, setIsRealtime] = useState(false);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const isSubscribedRef = useRef(false);
+  const portfolioDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const lendingDebounceRef = useRef<NodeJS.Timeout | null>(null);
+
+  const debouncePortfolioRefetch = useCallback(() => {
+    if (portfolioDebounceRef.current) {
+      clearTimeout(portfolioDebounceRef.current);
+    }
+    portfolioDebounceRef.current = setTimeout(() => {
+      portfolio.refetch();
+      portfolioDebounceRef.current = null;
+    }, 200);
+  }, [portfolio]);
+
+  const debounceLendingRefetch = useCallback(() => {
+    if (lendingDebounceRef.current) {
+      clearTimeout(lendingDebounceRef.current);
+    }
+    lendingDebounceRef.current = setTimeout(() => {
+      lending.refetch();
+      lendingDebounceRef.current = null;
+    }, 200);
+  }, [lending]);
 
   useEffect(() => {
     if (!user || isSubscribedRef.current) return;
@@ -38,8 +60,8 @@ export const useRealtimePortfolio = () => {
         (payload) => {
           console.log('[Realtime] Crypto price updated:', payload);
           // Refetch both portfolio and lending data when crypto prices change
-          portfolio.refetch();
-          lending.refetch();
+          debouncePortfolioRefetch();
+          debounceLendingRefetch();
         }
       )
       .on(
@@ -52,7 +74,7 @@ export const useRealtimePortfolio = () => {
         (payload) => {
           console.log('[Realtime] Portfolio updated:', payload);
           // Refetch portfolio data when user portfolios change
-          portfolio.refetch();
+          debouncePortfolioRefetch();
         }
       )
       .on(
@@ -65,8 +87,8 @@ export const useRealtimePortfolio = () => {
         (payload) => {
           console.log('[Realtime] Lending position updated:', payload);
           // Refetch lending data when lending positions change
-          lending.refetch();
-          portfolio.refetch(); // Also refetch portfolio for updated P&L calculations
+          debounceLendingRefetch();
+          debouncePortfolioRefetch(); // Also refetch portfolio for updated P&L calculations
         }
       )
       .on(
@@ -79,8 +101,8 @@ export const useRealtimePortfolio = () => {
         (payload) => {
           console.log('[Realtime] Interest payment received:', payload);
           // Refetch both when interest payments are added
-          lending.refetch();
-          portfolio.refetch();
+          debounceLendingRefetch();
+          debouncePortfolioRefetch();
         }
       )
       .on(
@@ -93,7 +115,7 @@ export const useRealtimePortfolio = () => {
         (payload) => {
           console.log('[Realtime] Trading order updated:', payload);
           // Refetch portfolio when trading orders change
-          portfolio.refetch();
+          debouncePortfolioRefetch();
         }
       )
       .subscribe((status) => {
@@ -115,10 +137,18 @@ export const useRealtimePortfolio = () => {
         supabase.removeChannel(channelRef.current);
         channelRef.current = null;
       }
+      if (portfolioDebounceRef.current) {
+        clearTimeout(portfolioDebounceRef.current);
+        portfolioDebounceRef.current = null;
+      }
+      if (lendingDebounceRef.current) {
+        clearTimeout(lendingDebounceRef.current);
+        lendingDebounceRef.current = null;
+      }
       setIsRealtime(false);
       isSubscribedRef.current = false;
     };
-  }, [user?.id]); // Only depend on user.id to prevent unnecessary re-subscriptions
+  }, [user, debouncePortfolioRefetch, debounceLendingRefetch]);
 
   return {
     ...portfolio,
