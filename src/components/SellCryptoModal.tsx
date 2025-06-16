@@ -11,7 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 import { formatCryptoQuantity } from '@/lib/cryptoFormatters';
-import CryptoPnLCalculator from '@/lib/CryptoPnLCalculator';
+import CryptoPnLCalculator, { SellPnlResult } from '@/lib/CryptoPnLCalculator';
 
 interface SellCryptoModalProps {
   isOpen: boolean;
@@ -67,9 +67,10 @@ const SellCryptoModal: React.FC<SellCryptoModalProps> = ({ isOpen, onClose, hold
       const feeAmount = eurValue * 0.0035; // 0.35% fee
 
       // update PnL calculator before executing
+      let sellPnlResult: SellPnlResult | null = null;
       try {
-        const result = pnlCalcRef.current.addSell(holding.crypto.symbol, sellAmountValue, eurValue);
-        console.log('[SellModal] PnL result', result);
+        sellPnlResult = pnlCalcRef.current.addSell(holding.crypto.symbol, sellAmountValue, eurValue);
+        console.log('[SellModal] PnL result', sellPnlResult);
       } catch (err) {
         console.error('[SellModal] PnL calculation error', err);
       }
@@ -117,6 +118,25 @@ const SellCryptoModal: React.FC<SellCryptoModalProps> = ({ isOpen, onClose, hold
         });
 
       if (transactionError) throw new Error(`Failed to create transaction: ${transactionError.message}`);
+
+      // Record realized gains
+      if (sellPnlResult) {
+        const { error: gainsError } = await supabase
+          .from('realized_gains')
+          .insert({
+            user_id: user.id,
+            cryptocurrency_id: holding.crypto.id,
+            quantity_sold: sellPnlResult.totalQuantitySold,
+            total_cost_basis: sellPnlResult.totalCostBasis,
+            total_sale_value: sellPnlResult.totalSaleValue,
+            realized_pnl: sellPnlResult.totalPnL,
+            details: sellPnlResult.details,
+            sold_at: new Date().toISOString(),
+          });
+        if (gainsError) {
+          console.error('[SellModal] Failed to record realized gains:', gainsError);
+        }
+      }
 
       // Step 3: Update portfolio
       const { data: existingPortfolio, error: portfolioFetchError } = await supabase
@@ -170,6 +190,7 @@ const SellCryptoModal: React.FC<SellCryptoModalProps> = ({ isOpen, onClose, hold
       // Invalidate queries to refresh data
       queryClient.invalidateQueries({ queryKey: ['portfolio', user.id] });
       queryClient.invalidateQueries({ queryKey: ['transaction-history', user.id] });
+      queryClient.invalidateQueries({ queryKey: ['enhanced-portfolio', user.id] });
       
       toast.success(`Successfully sold ${sellAmountValue.toFixed(8)} ${holding.crypto.symbol}`);
       
