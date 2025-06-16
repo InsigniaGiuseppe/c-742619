@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { usePortfolio } from '@/hooks/usePortfolio';
@@ -43,11 +44,12 @@ export const useSpinGame = () => {
     try {
       console.log('[useSpinGame] Starting spin with bet amount:', betAmount);
 
+      // Fetch active spin configurations
       const { data: spinConfigs, error: configError } = await supabase
         .from('spin_configurations')
         .select(`
           *,
-          cryptocurrencies(symbol, name, current_price)
+          cryptocurrencies(symbol, name, current_price, logo_url)
         `)
         .eq('is_active', true);
 
@@ -60,9 +62,9 @@ export const useSpinGame = () => {
         throw new Error('No active spin configurations found');
       }
 
-      // Calculate total win probability (should be 70% total)
+      // Calculate probabilities (total should be 70% for wins, 30% for loss)
       const totalWinProbability = spinConfigs.reduce((sum, config) => sum + Number(config.probability), 0);
-      const loseProbability = 0.30; // Fixed 30% lose chance
+      const loseProbability = 0.30;
       
       console.log('[useSpinGame] Total win probability:', totalWinProbability, 'Lose probability:', loseProbability);
 
@@ -78,7 +80,7 @@ export const useSpinGame = () => {
       if (random > totalWinProbability) {
         console.log('[useSpinGame] Player lost, no reward');
         
-        // Create losing transaction
+        // Create losing transaction record
         const { error: lossError } = await supabase
           .from('transaction_history')
           .insert({
@@ -96,8 +98,8 @@ export const useSpinGame = () => {
           throw new Error('Failed to process loss transaction');
         }
 
-        // Update BTC portfolio (subtract bet + fee)
-        const newBtcQuantity = btcPortfolio.quantity - totalDeduction;
+        // Update BTC portfolio balance
+        const newBtcQuantity = Math.max(0, btcPortfolio.quantity - totalDeduction);
         const { error: btcUpdateError } = await supabase
           .from('user_portfolios')
           .update({ quantity: newBtcQuantity })
@@ -108,30 +110,8 @@ export const useSpinGame = () => {
           throw new Error('Failed to update BTC balance');
         }
 
-        // Update reserve balance with losses and fees
-        const { data: currentReserve, error: fetchReserveError } = await supabase
-          .from('platform_reserves')
-          .select('balance, total_losses_collected, total_fees_collected')
-          .eq('cryptocurrency_id', btcPortfolio.cryptocurrency_id)
-          .single();
-
-        if (fetchReserveError) {
-          console.error('[useSpinGame] Error fetching reserve balance:', fetchReserveError);
-        } else {
-          const { error: reserveError } = await supabase
-            .from('platform_reserves')
-            .update({ 
-              balance: Number(currentReserve.balance) + totalDeduction,
-              total_losses_collected: Number(currentReserve.total_losses_collected) + betAmount,
-              total_fees_collected: Number(currentReserve.total_fees_collected) + feeAmount,
-              updated_at: new Date().toISOString()
-            })
-            .eq('cryptocurrency_id', btcPortfolio.cryptocurrency_id);
-
-          if (reserveError) {
-            console.error('[useSpinGame] Error updating reserve balance:', reserveError);
-          }
-        }
+        // Update platform reserves
+        await updatePlatformReserves(btcPortfolio.cryptocurrency_id, totalDeduction, betAmount, feeAmount);
 
         const lossResult: SpinResult = {
           multiplier: 0,
@@ -159,11 +139,13 @@ export const useSpinGame = () => {
         }
       }
 
+      // Calculate reward
       const multiplier = Number(selectedConfig.min_multiplier) + 
         Math.random() * (Number(selectedConfig.max_multiplier) - Number(selectedConfig.min_multiplier));
 
       const rewardValueUsd = betValueUsd * multiplier;
-      const rewardAmount = rewardValueUsd / Number(selectedConfig.cryptocurrencies.current_price);
+      const rewardCryptoPrice = Number(selectedConfig.cryptocurrencies.current_price);
+      const rewardAmount = rewardValueUsd / rewardCryptoPrice;
 
       const spinResult: SpinResult = {
         multiplier,
@@ -176,7 +158,7 @@ export const useSpinGame = () => {
 
       console.log('[useSpinGame] Spin result calculated:', spinResult);
 
-      // Create debit transaction (bet + fee)
+      // Create bet transaction (debit)
       const { error: debitError } = await supabase
         .from('transaction_history')
         .insert({
@@ -194,7 +176,7 @@ export const useSpinGame = () => {
         throw new Error('Failed to process bet transaction');
       }
 
-      // Create credit transaction (reward)
+      // Create reward transaction (credit)
       const { error: creditError } = await supabase
         .from('transaction_history')
         .insert({
@@ -213,7 +195,7 @@ export const useSpinGame = () => {
       }
 
       // Update BTC portfolio (subtract bet + fee)
-      const newBtcQuantity = btcPortfolio.quantity - totalDeduction;
+      const newBtcQuantity = Math.max(0, btcPortfolio.quantity - totalDeduction);
       const { error: btcUpdateError } = await supabase
         .from('user_portfolios')
         .update({ quantity: newBtcQuantity })
@@ -224,117 +206,11 @@ export const useSpinGame = () => {
         throw new Error('Failed to update BTC balance');
       }
 
-      // Update reserve balance with fee only (winners don't contribute to losses)
-      const { data: currentReserve, error: fetchReserveError } = await supabase
-        .from('platform_reserves')
-        .select('balance, total_fees_collected')
-        .eq('cryptocurrency_id', btcPortfolio.cryptocurrency_id)
-        .single();
+      // Update platform reserves (only fee for winners)
+      await updatePlatformReserves(btcPortfolio.cryptocurrency_id, feeAmount, 0, feeAmount);
 
-      if (fetchReserveError) {
-        console.error('[useSpinGame] Error fetching reserve balance:', fetchReserveError);
-      } else {
-        const { error: reserveError } = await supabase
-          .from('platform_reserves')
-          .update({ 
-            balance: Number(currentReserve.balance) + feeAmount,
-            total_fees_collected: Number(currentReserve.total_fees_collected) + feeAmount,
-            updated_at: new Date().toISOString()
-          })
-          .eq('cryptocurrency_id', btcPortfolio.cryptocurrency_id);
-
-        if (reserveError) {
-          console.error('[useSpinGame] Error updating reserve balance:', reserveError);
-        }
-      }
-
-      // Update or create reward crypto portfolio
-      const rewardCryptoPortfolio = portfolio?.find(p => p.cryptocurrency_id === selectedConfig.cryptocurrency_id);
-
-      if (rewardCryptoPortfolio) {
-        const newQuantity = rewardCryptoPortfolio.quantity + rewardAmount;
-        const { error: updateError } = await supabase
-          .from('user_portfolios')
-          .update({ quantity: newQuantity })
-          .eq('id', rewardCryptoPortfolio.id);
-
-        if (updateError) {
-          console.error('[useSpinGame] Error updating reward portfolio:', updateError);
-          throw new Error('Failed to update reward balance');
-        }
-      } else {
-        // Add enhanced error logging + preflight checks
-        const userId = session.user.id;
-        const cryptocurrency_id = selectedConfig.cryptocurrency_id;
-        const avg_price = Number(selectedConfig.cryptocurrencies.current_price);
-        const rewardAmt = rewardAmount;
-        const rewardValUsd = rewardValueUsd;
-
-        // Defensive value checks
-        if (
-          !userId || typeof userId !== 'string' ||
-          !cryptocurrency_id || typeof cryptocurrency_id !== 'string' ||
-          typeof avg_price !== 'number' || !isFinite(avg_price) ||
-          typeof rewardAmt !== 'number' || !isFinite(rewardAmt) ||
-          typeof rewardValUsd !== 'number' || !isFinite(rewardValUsd)
-        ) {
-          console.error("[useSpinGame] CRITICAL: Missing or bad values for user_portfolios insert", {
-            userId,
-            cryptocurrency_id,
-            avg_priceType: typeof avg_price, avg_price,
-            rewardAmtType: typeof rewardAmt, rewardAmt,
-            rewardValUsdType: typeof rewardValUsd, rewardValUsd,
-            selectedConfig: JSON.stringify(selectedConfig, null, 2)
-          });
-          toast.error("Spin bug: missing or invalid reward values. Contact support.");
-          throw new Error('Critical: Missing or invalid fields for reward insert');
-        }
-
-        console.log("[useSpinGame] PRE-INSERT user_portfolios", {
-          user_id: userId,
-          cryptocurrency_id,
-          quantity: rewardAmt,
-          average_buy_price: avg_price,
-          total_invested: rewardValUsd,
-          current_value: rewardValUsd,
-          profit_loss: 0,
-          profit_loss_percentage: 0,
-          selectedConfig: selectedConfig,
-        });
-
-        const { error: createError, data: createData } = await supabase
-          .from('user_portfolios')
-          .insert({
-            user_id: userId,
-            cryptocurrency_id,
-            quantity: rewardAmt,
-            average_buy_price: avg_price,
-            total_invested: rewardValUsd,
-            current_value: rewardValUsd,
-            profit_loss: 0,
-            profit_loss_percentage: 0
-          });
-
-        if (createError) {
-          console.error('[useSpinGame] INSERT FAILED:', {
-            createError,
-            user_id: userId,
-            cryptocurrency_id,
-            quantity: rewardAmt,
-            average_buy_price: avg_price,
-            total_invested: rewardValUsd,
-            current_value: rewardValUsd,
-            profit_loss: 0,
-            profit_loss_percentage: 0,
-            selectedConfig: JSON.stringify(selectedConfig, null, 2)
-          });
-          toast.error(`Spin failed (DB): ${createError.message || 'Insert error. Contact support.'}`);
-          throw new Error('Failed to create reward balance');
-        }
-        if (createData) {
-          console.log("[useSpinGame] INSERT SUCCESS, data:", createData);
-        }
-      }
+      // Handle reward crypto portfolio
+      await handleRewardCrypto(selectedConfig, rewardAmount, rewardValueUsd, rewardCryptoPrice);
 
       setCurrentSpin(spinResult);
       await refetchPortfolio();
@@ -347,6 +223,94 @@ export const useSpinGame = () => {
       return null;
     } finally {
       setIsSpinning(false);
+    }
+  };
+
+  // Helper function to update platform reserves
+  const updatePlatformReserves = async (cryptoId: string, totalAmount: number, lossAmount: number, feeAmount: number) => {
+    try {
+      const { data: currentReserve, error: fetchError } = await supabase
+        .from('platform_reserves')
+        .select('balance, total_losses_collected, total_fees_collected')
+        .eq('cryptocurrency_id', cryptoId)
+        .single();
+
+      if (fetchError) {
+        console.error('[useSpinGame] Error fetching reserve:', fetchError);
+        return;
+      }
+
+      const { error: updateError } = await supabase
+        .from('platform_reserves')
+        .update({ 
+          balance: Number(currentReserve.balance) + totalAmount,
+          total_losses_collected: Number(currentReserve.total_losses_collected) + lossAmount,
+          total_fees_collected: Number(currentReserve.total_fees_collected) + feeAmount,
+          updated_at: new Date().toISOString()
+        })
+        .eq('cryptocurrency_id', cryptoId);
+
+      if (updateError) {
+        console.error('[useSpinGame] Error updating reserves:', updateError);
+      }
+    } catch (error) {
+      console.error('[useSpinGame] Reserve update failed:', error);
+    }
+  };
+
+  // Helper function to handle reward crypto portfolio
+  const handleRewardCrypto = async (selectedConfig: any, rewardAmount: number, rewardValueUsd: number, rewardCryptoPrice: number) => {
+    const rewardCryptoPortfolio = portfolio?.find(p => p.cryptocurrency_id === selectedConfig.cryptocurrency_id);
+
+    if (rewardCryptoPortfolio) {
+      // Update existing portfolio
+      const newQuantity = rewardCryptoPortfolio.quantity + rewardAmount;
+      const { error: updateError } = await supabase
+        .from('user_portfolios')
+        .update({ quantity: newQuantity })
+        .eq('id', rewardCryptoPortfolio.id);
+
+      if (updateError) {
+        console.error('[useSpinGame] Error updating reward portfolio:', updateError);
+        throw new Error('Failed to update reward balance');
+      }
+    } else {
+      // Create new portfolio entry with validation
+      const userId = session?.user.id;
+      const cryptocurrency_id = selectedConfig.cryptocurrency_id;
+
+      if (!userId || !cryptocurrency_id || !rewardAmount || !rewardCryptoPrice) {
+        console.error('[useSpinGame] Missing required values for portfolio creation');
+        throw new Error('Invalid reward data');
+      }
+
+      console.log('[useSpinGame] Creating new portfolio entry:', {
+        user_id: userId,
+        cryptocurrency_id,
+        quantity: rewardAmount,
+        average_buy_price: rewardCryptoPrice,
+        total_invested: rewardValueUsd,
+        is_spin_reward: true
+      });
+
+      const { error: createError } = await supabase
+        .from('user_portfolios')
+        .insert({
+          user_id: userId,
+          cryptocurrency_id,
+          quantity: rewardAmount,
+          average_buy_price: rewardCryptoPrice,
+          total_invested: rewardValueUsd,
+          current_value: rewardValueUsd,
+          profit_loss: 0,
+          profit_loss_percentage: 0,
+          is_spin_reward: true
+        });
+
+      if (createError) {
+        console.error('[useSpinGame] Error creating reward portfolio:', createError);
+        throw new Error('Failed to create reward balance');
+      }
     }
   };
 
