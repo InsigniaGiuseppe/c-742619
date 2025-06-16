@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from './useAuth';
@@ -6,11 +6,13 @@ import { Cryptocurrency } from './useCryptocurrencies';
 import { useQueryClient } from '@tanstack/react-query';
 import { useExchangeRate } from './useExchangeRate';
 import { convertUsdToEur, convertEurToUsd } from '@/lib/currencyConverter';
+import CryptoPnLCalculator from '@/lib/CryptoPnLCalculator';
 
 export const useTrade = (crypto: Cryptocurrency | undefined) => {
   const { user } = useAuth();
   const { exchangeRate } = useExchangeRate();
   const queryClient = useQueryClient();
+  const pnlCalculatorRef = useRef(new CryptoPnLCalculator());
   
   const [tradeType, setTradeType] = useState<'buy' | 'sell'>('buy');
   const [paymentMethod, setPaymentMethod] = useState<'balance' | 'ideal'>('balance');
@@ -145,6 +147,18 @@ export const useTrade = (crypto: Cryptocurrency | undefined) => {
 
     setIsProcessingTrade(true);
     const logPrefix = `[Trade-Step]`;
+
+    // Update PnL calculator before processing trade
+    try {
+      if (tradeType === 'buy') {
+        pnlCalculatorRef.current.addBuy(crypto.symbol, coinAmount, eurValue);
+      } else {
+        const result = pnlCalculatorRef.current.addSell(crypto.symbol, coinAmount, eurValue);
+        console.log('[useTrade] PnL result', result);
+      }
+    } catch (err) {
+      console.error('[useTrade] PnL calculation error', err);
+    }
 
     try {
       // Step 1: Create trading order (store in USD)
