@@ -24,7 +24,10 @@ export interface PortfolioItem {
   };
 }
 
-const fetchPortfolio = async (userId: string): Promise<{
+const fetchPortfolio = async (
+  userId: string,
+  exchangeRate: number
+): Promise<{
   portfolio: PortfolioItem[];
   totalValue: number;
   totalProfitLoss: number;
@@ -80,31 +83,36 @@ const fetchPortfolio = async (userId: string): Promise<{
   console.log('[usePortfolio] Raw portfolio data:', portfolioData);
   console.log('[usePortfolio] Raw lending data:', lendingData);
 
-  const portfolioItems = portfolioData?.map(item => {
+const portfolioItems = portfolioData?.map(item => {
     // Calculate current value in USD first
     const liveCurrentValueUsd = item.quantity * (item.crypto?.current_price || 0);
+    // Convert to EUR using the latest exchange rate
+    const liveCurrentValueEur = convertUsdToEur(liveCurrentValueUsd, exchangeRate);
     
     // FIXED: Use database stored total_invested directly (already in EUR from recent trades)
     // For older entries that might have USD values, we need to detect and convert them
     let totalInvestedEur = item.total_invested;
     
     // Heuristic: If total_invested is much larger than current EUR value, it's likely in USD
-    const eurPrice = item.crypto?.current_price || 0;
-    const expectedEurValue = item.quantity * eurPrice * 0.85; // Rough EUR conversion
+    const eurPrice = convertUsdToEur(item.crypto?.current_price || 0, exchangeRate);
+    const expectedEurValue = item.quantity * eurPrice;
     
     if (totalInvestedEur > expectedEurValue * 2) {
-      // This looks like USD data, convert it
-      console.log(`[usePortfolio] Converting suspected USD total_invested for ${item.crypto?.symbol}:`, totalInvestedEur);
-      totalInvestedEur = totalInvestedEur * 0.85; // Approximate USD to EUR conversion
+      // This looks like USD data, convert it using the current exchange rate
+      console.log(
+        `[usePortfolio] Converting suspected USD total_invested for ${item.crypto?.symbol}:`,
+        totalInvestedEur
+      );
+      totalInvestedEur = convertUsdToEur(totalInvestedEur, exchangeRate);
     }
     
-    const profitLoss = liveCurrentValueUsd - totalInvestedEur;
+    const profitLoss = liveCurrentValueEur - totalInvestedEur;
     const profitLossPercentage = totalInvestedEur > 0 ? (profitLoss / totalInvestedEur) * 100 : 0;
 
     return {
       ...item,
       total_invested: totalInvestedEur,
-      current_value: liveCurrentValueUsd,
+      current_value: liveCurrentValueEur,
       profit_loss: profitLoss,
       profit_loss_percentage: profitLossPercentage,
       crypto: item.crypto
@@ -123,14 +131,14 @@ const fetchPortfolio = async (userId: string): Promise<{
 
   if (lendingData) {
     lendingData.forEach(lending => {
-      const currentLendingValue = lending.amount_lent * (lending.crypto?.current_price || 0);
-      const originalInvestment = lending.original_amount_lent * (lending.crypto?.current_price || 0);
+      const currentLendingValueUsd = lending.amount_lent * (lending.crypto?.current_price || 0);
+      const originalInvestmentUsd = lending.original_amount_lent * (lending.crypto?.current_price || 0);
       const interestInCrypto = lending.total_interest_earned;
-      const interestInUSD = interestInCrypto * (lending.crypto?.current_price || 0);
-      
-      lendingTotalValue += currentLendingValue;
-      lendingTotalInvested += originalInvestment;
-      lendingTotalInterestEarned += interestInUSD;
+      const interestInUsd = interestInCrypto * (lending.crypto?.current_price || 0);
+
+      lendingTotalValue += convertUsdToEur(currentLendingValueUsd, exchangeRate);
+      lendingTotalInvested += convertUsdToEur(originalInvestmentUsd, exchangeRate);
+      lendingTotalInterestEarned += convertUsdToEur(interestInUsd, exchangeRate);
     });
   }
 
@@ -160,13 +168,13 @@ const fetchPortfolio = async (userId: string): Promise<{
 export const usePortfolio = () => {
   const { user } = useAuth();
   const { exchangeRate } = useExchangeRate();
-  const queryKey = ['portfolio', user?.id];
+  const queryKey = ['portfolio', user?.id, exchangeRate];
 
   const query = useQuery({
     queryKey: queryKey,
     queryFn: () => {
       console.log(`[usePortfolio] queryFn executed with key:`, queryKey);
-      return fetchPortfolio(user!.id);
+      return fetchPortfolio(user!.id, exchangeRate);
     },
     enabled: !!user,
     staleTime: 5000,
