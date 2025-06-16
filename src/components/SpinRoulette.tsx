@@ -24,7 +24,9 @@ const CARD_WIDTH = 120;
 const CARD_MARGIN = 8;
 const TOTAL_CARD_WIDTH = CARD_WIDTH + CARD_MARGIN;
 const VISIBLE_CARDS = 7;
-const GHOST_CARDS = 20; // Increased for smoother experience
+// Number of placeholder cards placed before and after the winner
+// Lowered a bit to reduce initial network requests
+const GHOST_CARDS = 12;
 
 const getTierGlow = (tier: string) => {
   switch (tier) {
@@ -72,9 +74,10 @@ const buildCardsTrack = (
   for (let i = 0; i < GHOST_CARDS; i++) {
     // Mix items to avoid repetitive patterns
     const randomIndex = Math.floor(Math.random() * all.length);
-    surround.push({ 
-      ...all[randomIndex], 
-      id: `ghost-${i}-${Math.random()}`
+    surround.push({
+      ...all[randomIndex],
+      // Use stable id so the same element can be reused between spins
+      id: `ghost-${i}`
     });
   }
   

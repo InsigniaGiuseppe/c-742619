@@ -70,10 +70,11 @@ const CryptoLogo: React.FC<CryptoLogoProps> = ({
   const imageUrl = (!imageError && logo_url) ? logo_url : fallbackUrl;
   
   return (
-    <img 
+    <img
       src={imageUrl}
       alt={`${name} logo`}
       className={`${sizeClasses[size]} ${className} rounded-full object-cover`}
+      loading="lazy"
       onError={() => {
         console.log(`[CryptoLogo] Image error for ${symbol} with URL: ${imageUrl}`);
         if (!imageError && logo_url && imageUrl === logo_url) {
