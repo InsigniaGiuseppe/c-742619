@@ -97,7 +97,7 @@ const SellCryptoModal: React.FC<SellCryptoModalProps> = ({ isOpen, onClose, hold
         .insert({
           user_id: user.id,
           cryptocurrency_id: holding.crypto.id,
-          transaction_type: 'trade_sell',
+          transaction_type: 'sell',
           amount: sellAmountValue,
           usd_value: eurValue,
           fee_amount: feeAmount,
