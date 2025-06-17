@@ -19,6 +19,7 @@ import { useAdminStats } from '@/hooks/useAdminStats';
 import { formatCurrency } from '@/lib/formatters';
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const AdminDashboard = () => {
   const { data: stats, isLoading, error } = useAdminStats();
@@ -74,31 +75,41 @@ const AdminDashboard = () => {
     }
   ];
 
-  const { data: reserves } = useQuery({
+  const { data: reserveStats } = useQuery({
     queryKey: ["platform-reserves-stats"],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data: reserves } = await supabase
         .from("platform_reserves")
         .select("balance,total_fees_collected,total_losses_collected");
-      return (
-        data ||
-        []
-      );
+
+      const { data: feeData } = await supabase
+        .from("transaction_history")
+        .select("fee_amount")
+        .eq("status", "completed");
+
+      const transactionFees = feeData?.reduce(
+        (sum, t) => sum + Number(t.fee_amount || 0),
+        0
+      ) || 0;
+
+      return {
+        reserves: reserves || [],
+        transactionFees,
+      };
     },
     staleTime: 10 * 60 * 1000,
     refetchInterval: 30 * 1000,
   });
 
-  const platformProfit =
-    reserves && reserves.length
-      ? reserves.reduce(
+  const platformProfit = reserveStats
+    ? reserveStats.reserves.reduce(
         (sum, r) =>
           sum +
           Number(r.total_fees_collected || 0) +
           Number(r.total_losses_collected || 0),
         0
-      )
-      : 0;
+      ) + reserveStats.transactionFees
+    : 0;
 
   const quickStats = [
     {
@@ -127,6 +138,7 @@ const AdminDashboard = () => {
     },
     {
       title: "Platform Profit",
+      tooltip: "Includes trading fees and spin losses",
       value:
         platformProfit === 0
           ? "Loading..."
@@ -168,7 +180,22 @@ const AdminDashboard = () => {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">{stat.title}</p>
+                  {stat.tooltip ? (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <p className="text-sm font-medium text-muted-foreground cursor-help">
+                            {stat.title}
+                          </p>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>{stat.tooltip}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  ) : (
+                    <p className="text-sm font-medium text-muted-foreground">{stat.title}</p>
+                  )}
                   <p className="text-2xl font-bold">{stat.value}</p>
                   <p className="text-xs text-green-400">{stat.change}</p>
                 </div>
