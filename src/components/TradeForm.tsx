@@ -8,6 +8,9 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Link } from 'react-router-dom';
+import { formatCurrency, formatPrice } from '@/lib/formatters';
+import { useExchangeRate } from '@/hooks/useExchangeRate';
+import { convertUsdToEur } from '@/lib/currencyConverter';
 
 interface TradeFormProps {
   crypto: Cryptocurrency;
@@ -15,6 +18,7 @@ interface TradeFormProps {
 
 const TradeForm: React.FC<TradeFormProps> = ({ crypto }) => {
   const { user, loading: authLoading } = useAuth();
+  const { exchangeRate } = useExchangeRate();
   const {
     tradeType,
     setTradeType,
@@ -45,6 +49,7 @@ const TradeForm: React.FC<TradeFormProps> = ({ crypto }) => {
 
   const userBalanceDisplay = userBalance ?? 0;
   const userHoldingsDisplay = userHoldings ?? 0;
+  const cryptoPriceEur = convertUsdToEur(crypto.current_price, exchangeRate);
 
   return (
     <div className="space-y-6">
@@ -62,7 +67,7 @@ const TradeForm: React.FC<TradeFormProps> = ({ crypto }) => {
         <div className="flex justify-between text-sm">
           <span className="text-muted-foreground">You pay</span>
           <span className="text-muted-foreground">
-            Balance: {new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(userBalanceDisplay)}
+            Balance: {formatCurrency(userBalanceDisplay, { currency: 'EUR' })}
           </span>
         </div>
         <div className="relative">
@@ -85,7 +90,7 @@ const TradeForm: React.FC<TradeFormProps> = ({ crypto }) => {
           </span>
         </div>
         <div className="relative">
-           <Input 
+           <Input
             type="number"
             placeholder="0.000000"
             value={amountCoin}
@@ -95,6 +100,23 @@ const TradeForm: React.FC<TradeFormProps> = ({ crypto }) => {
           <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground">{crypto.symbol.toUpperCase()}</span>
         </div>
       </div>
+
+      {amountEUR && (
+        <div className="p-3 bg-white/5 rounded-lg text-sm space-y-2">
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Price</span>
+            <span>{formatPrice(cryptoPriceEur, 'EUR')}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Fee (0.35%)</span>
+            <span>{formatCurrency(parseFloat(amountEUR) * 0.0035, { currency: 'EUR', maximumFractionDigits: 4 })}</span>
+          </div>
+          <div className="flex justify-between font-bold text-base border-t border-white/10 pt-2 mt-2">
+            <span>Total</span>
+            <span>{formatCurrency(parseFloat(amountEUR) * 1.0035, { currency: 'EUR' })}</span>
+          </div>
+        </div>
+      )}
 
       <Button onClick={handleTrade} disabled={isProcessingTrade || !amountEUR || parseFloat(amountEUR) <= 0} className="w-full text-lg py-6">
         {isProcessingTrade ? <Loader2 className="animate-spin" /> : `${tradeType === 'buy' ? 'Buy' : 'Sell'} ${crypto.name}`}
